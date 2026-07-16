@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { buildAdjacency, computeDerivedPairs, computeRanks } from './derive';
-import type { Diagram, DiagramEdge, DiagramNode, DerivedRelation, PathStep, DerivedExclusion } from './types';
+import type { Diagram, DiagramEdge, DiagramNode, DerivedRelation, StepDir, DerivedExclusion } from './types';
 import { defaultVisibility } from './types';
+
+/** Build a pattern of same-relation hops from a compact dir string. */
+const steps = (dirs: StepDir[], relationId = 'rel_parent') => dirs.map((dir) => ({ relationId, dir }));
 
 /**
  * Family fixture (source = parent, target = child):
@@ -29,8 +32,8 @@ function familyDiagram(): Diagram {
   };
 }
 
-const derived = (pattern: PathStep[], exclude?: DerivedExclusion[]): DerivedRelation => ({
-  id: 'der', name: 'x', kind: 'derived', overRelationId: 'rel_parent', pattern, exclude,
+const derived = (dirs: StepDir[], exclude?: DerivedExclusion[]): DerivedRelation => ({
+  id: 'der', name: 'x', kind: 'derived', pattern: steps(dirs), exclude,
   style: { line: 'dotted', arrow: 'none', curve: 'bezier', color: '#000', width: 1 },
 });
 
@@ -70,6 +73,49 @@ describe('computeDerivedPairs — the kị→ông case and friends', () => {
   it('never emits a self pair even without explicit exclude', () => {
     const pairs = computeDerivedPairs(d, derived(['up', 'down']));
     expect(pairs.every((p) => p.source !== p.target)).toBe(true);
+  });
+});
+
+describe('computeDerivedPairs — mixed-relation paths (in-laws)', () => {
+  // A —(parent)→ B, and B —(spouse)→ S. So A's daughter/son-in-law is S.
+  const d: Diagram = {
+    id: 'd2', name: 'inlaw',
+    nodes: ['A', 'B', 'S'].map(node),
+    edges: [
+      edge('A', 'B'), // rel_parent
+      { id: 'B-S', relationId: 'rel_spouse', source: 'B', target: 'S' },
+    ],
+    ruleSetIds: [], localRules: [], visibility: defaultVisibility(),
+    createdAt: '', updatedAt: '',
+  };
+
+  it('daughter/son-in-law = [↓ parent-child, ↔ spouse]', () => {
+    const rel: DerivedRelation = {
+      id: 'der_cil', name: 'con dâu/rể', kind: 'derived',
+      pattern: [
+        { relationId: 'rel_parent', dir: 'down' },
+        { relationId: 'rel_spouse', dir: 'both' },
+      ],
+      exclude: ['self'],
+      style: { line: 'dotted', arrow: 'none', curve: 'bezier', color: '#000', width: 1 },
+    };
+    const pairs = asSet(computeDerivedPairs(d, rel));
+    expect(pairs).toEqual(new Set(['A>S']));
+  });
+
+  it('parent-in-law = [↔ spouse, ↑ parent-child] finds the spouse’s parent', () => {
+    const rel: DerivedRelation = {
+      id: 'der_pil', name: 'bố mẹ vợ/chồng', kind: 'derived',
+      pattern: [
+        { relationId: 'rel_spouse', dir: 'both' },
+        { relationId: 'rel_parent', dir: 'up' },
+      ],
+      exclude: ['self'],
+      style: { line: 'dotted', arrow: 'none', curve: 'bezier', color: '#000', width: 1 },
+    };
+    // From S: ↔spouse → B, ↑parent → A. So S's parent-in-law is A.
+    const pairs = asSet(computeDerivedPairs(d, rel));
+    expect(pairs).toEqual(new Set(['S>A']));
   });
 });
 

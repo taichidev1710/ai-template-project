@@ -1,50 +1,73 @@
-import { Button, Space, Tag, Typography } from 'antd';
-import { ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
-import type { PathStep } from '../types';
+import { useState } from 'react';
+import { Button, Select, Space, Tag, Typography } from 'antd';
+import { DIR_ARROW } from '../types';
+import type { BaseRelation, RelationStep, StepDir } from '../types';
 
 interface PatternBuilderProps {
-  value?: PathStep[];
-  onChange?: (value: PathStep[]) => void;
+  value?: RelationStep[];
+  onChange?: (value: RelationStep[]) => void;
+  /** Base relations of this type — each hop walks one of them. */
+  baseRelations: BaseRelation[];
 }
 
+const DIR_LABEL: Record<StepDir, string> = { up: '↑ Lên', down: '↓ Xuống', both: '↔ Hai chiều' };
+
 /**
- * Declares a derived relation as a sequence of up/down hops over the base
- * relation. Controlled input (bound via a Form.Item). e.g. ↑↑ = ông bà,
- * ↑↓ = anh chị em, ↓↓ = cháu, ↑↑↓ = cô/chú.
+ * Declares a derived relation as a sequence of hops. Each hop = a base relation
+ * + a direction, so paths can mix relations (e.g. ↓ Cha–con → ↔ Vợ chồng =
+ * con dâu/rể). The relation defaults to the primary one, so simple same-relation
+ * paths (ông bà = ↑↑) stay quick.
  */
-export function PatternBuilder({ value = [], onChange }: PatternBuilderProps) {
-  const add = (step: PathStep) => onChange?.([...value, step]);
+export function PatternBuilder({ value = [], onChange, baseRelations }: PatternBuilderProps) {
+  const primary = baseRelations.find((r) => r.role === 'primary') ?? baseRelations[0];
+  const [relId, setRelId] = useState<string | undefined>(primary?.id);
+  const activeRel = relId ?? primary?.id;
+  const relName = (id: string) => baseRelations.find((r) => r.id === id)?.name ?? id;
+
+  const add = (dir: StepDir) => {
+    if (!activeRel) return;
+    onChange?.([...value, { relationId: activeRel, dir }]);
+  };
   const pop = () => onChange?.(value.slice(0, -1));
 
   return (
     <div>
-      <div className="mb-2 flex min-h-[32px] flex-wrap items-center gap-1 rounded-app bg-canvas px-2 py-1">
+      <div className="mb-2 flex min-h-[34px] flex-wrap items-center gap-1 rounded-app bg-canvas px-2 py-1">
         {value.length === 0 ? (
           <Typography.Text type="secondary" className="text-xs">
-            Chưa có bước nào — thêm ↑/↓
+            Chưa có bước nào — chọn quan hệ rồi thêm ↑/↓/↔
           </Typography.Text>
         ) : (
           value.map((s, i) => (
-            <Tag key={i} color={s === 'up' ? 'geekblue' : 'volcano'}>
-              {s === 'up' ? '↑ Lên' : '↓ Xuống'}
+            <Tag key={i} color={s.dir === 'up' ? 'geekblue' : s.dir === 'down' ? 'volcano' : 'purple'}>
+              {DIR_ARROW[s.dir]} {relName(s.relationId)}
             </Tag>
           ))
         )}
       </div>
+
       <Space wrap>
-        <Button size="small" icon={<ArrowUpOutlined />} onClick={() => add('up')}>
-          Lên
-        </Button>
-        <Button size="small" icon={<ArrowDownOutlined />} onClick={() => add('down')}>
-          Xuống
-        </Button>
+        <Select
+          size="small"
+          value={activeRel}
+          onChange={setRelId}
+          style={{ minWidth: 150 }}
+          options={baseRelations.map((r) => ({ value: r.id, label: r.name }))}
+          placeholder="Quan hệ"
+        />
+        {(['up', 'down', 'both'] as StepDir[]).map((dir) => (
+          <Button key={dir} size="small" onClick={() => add(dir)} disabled={!activeRel}>
+            {DIR_LABEL[dir]}
+          </Button>
+        ))}
         <Button size="small" onClick={pop} disabled={value.length === 0}>
           Xoá bước cuối
         </Button>
       </Space>
+
       <div className="mt-1">
         <Typography.Text type="secondary" className="text-xs">
-          VD: ↑↑ = ông bà · ↑↓ = anh chị em · ↓↓ = cháu · ↑↑↓ = cô/dì/chú/bác
+          VD (Cha–con): ↑↑ = ông bà · ↑↓ = anh chị em · ↓↓ = cháu. Trộn: ↓ Cha–con → ↔ Vợ chồng = con dâu/rể.
         </Typography.Text>
       </div>
     </div>

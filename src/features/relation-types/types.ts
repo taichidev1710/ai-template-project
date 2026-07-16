@@ -6,12 +6,13 @@ import type {
   DerivedExclusion,
   DerivedRelation,
   LineStyle,
-  PathStep,
+  RelationStep,
+  StepDir,
   Relation,
   RelationRole,
 } from '@/domain/diagram';
 
-export type { Relation, BaseRelation, DerivedRelation, PathStep, DerivedExclusion, RelationRole };
+export type { Relation, BaseRelation, DerivedRelation, RelationStep, StepDir, DerivedExclusion, RelationRole };
 
 /** Create/update payloads — id is server-managed; kind picks the variant. */
 export type BaseRelationInput = Omit<BaseRelation, 'id'>;
@@ -57,7 +58,24 @@ export function roleLabel(role: RelationRole): string {
   return ROLE_OPTIONS.find((r) => r.value === role)?.label ?? role;
 }
 
-/** Human-readable path, e.g. ['up','up'] → "↑ ↑". */
-export function patternText(pattern: PathStep[]): string {
-  return pattern.map((s) => (s === 'up' ? '↑' : '↓')).join(' ') || '—';
+export const DIR_ARROW: Record<StepDir, string> = { up: '↑', down: '↓', both: '↔' };
+
+export const DIR_OPTIONS: { value: StepDir; label: string }[] = [
+  { value: 'up', label: '↑ Lên (cha mẹ)' },
+  { value: 'down', label: '↓ Xuống (con)' },
+  { value: 'both', label: '↔ Hai chiều' },
+];
+
+/**
+ * Human-readable path. Same-relation paths render compactly ("↑↑ trên Cha–con");
+ * mixed-relation paths render step-by-step ("↓ Cha–con → ↔ Vợ chồng").
+ */
+export function describePattern(pattern: RelationStep[], relationName: (id: string) => string): string {
+  if (pattern.length === 0) return '—';
+  const relIds = new Set(pattern.map((s) => s.relationId));
+  if (relIds.size === 1) {
+    const only = [...relIds][0]!;
+    return `${pattern.map((s) => DIR_ARROW[s.dir]).join('')} trên ${relationName(only)}`;
+  }
+  return pattern.map((s) => `${DIR_ARROW[s.dir]} ${relationName(s.relationId)}`).join(' → ');
 }

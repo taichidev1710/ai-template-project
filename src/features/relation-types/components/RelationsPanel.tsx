@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { App, Button, Input, Segmented, Space } from 'antd';
 import { AppstoreOutlined, PlusOutlined, UnorderedListOutlined } from '@ant-design/icons';
-import { isBaseRelation } from '@/domain/diagram';
 import { useDebounce } from '@/shared/hooks/use-debounce';
 import { RelationsTable } from './RelationsTable';
 import { RelationsGrid } from './RelationsGrid';
@@ -28,7 +27,6 @@ export function RelationsPanel({ typeId }: { typeId: string }) {
   const { data: allRelations } = useAllRelations(typeId);
   const { create, update, remove } = useRelationMutations(typeId);
 
-  const baseRelations = (allRelations ?? []).filter(isBaseRelation);
   const relationName = (id: string) => (allRelations ?? []).find((r) => r.id === id)?.name ?? id;
 
   const openCreate = () => {
@@ -110,7 +108,7 @@ export function RelationsPanel({ typeId }: { typeId: string }) {
       <RelationFormModal
         open={modalOpen}
         initialValue={editing}
-        baseRelations={baseRelations}
+        relations={allRelations ?? []}
         confirmLoading={create.isPending || update.isPending}
         onSubmit={handleSubmit}
         onCancel={() => setModalOpen(false)}

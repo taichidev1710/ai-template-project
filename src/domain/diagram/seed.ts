@@ -10,7 +10,12 @@
  * ['up','up'] means "skip-level manager"; over a network's "connects-to",
  * ['down','down'] means "reachable in 2 hops". Same engine, different data.
  */
-import type { BlockType, DiagramTemplate, Relation, RuleSet } from './types';
+import type { BlockType, DiagramTemplate, Relation, RelationStep, RuleSet } from './types';
+
+/* Path-step shorthands for derived relations. */
+const up = (relationId: string): RelationStep => ({ relationId, dir: 'up' });
+const down = (relationId: string): RelationStep => ({ relationId, dir: 'down' });
+const both = (relationId: string): RelationStep => ({ relationId, dir: 'both' });
 
 /* Relation-style shorthands. */
 const solid = (color: string, arrow: 'triangle' | 'vee' | 'none' = 'triangle', curve: 'straight' | 'taxi' = 'straight') =>
@@ -31,10 +36,11 @@ const FAMILY_RELATIONS: Relation[] = [
   { id: 'rel_parent', name: 'Cha mẹ – con', kind: 'base', role: 'primary', style: solid('#5b647e') },
   { id: 'rel_spouse', name: 'Vợ chồng', kind: 'base', role: 'secondary', style: dashed('#c46ba0') },
   { id: 'rel_friend', name: 'Bạn bè', kind: 'base', role: 'secondary', style: dashed('#6fb1d8') },
-  { id: 'der_grandparent', name: 'Ông bà (suy ra)', kind: 'derived', overRelationId: 'rel_parent', pattern: ['up', 'up'], style: faint('#b08d6a') },
-  { id: 'der_grandchild', name: 'Cháu (suy ra)', kind: 'derived', overRelationId: 'rel_parent', pattern: ['down', 'down'], style: faint('#d97b6c') },
-  { id: 'der_sibling', name: 'Anh chị em (suy ra)', kind: 'derived', overRelationId: 'rel_parent', pattern: ['up', 'down'], exclude: ['self'], style: faint('#5fb99a') },
-  { id: 'der_uncle', name: 'Cô/dì/chú/bác (suy ra)', kind: 'derived', overRelationId: 'rel_parent', pattern: ['up', 'up', 'down'], exclude: ['self', 'parents'], style: faint('#7d8cc4') },
+  { id: 'der_grandparent', name: 'Ông bà (suy ra)', kind: 'derived', pattern: [up('rel_parent'), up('rel_parent')], style: faint('#b08d6a') },
+  { id: 'der_grandchild', name: 'Cháu (suy ra)', kind: 'derived', pattern: [down('rel_parent'), down('rel_parent')], style: faint('#d97b6c') },
+  { id: 'der_sibling', name: 'Anh chị em (suy ra)', kind: 'derived', pattern: [up('rel_parent'), down('rel_parent')], exclude: ['self'], style: faint('#5fb99a') },
+  { id: 'der_uncle', name: 'Cô/dì/chú/bác (suy ra)', kind: 'derived', pattern: [up('rel_parent'), up('rel_parent'), down('rel_parent')], exclude: ['self', 'parents'], style: faint('#7d8cc4') },
+  { id: 'der_child_in_law', name: 'Con dâu/rể (suy ra)', kind: 'derived', pattern: [down('rel_parent'), both('rel_spouse')], exclude: ['self'], style: faint('#c46ba0') },
 ];
 const RS_FAMILY: RuleSet = {
   id: 'rs_family', name: 'Gia đình chuẩn', icon: '👪', builtin: true,
@@ -59,7 +65,7 @@ const ORG_BLOCKS: BlockType[] = [
 const ORG_RELATIONS: Relation[] = [
   { id: 'rel_reports', name: 'Trực thuộc', kind: 'base', role: 'primary', style: solid('#5b647e', 'triangle', 'taxi') },
   { id: 'rel_coord', name: 'Phối hợp', kind: 'base', role: 'secondary', style: dashed('#a5c46b') },
-  { id: 'der_skiplevel', name: 'Sếp cách cấp (suy ra)', kind: 'derived', overRelationId: 'rel_reports', pattern: ['up', 'up'], style: faint('#b08d6a') },
+  { id: 'der_skiplevel', name: 'Sếp cách cấp (suy ra)', kind: 'derived', pattern: [up('rel_reports'), up('rel_reports')], style: faint('#b08d6a') },
 ];
 const RS_ORG: RuleSet = {
   id: 'rs_org', name: 'Tổ chức — thống nhất mệnh lệnh', icon: '🏢', builtin: true,
@@ -117,7 +123,7 @@ const NETWORK_BLOCKS: BlockType[] = [
 ];
 const NETWORK_RELATIONS: Relation[] = [
   { id: 'rel_conn', name: 'Kết nối', kind: 'base', role: 'primary', style: solid('#5b647e', 'none') },
-  { id: 'der_2hop', name: 'Tới sau 2 bước (suy ra)', kind: 'derived', overRelationId: 'rel_conn', pattern: ['down', 'down'], exclude: ['self'], style: faint('#b08d6a') },
+  { id: 'der_2hop', name: 'Tới sau 2 bước (suy ra)', kind: 'derived', pattern: [down('rel_conn'), down('rel_conn')], exclude: ['self'], style: faint('#b08d6a') },
 ];
 
 /* ============================================================

@@ -2,7 +2,7 @@ import { Button, Descriptions, Modal, Tag } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import { isDerivedRelation } from '@/domain/diagram';
 import { RelationLinePreview } from './RelationLinePreview';
-import { patternText, roleLabel } from '../types';
+import { describePattern, roleLabel } from '../types';
 import type { Relation } from '../types';
 
 interface RelationDetailModalProps {
@@ -42,8 +42,7 @@ export function RelationDetailModal({ open, item, onEdit, onClose, relationName 
           </Descriptions.Item>
           {isDerivedRelation(item) ? (
             <>
-              <Descriptions.Item label="Đường đi">{patternText(item.pattern)}</Descriptions.Item>
-              <Descriptions.Item label="Trên quan hệ">{relationName?.(item.overRelationId) ?? item.overRelationId}</Descriptions.Item>
+              <Descriptions.Item label="Đường đi">{describePattern(item.pattern, relationName ?? ((id) => id))}</Descriptions.Item>
               <Descriptions.Item label="Loại trừ">
                 {(item.exclude ?? []).length ? item.exclude!.join(', ') : '— (chỉ trừ chính nó)'}
               </Descriptions.Item>

@@ -3,7 +3,7 @@ import type { TablePaginationConfig } from 'antd';
 import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { isDerivedRelation } from '@/domain/diagram';
 import { RelationLinePreview } from './RelationLinePreview';
-import { patternText, roleLabel } from '../types';
+import { describePattern, roleLabel } from '../types';
 import type { Relation } from '../types';
 
 interface RelationsTableProps {
@@ -52,12 +52,7 @@ export function RelationsTable({ data, total, page, pageSize, loading, onPageCha
           key: 'roleOrPattern',
           render: (_, r) =>
             isDerivedRelation(r) ? (
-              <Typography.Text>
-                {patternText(r.pattern)}{' '}
-                <Typography.Text type="secondary" className="text-xs">
-                  trên {relationName?.(r.overRelationId) ?? r.overRelationId}
-                </Typography.Text>
-              </Typography.Text>
+              <Typography.Text className="text-xs">{describePattern(r.pattern, relationName ?? ((id) => id))}</Typography.Text>
             ) : (
               roleLabel(r.role)
             ),

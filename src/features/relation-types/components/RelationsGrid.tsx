@@ -2,7 +2,7 @@ import { Button, Card, Empty, Pagination, Skeleton, Space, Tag, Typography } fro
 import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { isDerivedRelation } from '@/domain/diagram';
 import { RelationLinePreview } from './RelationLinePreview';
-import { patternText, roleLabel } from '../types';
+import { describePattern, roleLabel } from '../types';
 import type { Relation } from '../types';
 
 interface RelationsGridProps {
@@ -51,9 +51,7 @@ export function RelationsGrid({ data, total, page, pageSize, loading, onPageChan
               </Space>
               <RelationLinePreview style={r.style} width={120} />
               <Typography.Text type="secondary" className="text-xs">
-                {isDerivedRelation(r)
-                  ? `${patternText(r.pattern)} trên ${relationName?.(r.overRelationId) ?? r.overRelationId}`
-                  : roleLabel(r.role)}
+                {isDerivedRelation(r) ? describePattern(r.pattern, relationName ?? ((id) => id)) : roleLabel(r.role)}
               </Typography.Text>
             </Space>
           </Card>

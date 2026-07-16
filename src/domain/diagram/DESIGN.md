@@ -21,16 +21,24 @@ Demo gộp mọi thứ vào một trường `level`, khiến nó dính "gia đì
 Chuỗi **Kị →(cha) Cụ →(cha) Ông**. Chỉ lưu 2 cạnh nền `kị→cụ`, `cụ→ông`.
 
 "Kị là ông bà của Ông" = đi **2 bậc** trên quan hệ cha–con → là **quan hệ suy ra**,
-định nghĩa bằng `pattern`:
+định nghĩa bằng `pattern` — mỗi bước = `{ quan hệ, hướng ↑/↓/↔ }` (`RelationStep`):
 
 ```
-Ông bà     = ['up','up']            Cháu        = ['down','down']
-Anh chị em = ['up','down']  (self)  Cô/dì/chú   = ['up','up','down']  (self, parents)
-Cụ (3 bậc) = ['up','up','up']       Anh em họ   = ['up','up','down','down'] (self, siblings)
+Ông bà     = [↑cha-con, ↑cha-con]           Cháu     = [↓cha-con, ↓cha-con]
+Anh chị em = [↑cha-con, ↓cha-con]  (self)   Cô/dì/chú= [↑cha-con, ↑cha-con, ↓cha-con] (self, parents)
 ```
 
-→ **"kị→ông" KHÔNG phải loại liên kết và KHÔNG bao giờ lưu.** Không cần tạo "loại
-kị / loại cụ / loại liên kết ông–cháu". Engine tự tính mọi cặp khớp pattern.
+Vì mỗi bước tự mang quan hệ, pattern **trộn được nhiều quan hệ** → khai báo được cả
+họ hàng bên vợ/chồng (`↔` = quan hệ hai chiều như vợ chồng):
+
+```
+Con dâu/rể       = [↓cha-con, ↔vợ-chồng]  (self)
+Bố/mẹ vợ/chồng   = [↔vợ-chồng, ↑cha-con]
+Thông gia        = [↓cha-con, ↔vợ-chồng, ↑cha-con]
+```
+
+→ **"kị→ông", "con dâu/rể" KHÔNG phải loại liên kết và KHÔNG bao giờ lưu.** Không
+cần tạo loại kị/cụ/ông–cháu/con dâu. Engine tự tính mọi cặp khớp pattern.
 
 ## 3. Quan hệ suy ra vẫn *vẽ và hiển thị* được
 
@@ -101,5 +109,6 @@ vốn từ vựng của loại đó.
 - Danh sách `DerivedRelation` mặc định: hiện seed sẵn ông bà / cháu / anh chị em /
   cô-chú cho gia đình. Có nên cho user **tự dựng pattern** qua UI hay chỉ chọn từ
   thư viện dựng sẵn? (đề xuất: thư viện trước, builder sau).
-- Suy ra hiện đi trên **một** quan hệ primary. Nếu cần trộn nhiều quan hệ trong một
-  pattern (hiếm) sẽ mở rộng `PathStep` thành `{relationId, dir}`.
+- ✅ Suy ra đi trên **nhiều quan hệ**: mỗi bước là `RelationStep = {relationId, dir}`
+  với `dir ∈ {up, down, both}` — khai báo được cả họ hàng bên vợ/chồng (con dâu/rể,
+  thông gia…). `both` dùng cho quan hệ hai chiều (vợ chồng).

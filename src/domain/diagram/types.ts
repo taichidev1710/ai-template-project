@@ -67,30 +67,39 @@ export interface BaseRelation {
 }
 
 /**
- * One hop along a base relation. `up` walks toward the edge SOURCE (parents);
- * `down` walks toward the edge TARGET (children). Edge orientation convention:
- * source is the parent, target is the child (arrow points at the child).
+ * Direction of a hop along a base relation. `up` walks toward the edge SOURCE
+ * (parents); `down` toward the TARGET (children); `both` follows the edge in
+ * either direction — for SYMMETRIC relations with no parent/child orientation
+ * (e.g. spouse). Edge convention: source is the parent, target is the child.
  */
-export type PathStep = 'up' | 'down';
+export type StepDir = 'up' | 'down' | 'both';
+
+/**
+ * One hop in a derived-relation path: which base relation to walk and which
+ * way. Because each step names its OWN relation, a pattern can MIX relations —
+ * e.g. daughter/son-in-law = [down over parent-child, both over spouse].
+ */
+export interface RelationStep {
+  relationId: string;
+  dir: StepDir;
+}
 
 /** Which trivial matches to drop when computing a derived relation. */
 export type DerivedExclusion = 'self' | 'parents' | 'children' | 'siblings';
 
 /**
  * An edge type that is COMPUTED by composing base hops, never drawn by hand
- * and never stored. e.g. grandparent = ['up','up'] over the parent-child
- * relation; sibling = ['up','down'] excluding self. It still lives in the
- * catalog as a first-class relation (so it has a name + style + can be toggled
- * on the canvas) — the engine renders every node-pair that matches `pattern`.
+ * and never stored. Grandparent = two up-hops over parent-child; sibling = up
+ * then down (exclude self); daughter-in-law = down over parent-child then a
+ * both-hop over spouse. It still lives in the catalog as a first-class relation
+ * (name + style + toggle) — the engine renders every pair matching `pattern`.
  */
 export interface DerivedRelation {
   id: string;
   name: string;
   kind: 'derived';
-  /** The (usually primary) base relation whose edges the pattern walks over. */
-  overRelationId: string;
-  /** Sequence of hops, e.g. ['up','up'] (grandparent), ['up','down'] (sibling). */
-  pattern: PathStep[];
+  /** Ordered hops. Each step names its relation, so patterns may mix relations. */
+  pattern: RelationStep[];
   /** Trivial matches to drop (self is dropped by default even if omitted). */
   exclude?: DerivedExclusion[];
   style: RelationStyle;

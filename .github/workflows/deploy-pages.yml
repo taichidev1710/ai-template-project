@@ -23,7 +23,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      # npm ci is stricter but flakes here: optional native-binding peers
+      # (rollup/lightningcss) drift between platforms, desyncing the lockfile.
+      - run: npm install
       - run: npm run build
         env:
           GITHUB_PAGES: 'true'

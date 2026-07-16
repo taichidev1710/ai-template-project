@@ -2,7 +2,7 @@
 
 # Data Model (v1.0.0)
 
-Data-model dùng chung cho toàn platform. Đây là nguồn chân lý duy nhất về shape (hình dạng) của các entity mà mọi repo (frontend, backend, ...) code theo. Chỉ sửa tại đây; các consumer repo nhận về một bản sao được generate qua sync-standards.
+Data-model dùng chung cho toàn platform. Đây là nguồn chân lý duy nhất về shape (hình dạng) của các entity mà cả frontend lẫn backend code theo. Chỉ sửa tại đây.
 
 Mọi repo code theo các shape này (qua API contract), không code theo bất kỳ schema
 vật lý nào của database.

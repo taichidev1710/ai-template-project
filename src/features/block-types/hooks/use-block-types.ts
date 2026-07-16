@@ -6,26 +6,26 @@ import { blockTypesApi } from '../api/block-types-api';
 import { blockTypesKeys } from '../api/block-types-keys';
 import type { BlockTypeInput, BlockTypesListParams } from '../types';
 
-/** Read list. Server state → TanStack Query. */
-export function useBlockTypes(params: BlockTypesListParams) {
+/** Read list scoped to a Loại sơ đồ. Server state → TanStack Query. */
+export function useBlockTypes(typeId: string, params: BlockTypesListParams) {
   return useQuery({
-    queryKey: blockTypesKeys.list(params),
-    queryFn: () => blockTypesApi.list(params),
+    queryKey: blockTypesKeys.list(typeId, params),
+    queryFn: () => blockTypesApi.list(typeId, params),
     placeholderData: keepPreviousData,
   });
 }
 
-/** Create + update + delete, with toasts and cache invalidation. */
-export function useBlockTypeMutations() {
+/** Create + update + delete within a Loại sơ đồ, with toasts + invalidation. */
+export function useBlockTypeMutations(typeId: string) {
   const qc = useQueryClient();
   const { message } = App.useApp();
   const { t } = useTranslation();
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: blockTypesKeys.lists() });
+  const invalidate = () => qc.invalidateQueries({ queryKey: blockTypesKeys.lists(typeId) });
   const onError = (e: NormalizedError) => message.error(e.message || t('error.generic'));
 
   const create = useMutation({
-    mutationFn: (input: BlockTypeInput) => blockTypesApi.create(input),
+    mutationFn: (input: BlockTypeInput) => blockTypesApi.create(typeId, input),
     onSuccess: () => {
       void invalidate();
       message.success(t('action.save'));
@@ -34,7 +34,7 @@ export function useBlockTypeMutations() {
   });
 
   const update = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: BlockTypeInput }) => blockTypesApi.update(id, input),
+    mutationFn: ({ id, input }: { id: string; input: BlockTypeInput }) => blockTypesApi.update(typeId, id, input),
     onSuccess: () => {
       void invalidate();
       message.success(t('action.save'));
@@ -43,7 +43,7 @@ export function useBlockTypeMutations() {
   });
 
   const remove = useMutation({
-    mutationFn: (id: string) => blockTypesApi.remove(id),
+    mutationFn: (id: string) => blockTypesApi.remove(typeId, id),
     onSuccess: () => {
       void invalidate();
       message.success(t('action.delete'));

@@ -42,10 +42,18 @@ export function AppLayout() {
     { key: paths.dashboard, icon: <DashboardOutlined />, label: t('nav.dashboard') },
     { key: paths.users, icon: <TeamOutlined />, label: t('nav.users') },
     { key: paths.profile, icon: <IdcardOutlined />, label: t('nav.profile') },
-    { key: paths.blockTypes, icon: <ApartmentOutlined />, label: 'Loại khối' },
+    { key: paths.diagramTypes, icon: <ApartmentOutlined />, label: 'Loại sơ đồ' },
   ];
 
   const toggleLang = () => void i18n.changeLanguage(i18n.language === 'vi' ? 'en' : 'vi');
+
+  // Highlight the nav item whose route prefixes the current path (so nested
+  // pages like /diagram-types/:id still light up their parent).
+  const selectedKey =
+    menuItems
+      .map((m) => m.key)
+      .filter((k) => location.pathname === k || location.pathname.startsWith(`${k}/`))
+      .sort((a, b) => b.length - a.length)[0] ?? location.pathname;
 
   const brand = (full: boolean) => (
     <div className="flex h-14 items-center justify-center font-semibold text-ink">
@@ -57,7 +65,7 @@ export function AppLayout() {
     <Menu
       theme={mode === 'dark' ? 'dark' : 'light'}
       mode="inline"
-      selectedKeys={[location.pathname]}
+      selectedKeys={[selectedKey]}
       items={menuItems}
       onClick={({ key }) => {
         navigate(key);

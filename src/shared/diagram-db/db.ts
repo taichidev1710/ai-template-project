@@ -1,30 +1,18 @@
 /**
- * In-memory mock "backend" for the diagram domain — the shared library that
- * every diagram feature (block-types, relation-types, rule-sets, diagrams)
- * reads and writes. Seeded from the built-in presets. Swap these tables for
- * real `apiClient` calls when a backend exists; the feature api layers are the
- * only callers, so nothing else changes.
+ * In-memory mock "backend" for the diagram domain.
+ *
+ * The primary table is `templates` (Loại sơ đồ) — each is a SELF-CONTAINED
+ * bundle owning its own block types + relations + rule sets. Block types /
+ * relations / rule sets are always accessed THROUGH their owning type, so a
+ * rule always references vocabulary that exists in the same bundle. Swap these
+ * tables for real `apiClient` calls when a backend exists.
  */
 import type { ListParams, Paginated } from '@/shared/api';
-import {
-  BUILTIN_BLOCK_TYPES,
-  BUILTIN_RELATIONS,
-  BUILTIN_RULE_SETS,
-  BUILTIN_TEMPLATES,
-  type BlockType,
-  type Diagram,
-  type DiagramTemplate,
-  type Relation,
-  type RuleSet,
-} from '@/domain/diagram';
+import { BUILTIN_TEMPLATES, type Diagram, type DiagramTemplate } from '@/domain/diagram';
 
 const clone = <T>(v: T): T => structuredClone(v);
 
-/** Mutable tables. Module-level so all features share one library instance. */
 export const tables = {
-  blockTypes: clone(BUILTIN_BLOCK_TYPES) as BlockType[],
-  relations: clone(BUILTIN_RELATIONS) as Relation[],
-  ruleSets: clone(BUILTIN_RULE_SETS) as RuleSet[],
   templates: clone(BUILTIN_TEMPLATES) as DiagramTemplate[],
   diagrams: [] as Diagram[],
 };
@@ -49,4 +37,11 @@ export function paginate<T>(rows: T[], params: ListParams, searchFields: (row: T
 /** Short unique-ish id with a prefix (mock only). */
 export function genId(prefix: string): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/** Find a Loại sơ đồ by id or throw (used by the type-scoped catalog apis). */
+export function getTypeOrThrow(typeId: string): DiagramTemplate {
+  const t = tables.templates.find((x) => x.id === typeId);
+  if (!t) throw new Error('Diagram type not found');
+  return t;
 }

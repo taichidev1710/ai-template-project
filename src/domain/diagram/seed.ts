@@ -150,16 +150,16 @@ const FREE_RELATIONS: Relation[] = [
 export const BUILTIN_RULE_SETS: RuleSet[] = [RS_FAMILY, RS_ORG, RS_SCHOOL];
 
 export const BUILTIN_TEMPLATES: DiagramTemplate[] = [
-  { id: 'tpl_org', name: 'Tổ chức', icon: '🏢', builtin: true, description: 'Các tầng có thứ tự với luật chuỗi liền kề; suy ra “sếp cách cấp”.', blockTypes: ORG_BLOCKS, relations: ORG_RELATIONS, ruleSetIds: ['rs_org'] },
-  { id: 'tpl_school', name: 'Trường học', icon: '🏫', builtin: true, description: 'Trường → Lớp → Học sinh; chủ nhiệm & phụ huynh là quan hệ phụ.', blockTypes: SCHOOL_BLOCKS, relations: SCHOOL_RELATIONS, ruleSetIds: ['rs_school'] },
-  { id: 'tpl_process', name: 'Quy trình / Flow', icon: '🔀', builtin: true, description: 'Luồng có hướng qua các bước và điều kiện — không ràng buộc.', blockTypes: PROCESS_BLOCKS, relations: PROCESS_RELATIONS, ruleSetIds: [] },
-  { id: 'tpl_network', name: 'Mạng lưới', icon: '🕸️', builtin: true, description: 'Đồ thị kết nối; suy ra “tới sau 2 bước”.', blockTypes: NETWORK_BLOCKS, relations: NETWORK_RELATIONS, ruleSetIds: [] },
-  { id: 'tpl_mindmap', name: 'Sơ đồ tư duy', icon: '🧠', builtin: true, description: 'Ý trung tâm phân nhánh — không ràng buộc.', blockTypes: MINDMAP_BLOCKS, relations: MINDMAP_RELATIONS, ruleSetIds: [] },
-  { id: 'tpl_family', name: 'Gia đình', icon: '👪', builtin: true, description: 'Một loại khối “Người”; thế hệ suy ra từ chuỗi cha–con; họ hàng là quan hệ suy ra.', blockTypes: FAMILY_BLOCKS, relations: FAMILY_RELATIONS, ruleSetIds: ['rs_family'] },
-  { id: 'tpl_free', name: 'Tự do (không luật)', icon: '✨', builtin: true, description: 'Vẽ thoải mái — tự thêm loại khối / quan hệ / luật nếu muốn.', blockTypes: FREE_BLOCKS, relations: FREE_RELATIONS, ruleSetIds: [] },
+  { id: 'tpl_org', name: 'Tổ chức', icon: '🏢', builtin: true, description: 'Các tầng có thứ tự với luật chuỗi liền kề; suy ra “sếp cách cấp”.', blockTypes: ORG_BLOCKS, relations: ORG_RELATIONS, ruleSets: [RS_ORG] },
+  { id: 'tpl_school', name: 'Trường học', icon: '🏫', builtin: true, description: 'Trường → Lớp → Học sinh; chủ nhiệm & phụ huynh là quan hệ phụ.', blockTypes: SCHOOL_BLOCKS, relations: SCHOOL_RELATIONS, ruleSets: [RS_SCHOOL] },
+  { id: 'tpl_process', name: 'Quy trình / Flow', icon: '🔀', builtin: true, description: 'Luồng có hướng qua các bước và điều kiện — không ràng buộc.', blockTypes: PROCESS_BLOCKS, relations: PROCESS_RELATIONS, ruleSets: [] },
+  { id: 'tpl_network', name: 'Mạng lưới', icon: '🕸️', builtin: true, description: 'Đồ thị kết nối; suy ra “tới sau 2 bước”.', blockTypes: NETWORK_BLOCKS, relations: NETWORK_RELATIONS, ruleSets: [] },
+  { id: 'tpl_mindmap', name: 'Sơ đồ tư duy', icon: '🧠', builtin: true, description: 'Ý trung tâm phân nhánh — không ràng buộc.', blockTypes: MINDMAP_BLOCKS, relations: MINDMAP_RELATIONS, ruleSets: [] },
+  { id: 'tpl_family', name: 'Gia đình', icon: '👪', builtin: true, description: 'Một loại khối “Người”; thế hệ suy ra từ chuỗi cha–con; họ hàng là quan hệ suy ra.', blockTypes: FAMILY_BLOCKS, relations: FAMILY_RELATIONS, ruleSets: [RS_FAMILY] },
+  { id: 'tpl_free', name: 'Tự do (không luật)', icon: '✨', builtin: true, description: 'Vẽ thoải mái — tự thêm loại khối / quan hệ / luật nếu muốn.', blockTypes: FREE_BLOCKS, relations: FREE_RELATIONS, ruleSets: [] },
 ];
 
-/** Flattened shared library: every built-in block type / relation, deduped by id. */
+/** Convenience flattened views (deduped by id) — handy for tests/tools. */
 export const BUILTIN_BLOCK_TYPES: BlockType[] = dedupe(BUILTIN_TEMPLATES.flatMap((t) => t.blockTypes));
 export const BUILTIN_RELATIONS: Relation[] = dedupe(BUILTIN_TEMPLATES.flatMap((t) => t.relations));
 

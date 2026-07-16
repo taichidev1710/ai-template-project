@@ -70,19 +70,30 @@ Cùng một engine phục vụ cả hai — khác nhau chỉ ở dữ liệu dan
   hợp lệ nếu thoả ≥1 luật của quan hệ đó; quan hệ không có luật nào thì tự do.
 - `edgeWouldViolate()`: chặn cạnh phạm luật *trước khi* vẽ (chế độ nghiêm của canvas).
 
-## 7. Phạm vi danh mục: HYBRID
+## 7. Phạm vi danh mục: LOẠI SƠ ĐỒ sở hữu vốn từ vựng
 
-- **Thư viện dùng chung** (`Catalog`, `RuleSet[]`, `DiagramTemplate[]`): loại khối,
-  loại quan hệ, bộ luật tái sử dụng.
-- **Mỗi sơ đồ** (`Diagram`): tick **nhiều** `ruleSetIds` + có `localRules` riêng.
-  `effectiveRules()` = gộp luật của các bộ đã tick + luật riêng.
+`DiagramTemplate` ("Loại sơ đồ") là **bundle tự chứa**: nó sở hữu `blockTypes` +
+`relations` + `ruleSets` của chính nó. Rule trong các bộ luật đó tham chiếu loại
+khối/quan hệ **trong cùng bundle** → luôn đồng bộ, và khi viết luật chỉ chọn được
+vốn từ vựng của loại đó.
+
+- **Vì sao loại sơ đồ sở hữu, không phải từng bộ luật:** một sơ đồ áp **nhiều** bộ
+  luật; nếu mỗi bộ tự mang khối/quan hệ riêng thì stack nhiều bộ sẽ đụng/trùng. Cho
+  loại sơ đồ sở hữu vốn từ vựng, còn bộ luật chỉ là gói ràng buộc → stack sạch.
+- **Sơ đồ** (`Diagram`) chọn 1 loại + tick `ruleSetIds` (một tập con các bộ luật của
+  loại) + có `localRules` riêng. `effectiveRules()` = gộp luật các bộ đã tick + riêng.
+- **UI:** màn *Loại sơ đồ* là workspace một-chỗ với tab **Khối | Quan hệ | Bộ luật**;
+  mỗi tab là CRUD phạm vi loại đó. `features/block-types/BlockTypesPanel` là tab Khối.
 
 ## 8. Lộ trình build
 
 1. ✅ **Nền**: types + engine (validate + suy ra) + test — thư mục này.
-2. ⏳ **Module CRUD chuẩn** (copy `features/users`): `block-types`, `relation-types`,
-   `rule-sets` (kèm rule-builder + tạo catalog inline), `diagrams`.
-3. ⏳ **Canvas editor** (Cytoscape.js): vẽ, áp nhiều bộ luật, validate trực tiếp,
+2. ✅ **Loại sơ đồ**: `features/diagram-types` (danh sách + editor có tab) và tab
+   **Khối** (`features/block-types/BlockTypesPanel`, phạm vi theo loại).
+3. ⏳ **Tab Quan hệ** (nền + suy ra) và **tab Bộ luật** (rule-builder 5 loại + tạo
+   catalog inline) trong màn Loại sơ đồ.
+4. ⏳ **Sơ đồ** (`features/diagrams`): chọn loại, tick nhiều bộ luật, danh sách CRUD.
+5. ⏳ **Canvas editor** (Cytoscape.js): vẽ, áp nhiều bộ luật, validate trực tiếp,
    overlay suy ra, thu gọn nhánh primary, lọc/ẩn hiện.
 
 ## 9. Điểm mở còn cần chốt về sau

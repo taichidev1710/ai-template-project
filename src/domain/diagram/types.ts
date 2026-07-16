@@ -262,7 +262,13 @@ export interface Catalog {
   relations: Relation[];
 }
 
-/** A reusable bundle that seeds a new diagram's catalog + applied rule sets. */
+/**
+ * "Loại sơ đồ" — the SELF-CONTAINED authoring bundle and the owner of a
+ * diagram's vocabulary. It holds its own block types + relations + rule sets;
+ * rules inside those rule sets reference THIS type's block types/relations. A
+ * diagram picks a type and applies a subset of its rule sets. Owning the
+ * vocabulary here (not on each rule set) keeps "apply many rule sets" clean.
+ */
 export interface DiagramTemplate {
   id: string;
   name: string;
@@ -271,7 +277,7 @@ export interface DiagramTemplate {
   builtin?: boolean;
   blockTypes: BlockType[];
   relations: Relation[];
-  ruleSetIds: string[];
+  ruleSets: RuleSet[];
 }
 
 /* ============================================================

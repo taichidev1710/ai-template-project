@@ -1,51 +1,54 @@
 import { useState } from 'react';
 import { App, Button, Input, Segmented, Space } from 'antd';
 import { AppstoreOutlined, PlusOutlined, UnorderedListOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '@/shared/ui';
 import { useDebounce } from '@/shared/hooks/use-debounce';
-import { BlockTypesTable } from '../components/BlockTypesTable';
-import { BlockTypesGrid } from '../components/BlockTypesGrid';
-import { BlockTypeDetailModal } from '../components/BlockTypeDetailModal';
-import { BlockTypeFormModal } from '../components/BlockTypeFormModal';
-import { useBlockTypes, useBlockTypeMutations } from '../hooks/use-block-types';
-import type { BlockType, BlockTypeInput, BlockTypesViewMode } from '../types';
+import { paths } from '@/app/router/paths';
+import { DiagramTypesTable } from '../components/DiagramTypesTable';
+import { DiagramTypesGrid } from '../components/DiagramTypesGrid';
+import { DiagramTypeFormModal } from '../components/DiagramTypeFormModal';
+import { useDiagramTypes, useDiagramTypeMutations } from '../hooks/use-diagram-types';
+import type { DiagramTemplate, DiagramTypeInput, DiagramTypesViewMode } from '../types';
 
-/** Container page: owns list/filter/view/modal state and wires hooks to components. */
-export function BlockTypesPage() {
+/** List of Loại sơ đồ. Opening one goes to its editor (blocks/relations/rules). */
+export function DiagramTypesPage() {
   const { modal } = App.useApp();
+  const navigate = useNavigate();
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search);
-  const [view, setView] = useState<BlockTypesViewMode>('table');
+  const [view, setView] = useState<DiagramTypesViewMode>('table');
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<BlockType | null>(null);
-  const [detail, setDetail] = useState<BlockType | null>(null);
+  const [editing, setEditing] = useState<DiagramTemplate | null>(null);
 
-  const { data, isFetching } = useBlockTypes({ page, pageSize, search: debouncedSearch });
-  const { create, update, remove } = useBlockTypeMutations();
+  const { data, isFetching } = useDiagramTypes({ page, pageSize, search: debouncedSearch });
+  const { create, update, remove } = useDiagramTypeMutations();
+
+  const openEditor = (item: DiagramTemplate) => navigate(`${paths.diagramTypes}/${item.id}`);
 
   const openCreate = () => {
     setEditing(null);
     setModalOpen(true);
   };
-  const openEdit = (item: BlockType) => {
-    setDetail(null);
+  const openRename = (item: DiagramTemplate) => {
     setEditing(item);
     setModalOpen(true);
   };
 
-  const handleSubmit = (values: BlockTypeInput) => {
+  const handleSubmit = (values: DiagramTypeInput) => {
     const onDone = () => setModalOpen(false);
     if (editing) update.mutate({ id: editing.id, input: values }, { onSuccess: onDone });
-    else create.mutate(values, { onSuccess: onDone });
+    else create.mutate(values, { onSuccess: (createdType) => { onDone(); openEditor(createdType); } });
   };
 
-  const confirmDelete = (item: BlockType) => {
+  const confirmDelete = (item: DiagramTemplate) => {
     modal.confirm({
-      title: `Xoá loại khối “${item.name}”?`,
+      title: `Xoá loại sơ đồ “${item.name}”?`,
+      content: item.builtin ? 'Đây là loại mẫu dựng sẵn.' : undefined,
       okText: 'Xoá',
       okButtonProps: { danger: true },
       cancelText: 'Huỷ',
@@ -63,14 +66,14 @@ export function BlockTypesPage() {
       setPage(p);
       setPageSize(ps);
     },
-    onView: setDetail,
-    onEdit: openEdit,
+    onOpen: openEditor,
+    onEdit: openRename,
     onDelete: confirmDelete,
   };
 
   return (
     <PageContainer
-      title="Loại khối"
+      title="Loại sơ đồ"
       extra={
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
           Thêm mới
@@ -80,7 +83,7 @@ export function BlockTypesPage() {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Space wrap>
           <Input.Search
-            placeholder="Tìm kiếm"
+            placeholder="Tìm loại sơ đồ"
             allowClear
             value={search}
             onChange={(e) => {
@@ -90,7 +93,7 @@ export function BlockTypesPage() {
             className="w-60"
           />
         </Space>
-        <Segmented<BlockTypesViewMode>
+        <Segmented<DiagramTypesViewMode>
           value={view}
           onChange={setView}
           options={[
@@ -100,11 +103,9 @@ export function BlockTypesPage() {
         />
       </div>
 
-      {view === 'table' ? <BlockTypesTable {...listProps} /> : <BlockTypesGrid {...listProps} />}
+      {view === 'table' ? <DiagramTypesTable {...listProps} /> : <DiagramTypesGrid {...listProps} />}
 
-      <BlockTypeDetailModal open={Boolean(detail)} item={detail} onEdit={openEdit} onClose={() => setDetail(null)} />
-
-      <BlockTypeFormModal
+      <DiagramTypeFormModal
         open={modalOpen}
         initialValue={editing}
         confirmLoading={create.isPending || update.isPending}

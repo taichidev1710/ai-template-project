@@ -2,6 +2,11 @@
 
 # API Contract (giao kèo API — cấp platform)
 
+> Các quy ước chung (REST, list/error shape, auth...) ở dưới đây áp dụng lâu dài.
+> Nhưng các endpoint/entity cụ thể (`/users`, ...) hiện đang khớp với data-model MẪU
+> ở `28-platform-data-model.md` — khi kết nối một backend thật, hãy cập nhật cả hai
+> file cho khớp API thật.
+
 Thỏa thuận giữa frontend và backend. Cả hai phía đều phải tuân theo.
 
 ## Quy ước (conventions)

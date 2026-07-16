@@ -2,6 +2,11 @@
 
 # Data Model (v1.0.0)
 
+> **Đây là data-model MẪU**, khớp với feature tham chiếu `src/features/users`. Khi
+> dùng template này để bắt đầu một project thật, hãy thay `User`/`Order` bằng
+> data-model thật của backend bạn kết nối, rồi cập nhật `src/features/users` và
+> `docs/ai/22-platform-api-contract.md` cho khớp.
+
 Data-model dùng chung cho toàn platform. Đây là nguồn chân lý duy nhất về shape (hình dạng) của các entity mà cả frontend lẫn backend code theo. Chỉ sửa tại đây.
 
 Mọi repo code theo các shape này (qua API contract), không code theo bất kỳ schema

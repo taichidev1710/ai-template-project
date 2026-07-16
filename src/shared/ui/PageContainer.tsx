@@ -10,14 +10,14 @@ interface PageContainerProps {
 /** Standard page wrapper: consistent title row + surface card. */
 export function PageContainer({ title, extra, children }: PageContainerProps) {
   return (
-    <div className="p-6">
-      <div className="mb-4 flex items-center justify-between gap-4">
+    <div className="p-4 sm:p-6">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Typography.Title level={3} className="!mb-0">
           {title}
         </Typography.Title>
         {extra}
       </div>
-      <div className="rounded-app bg-surface p-6">{children}</div>
+      <div className="rounded-app bg-surface p-4 sm:p-6">{children}</div>
     </div>
   );
 }

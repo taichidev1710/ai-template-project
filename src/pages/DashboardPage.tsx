@@ -26,7 +26,7 @@ export function DashboardPage() {
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <Card>
-            <Statistic title="Growth" value={11.28} suffix="%" prefix={<ArrowUpOutlined />} valueStyle={{ color: 'var(--app-color-success)' }} />
+            <Statistic title="Growth" value={11.28} suffix="%" prefix={<ArrowUpOutlined />} styles={{ content: { color: 'var(--app-color-success)' } }} />
           </Card>
         </Col>
       </Row>

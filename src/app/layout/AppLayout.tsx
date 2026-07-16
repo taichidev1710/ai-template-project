@@ -1,4 +1,5 @@
-import { Layout, Menu, Button, Space, Dropdown, Avatar } from 'antd';
+import { useState } from 'react';
+import { Layout, Menu, Button, Space, Dropdown, Avatar, Drawer, Grid } from 'antd';
 import {
   DashboardOutlined,
   TeamOutlined,
@@ -17,6 +18,7 @@ import { useThemeStore } from '@/shared/theme';
 import { paths } from '@/app/router/paths';
 
 const { Header, Sider, Content } = Layout;
+const { useBreakpoint } = Grid;
 
 export function AppLayout() {
   const { t, i18n } = useTranslation();
@@ -29,6 +31,12 @@ export function AppLayout() {
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const user = useAuthStore((s) => s.user);
 
+  // < lg (992px): phone + small tablet → nav là Drawer overlay, không chiếm chỗ.
+  // >= lg: desktop/large screen → Sider inline thu gọn được.
+  const screens = useBreakpoint();
+  const isMobile = !screens.lg;
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
   const menuItems = [
     { key: paths.dashboard, icon: <DashboardOutlined />, label: t('nav.dashboard') },
     { key: paths.users, icon: <TeamOutlined />, label: t('nav.users') },
@@ -37,27 +45,54 @@ export function AppLayout() {
 
   const toggleLang = () => void i18n.changeLanguage(i18n.language === 'vi' ? 'en' : 'vi');
 
+  const brand = (full: boolean) => (
+    <div className="flex h-14 items-center justify-center font-semibold text-ink">
+      {full ? t('app.name') : 'AD'}
+    </div>
+  );
+
+  const nav = (
+    <Menu
+      theme={mode === 'dark' ? 'dark' : 'light'}
+      mode="inline"
+      selectedKeys={[location.pathname]}
+      items={menuItems}
+      onClick={({ key }) => {
+        navigate(key);
+        setMobileNavOpen(false); // close the drawer after picking a route on mobile
+      }}
+    />
+  );
+
+  const onToggleNav = () => (isMobile ? setMobileNavOpen(true) : toggleSidebar());
+
   return (
     <Layout className="h-screen">
-      <Sider trigger={null} collapsible collapsed={collapsed}>
-        <div className="flex h-14 items-center justify-center font-semibold text-ink">
-          {collapsed ? 'AD' : t('app.name')}
-        </div>
-        <Menu
-          theme={mode === 'dark' ? 'dark' : 'light'}
-          mode="inline"
-          selectedKeys={[location.pathname]}
-          items={menuItems}
-          onClick={({ key }) => navigate(key)}
-        />
-      </Sider>
+      {isMobile ? (
+        <Drawer
+          placement="left"
+          open={mobileNavOpen}
+          onClose={() => setMobileNavOpen(false)}
+          size={240}
+          closable={false}
+          styles={{ body: { padding: 0 } }}
+        >
+          {brand(true)}
+          {nav}
+        </Drawer>
+      ) : (
+        <Sider trigger={null} collapsible collapsed={collapsed}>
+          {brand(!collapsed)}
+          {nav}
+        </Sider>
+      )}
       <Layout>
         <Header className="flex items-center justify-between !px-4">
           <Button
             type="text"
             aria-label="Toggle sidebar"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={toggleSidebar}
+            icon={!isMobile && !collapsed ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
+            onClick={onToggleNav}
           />
           <Space>
             <Button type="text" aria-label="Toggle language" icon={<TranslationOutlined />} onClick={toggleLang} />

@@ -51,6 +51,7 @@ export function UsersTable({
       loading={loading}
       dataSource={data}
       pagination={pagination}
+      scroll={{ x: 'max-content' }}
       columns={[
         { title: t('user.name'), dataIndex: 'name' },
         { title: t('user.email'), dataIndex: 'email' },

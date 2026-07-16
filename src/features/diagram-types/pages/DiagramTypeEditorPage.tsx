@@ -1,8 +1,9 @@
-import { Alert, Button, Result, Skeleton, Space, Tabs, Typography } from 'antd';
+import { Button, Result, Skeleton, Space, Tabs, Typography } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { BlockTypesPanel } from '@/features/block-types';
 import { RelationsPanel } from '@/features/relation-types';
+import { RuleSetsPanel } from '@/features/rule-sets';
 import { paths } from '@/app/router/paths';
 import { useDiagramType } from '../hooks/use-diagram-types';
 
@@ -39,15 +40,6 @@ export function DiagramTypeEditorPage() {
     );
   }
 
-  const soon = (label: string) => (
-    <Alert
-      type="info"
-      showIcon
-      title={`Tab “${label}” sẽ có ở đợt tới`}
-      description="Cùng khuôn với tab Khối: bảng/lưới + tạo/sửa qua modal, tham chiếu đúng vốn từ vựng của loại sơ đồ này."
-    />
-  );
-
   return (
     <div className="p-4 sm:p-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -67,7 +59,11 @@ export function DiagramTypeEditorPage() {
           items={[
             { key: 'blocks', label: `Khối (${type.blockTypes.length})`, children: <BlockTypesPanel typeId={type.id} /> },
             { key: 'relations', label: `Quan hệ (${type.relations.length})`, children: <RelationsPanel typeId={type.id} /> },
-            { key: 'rules', label: `Bộ luật (${type.ruleSets.length})`, children: soon('Bộ luật') },
+            {
+              key: 'rules',
+              label: `Bộ luật (${type.ruleSets.length})`,
+              children: <RuleSetsPanel typeId={type.id} blockTypes={type.blockTypes} relations={type.relations} />,
+            },
           ]}
         />
       </div>

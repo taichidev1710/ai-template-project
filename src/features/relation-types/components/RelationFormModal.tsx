@@ -1,4 +1,4 @@
-import { Checkbox, ColorPicker, Form, Input, InputNumber, Modal, Radio, Select } from 'antd';
+import { Checkbox, ColorPicker, Form, Input, InputNumber, Modal, Radio, Select, Switch } from 'antd';
 import type { AggregationColor } from 'antd/es/color-picker/color';
 import { useEffect } from 'react';
 import { isBaseRelation, isDerivedRelation } from '@/domain/diagram';
@@ -28,6 +28,7 @@ interface FormShape {
     curve: RelationInput['style']['curve'];
     color: string;
     width: number;
+    animated: boolean;
   };
 }
 
@@ -37,11 +38,16 @@ const DEFAULTS: FormShape = {
   role: 'secondary',
   pattern: [],
   exclude: [],
-  style: { line: 'solid', arrow: 'triangle', curve: 'straight', color: '#5b647e', width: 2 },
+  style: { line: 'solid', arrow: 'triangle', curve: 'straight', color: '#5b647e', width: 2, animated: false },
 };
 
 function toFormShape(r: Relation): FormShape {
-  const base: FormShape = { ...DEFAULTS, name: r.name, kind: r.kind, style: { ...r.style } as FormShape['style'] };
+  const base: FormShape = {
+    ...DEFAULTS,
+    name: r.name,
+    kind: r.kind,
+    style: { ...r.style, animated: Boolean(r.style.animated) } as FormShape['style'],
+  };
   if (isDerivedRelation(r)) {
     const exclude = (r.exclude ?? []).filter((e): e is 'parents' | 'children' | 'siblings' => e !== 'self');
     return { ...base, pattern: [...r.pattern], exclude };
@@ -137,6 +143,25 @@ export function RelationFormModal({ open, initialValue, relations, confirmLoadin
             <ColorPicker format="hex" showText />
           </Form.Item>
         </div>
+
+        {/* Default for every link of this kind; a single link can override it in
+            the canvas's link detail. Only reads on dashed/dotted lines. */}
+        <Form.Item noStyle shouldUpdate={(a, b) => a.style?.line !== b.style?.line}>
+          {({ getFieldValue }) => (
+            <Form.Item
+              name={['style', 'animated']}
+              label="Nét chạy"
+              valuePropName="checked"
+              extra={
+                getFieldValue(['style', 'line']) === 'solid'
+                  ? 'Nét liền không thấy hiệu ứng — chọn kiểu nét gạch/chấm ở trên để thấy rõ.'
+                  : 'Mặc định cho mọi liên kết thuộc loại này; từng liên kết vẫn chỉnh riêng được trên canvas.'
+              }
+            >
+              <Switch />
+            </Form.Item>
+          )}
+        </Form.Item>
       </Form>
     </Modal>
   );

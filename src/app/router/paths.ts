@@ -5,5 +5,6 @@ export const paths = {
   dashboard: '/dashboard',
   users: '/users',
   profile: '/profile',
+  diagrams: '/diagrams',
   diagramTypes: '/diagram-types',
 } as const;

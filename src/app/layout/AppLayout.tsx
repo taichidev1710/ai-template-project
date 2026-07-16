@@ -5,6 +5,7 @@ import {
   TeamOutlined,
   IdcardOutlined,
   ApartmentOutlined,
+  PartitionOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   BulbOutlined,
@@ -42,6 +43,7 @@ export function AppLayout() {
     { key: paths.dashboard, icon: <DashboardOutlined />, label: t('nav.dashboard') },
     { key: paths.users, icon: <TeamOutlined />, label: t('nav.users') },
     { key: paths.profile, icon: <IdcardOutlined />, label: t('nav.profile') },
+    { key: paths.diagrams, icon: <PartitionOutlined />, label: 'Sơ đồ' },
     { key: paths.diagramTypes, icon: <ApartmentOutlined />, label: 'Loại sơ đồ' },
   ];
 

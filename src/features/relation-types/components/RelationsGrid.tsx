@@ -15,9 +15,10 @@ interface RelationsGridProps {
   onView: (item: Relation) => void;
   onEdit: (item: Relation) => void;
   onDelete: (item: Relation) => void;
+  relationName?: (id: string) => string;
 }
 
-export function RelationsGrid({ data, total, page, pageSize, loading, onPageChange, onView, onEdit, onDelete }: RelationsGridProps) {
+export function RelationsGrid({ data, total, page, pageSize, loading, onPageChange, onView, onEdit, onDelete, relationName }: RelationsGridProps) {
   if (loading) {
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -50,7 +51,9 @@ export function RelationsGrid({ data, total, page, pageSize, loading, onPageChan
               </Space>
               <RelationLinePreview style={r.style} width={120} />
               <Typography.Text type="secondary" className="text-xs">
-                {isDerivedRelation(r) ? `${patternText(r.pattern)} trên ${r.overRelationId}` : roleLabel(r.role)}
+                {isDerivedRelation(r)
+                  ? `${patternText(r.pattern)} trên ${relationName?.(r.overRelationId) ?? r.overRelationId}`
+                  : roleLabel(r.role)}
               </Typography.Text>
             </Space>
           </Card>

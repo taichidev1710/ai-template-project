@@ -10,9 +10,10 @@ interface RelationDetailModalProps {
   item: Relation | null;
   onEdit: (item: Relation) => void;
   onClose: () => void;
+  relationName?: (id: string) => string;
 }
 
-export function RelationDetailModal({ open, item, onEdit, onClose }: RelationDetailModalProps) {
+export function RelationDetailModal({ open, item, onEdit, onClose, relationName }: RelationDetailModalProps) {
   return (
     <Modal
       open={open}
@@ -42,7 +43,7 @@ export function RelationDetailModal({ open, item, onEdit, onClose }: RelationDet
           {isDerivedRelation(item) ? (
             <>
               <Descriptions.Item label="Đường đi">{patternText(item.pattern)}</Descriptions.Item>
-              <Descriptions.Item label="Trên quan hệ">{item.overRelationId}</Descriptions.Item>
+              <Descriptions.Item label="Trên quan hệ">{relationName?.(item.overRelationId) ?? item.overRelationId}</Descriptions.Item>
               <Descriptions.Item label="Loại trừ">
                 {(item.exclude ?? []).length ? item.exclude!.join(', ') : '— (chỉ trừ chính nó)'}
               </Descriptions.Item>

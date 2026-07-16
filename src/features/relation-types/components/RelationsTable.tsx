@@ -16,9 +16,11 @@ interface RelationsTableProps {
   onView: (item: Relation) => void;
   onEdit: (item: Relation) => void;
   onDelete: (item: Relation) => void;
+  /** Resolve a relation id to its friendly name (for the derived "over" column). */
+  relationName?: (id: string) => string;
 }
 
-export function RelationsTable({ data, total, page, pageSize, loading, onPageChange, onView, onEdit, onDelete }: RelationsTableProps) {
+export function RelationsTable({ data, total, page, pageSize, loading, onPageChange, onView, onEdit, onDelete, relationName }: RelationsTableProps) {
   const pagination: TablePaginationConfig = { current: page, pageSize, total, showSizeChanger: true, onChange: onPageChange };
 
   return (
@@ -53,7 +55,7 @@ export function RelationsTable({ data, total, page, pageSize, loading, onPageCha
               <Typography.Text>
                 {patternText(r.pattern)}{' '}
                 <Typography.Text type="secondary" className="text-xs">
-                  trên {r.overRelationId}
+                  trên {relationName?.(r.overRelationId) ?? r.overRelationId}
                 </Typography.Text>
               </Typography.Text>
             ) : (

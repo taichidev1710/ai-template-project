@@ -29,6 +29,7 @@ export function RelationsPanel({ typeId }: { typeId: string }) {
   const { create, update, remove } = useRelationMutations(typeId);
 
   const baseRelations = (allRelations ?? []).filter(isBaseRelation);
+  const relationName = (id: string) => (allRelations ?? []).find((r) => r.id === id)?.name ?? id;
 
   const openCreate = () => {
     setEditing(null);
@@ -99,9 +100,13 @@ export function RelationsPanel({ typeId }: { typeId: string }) {
         />
       </div>
 
-      {view === 'table' ? <RelationsTable {...listProps} /> : <RelationsGrid {...listProps} />}
+      {view === 'table' ? (
+        <RelationsTable {...listProps} relationName={relationName} />
+      ) : (
+        <RelationsGrid {...listProps} relationName={relationName} />
+      )}
 
-      <RelationDetailModal open={Boolean(detail)} item={detail} onEdit={openEdit} onClose={() => setDetail(null)} />
+      <RelationDetailModal open={Boolean(detail)} item={detail} onEdit={openEdit} onClose={() => setDetail(null)} relationName={relationName} />
       <RelationFormModal
         open={modalOpen}
         initialValue={editing}

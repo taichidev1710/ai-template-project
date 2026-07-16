@@ -60,6 +60,29 @@ export function roleLabel(role: RelationRole): string {
 
 export const DIR_ARROW: Record<StepDir, string> = { up: '↑', down: '↓', both: '↔' };
 
+/**
+ * Plain-language labels for a relation's two ends. A relation named "A – B" reads
+ * naturally ("về phía a" / "về phía b"); otherwise generic wording.
+ */
+export function relationEndLabels(rel: BaseRelation): { up: string; down: string } {
+  const parts = rel.name
+    .split(/[–\-/]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (parts.length >= 2) {
+    return { up: `về phía ${parts[0]!.toLowerCase()}`, down: `về phía ${parts[parts.length - 1]!.toLowerCase()}` };
+  }
+  return { up: 'ngược chiều (←)', down: 'theo chiều (→)' };
+}
+
+/** Direction of a single hop, in plain Vietnamese. */
+export function directionPhrase(rel: BaseRelation | undefined, dir: StepDir): string {
+  if (dir === 'both') return 'cả hai chiều';
+  if (!rel) return dir === 'down' ? 'theo chiều' : 'ngược chiều';
+  const l = relationEndLabels(rel);
+  return dir === 'down' ? l.down : l.up;
+}
+
 export const DIR_OPTIONS: { value: StepDir; label: string }[] = [
   { value: 'up', label: '↑ Lên (cha mẹ)' },
   { value: 'down', label: '↓ Xuống (con)' },

@@ -1,5 +1,7 @@
 import { Button, Select, Tag, Typography } from 'antd';
 import { PlusOutlined, CloseOutlined } from '@ant-design/icons';
+import { PatternDiagram } from './PatternDiagram';
+import { directionPhrase, relationEndLabels } from '../types';
 import type { BaseRelation, RelationStep, StepDir } from '../types';
 
 interface PatternBuilderProps {
@@ -7,21 +9,6 @@ interface PatternBuilderProps {
   onChange?: (value: RelationStep[]) => void;
   /** Base relations of this type — each hop walks one of them. */
   baseRelations: BaseRelation[];
-}
-
-/**
- * Plain-language direction labels for a relation. A relation named "A – B" reads
- * naturally ("về phía B" / "về phía A"); otherwise fall back to generic wording.
- */
-function endLabels(rel: BaseRelation): { up: string; down: string } {
-  const parts = rel.name
-    .split(/[–\-/]/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (parts.length >= 2) {
-    return { up: `về phía ${parts[0]!.toLowerCase()}`, down: `về phía ${parts[parts.length - 1]!.toLowerCase()}` };
-  }
-  return { up: 'ngược chiều (←)', down: 'theo chiều (→)' };
 }
 
 /**
@@ -39,7 +26,7 @@ export function PatternBuilder({ value = [], onChange, baseRelations }: PatternB
   const removeStep = (i: number) => onChange?.(value.filter((_, idx) => idx !== i));
 
   const dirOptions = (rel?: BaseRelation) => {
-    const l = rel ? endLabels(rel) : { up: 'ngược chiều (←)', down: 'theo chiều (→)' };
+    const l = rel ? relationEndLabels(rel) : { up: 'ngược chiều (←)', down: 'theo chiều (→)' };
     return [
       { value: 'down' as StepDir, label: l.down },
       { value: 'up' as StepDir, label: l.up },
@@ -49,14 +36,7 @@ export function PatternBuilder({ value = [], onChange, baseRelations }: PatternB
 
   const summary = value.length
     ? 'Từ một khối: ' +
-      value
-        .map((s) => {
-          const rel = relById(s.relationId);
-          const l = rel ? endLabels(rel) : { up: '', down: '' };
-          const dirTxt = s.dir === 'both' ? 'cả hai chiều' : s.dir === 'down' ? l.down : l.up;
-          return `đi theo ${rel?.name ?? '?'} ${dirTxt}`;
-        })
-        .join(', rồi ') +
+      value.map((s) => `đi theo ${relById(s.relationId)?.name ?? '?'} ${directionPhrase(relById(s.relationId), s.dir)}`).join(', rồi ') +
       '.'
     : '';
 
@@ -100,9 +80,11 @@ export function PatternBuilder({ value = [], onChange, baseRelations }: PatternB
         </Button>
       </div>
 
-      {summary && (
-        <div className="mt-2 rounded-app bg-canvas px-3 py-2">
-          <Typography.Text className="text-xs">🧭 {summary}</Typography.Text>
+      {value.length > 0 && (
+        <div className="mt-3 rounded-app bg-canvas px-3 py-2">
+          <div className="mb-1 text-[11px] font-medium text-muted">Sơ đồ minh hoạ</div>
+          <PatternDiagram pattern={value} baseRelations={baseRelations} />
+          <Typography.Text className="mt-1 block text-xs">🧭 {summary}</Typography.Text>
         </div>
       )}
       <div className="mt-1">

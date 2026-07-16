@@ -155,14 +155,19 @@ export function edgeWouldViolate(
     return `Loại quan hệ này không được phép nối “${src.label} → ${tgt.label}”.`;
   }
 
-  // Limit: adding the edge must not push either endpoint over a max.
+  // Limit: adding the edge must not push either endpoint over a max. Which end
+  // gains a link depends on the direction: `out` loads only the source, `in`
+  // only the target, and `any` loads BOTH — checking one end there would let a
+  // symmetric relation (spouse) exceed its max from the source's side.
   for (const r of rules) {
     if (r.type !== 'limit' || r.relation !== candidate.relationId) continue;
-    const node = r.dir === 'out' ? src : tgt; // 'in'/'any' checked on the gaining side
-    if (r.blockType !== '*' && node.blockTypeId !== r.blockType) continue;
-    const current = degree(diagram, node.id, r.relation, r.dir);
-    if (current + 1 > r.max) {
-      return `“${node.label}” đã đạt tối đa ${r.max} ${dirLabel(r.dir)}.`;
+    const gaining = r.dir === 'out' ? [src] : r.dir === 'in' ? [tgt] : [src, tgt];
+    for (const node of gaining) {
+      if (r.blockType !== '*' && node.blockTypeId !== r.blockType) continue;
+      const current = degree(diagram, node.id, r.relation, r.dir);
+      if (current + 1 > r.max) {
+        return `“${node.label}” đã đạt tối đa ${r.max} ${dirLabel(r.dir)}.`;
+      }
     }
   }
   return null;

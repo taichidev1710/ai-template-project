@@ -124,6 +124,26 @@ describe('edgeWouldViolate — pre-draw guard for the canvas', () => {
     expect(edgeWouldViolate(d, rules, { relationId: 'rel_parent', source: 'c', target: 'a' })).toBeNull();
   });
 
+  it("blocks a 2nd spouse from the SOURCE's side under a max-1 `any` limit", () => {
+    // `any` loads both ends, so a node that already has its one spouse must be
+    // refused whether it is the source or the target of the new edge. Checking
+    // only the target let the canvas draw a link that `validate` then flagged.
+    const rules: Rule[] = [{ id: 'r', type: 'limit', blockType: '*', relation: 'rel_spouse', dir: 'any', max: 1 }];
+    const d = diagram(
+      [node('a', 'bt_person'), node('b', 'bt_person'), node('c', 'bt_person')],
+      [edge('e1', 'rel_spouse', 'a', 'b')], // `a` already has a spouse
+    );
+    expect(edgeWouldViolate(d, rules, { relationId: 'rel_spouse', source: 'a', target: 'c' })).not.toBeNull();
+    expect(edgeWouldViolate(d, rules, { relationId: 'rel_spouse', source: 'c', target: 'a' })).not.toBeNull();
+    expect(edgeWouldViolate(d, rules, { relationId: 'rel_spouse', source: 'c', target: 'a' })).toContain('a');
+  });
+
+  it('still allows a spouse link between two unattached nodes', () => {
+    const rules: Rule[] = [{ id: 'r', type: 'limit', blockType: '*', relation: 'rel_spouse', dir: 'any', max: 1 }];
+    const d = diagram([node('a', 'bt_person'), node('b', 'bt_person')], []);
+    expect(edgeWouldViolate(d, rules, { relationId: 'rel_spouse', source: 'a', target: 'b' })).toBeNull();
+  });
+
   it('blocks an edge that satisfies no allow-list rule', () => {
     const rules: Rule[] = [{ id: 'r', type: 'chain', relation: 'rel_reports', order: ['bt_company', 'bt_dept'] }];
     const d = diagram([node('co', 'bt_company'), node('mg', 'bt_manager')], []);

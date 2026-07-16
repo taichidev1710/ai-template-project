@@ -30,4 +30,7 @@ export const router = createBrowserRouter([
     ],
   },
   { path: '*', element: <NotFoundPage /> },
-]);
+], {
+  // Matches vite.config.ts's `base` when built for GitHub Pages.
+  basename: import.meta.env.BASE_URL,
+});

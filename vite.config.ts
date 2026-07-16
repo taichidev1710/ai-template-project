@@ -19,6 +19,8 @@ type ViteConfigWithTest = UserConfig & {
 
 // https://vite.dev/config/
 const config: ViteConfigWithTest = {
+  // GitHub Pages serves this repo from /ai-template-project/, not the domain root.
+  base: process.env.GITHUB_PAGES ? '/ai-template-project/' : '/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

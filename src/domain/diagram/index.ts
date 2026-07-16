@@ -5,4 +5,9 @@ export * from './types';
 export { buildAdjacency, computeDerivedPairs, computeRanks } from './derive';
 export type { Adjacency, DerivedPair } from './derive';
 export { effectiveRules, validate, edgeWouldViolate } from './rules';
-export { BUILTIN_RULE_SETS, BUILTIN_TEMPLATES } from './seed';
+export {
+  BUILTIN_RULE_SETS,
+  BUILTIN_TEMPLATES,
+  BUILTIN_BLOCK_TYPES,
+  BUILTIN_RELATIONS,
+} from './seed';

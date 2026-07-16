@@ -5,4 +5,5 @@ export const paths = {
   dashboard: '/dashboard',
   users: '/users',
   profile: '/profile',
+  blockTypes: '/block-types',
 } as const;

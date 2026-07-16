@@ -7,6 +7,7 @@ import { LoginPage } from '@/pages/LoginPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { UsersPage } from '@/features/users';
 import { ProfilePage } from '@/features/profile';
+import { BlockTypesPage } from '@/features/block-types';
 
 /**
  * Route table (React Router v7, data mode).
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
           { path: paths.dashboard, element: <DashboardPage /> },
           { path: paths.users, element: <UsersPage /> },
           { path: paths.profile, element: <ProfilePage /> },
+          { path: paths.blockTypes, element: <BlockTypesPage /> },
         ],
       },
     ],

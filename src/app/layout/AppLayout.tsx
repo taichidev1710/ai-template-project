@@ -4,6 +4,7 @@ import {
   DashboardOutlined,
   TeamOutlined,
   IdcardOutlined,
+  ApartmentOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   BulbOutlined,
@@ -41,6 +42,7 @@ export function AppLayout() {
     { key: paths.dashboard, icon: <DashboardOutlined />, label: t('nav.dashboard') },
     { key: paths.users, icon: <TeamOutlined />, label: t('nav.users') },
     { key: paths.profile, icon: <IdcardOutlined />, label: t('nav.profile') },
+    { key: paths.blockTypes, icon: <ApartmentOutlined />, label: 'Loại khối' },
   ];
 
   const toggleLang = () => void i18n.changeLanguage(i18n.language === 'vi' ? 'en' : 'vi');

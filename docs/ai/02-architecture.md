@@ -26,11 +26,17 @@ src/
 │   │   ├── types.ts     # type của feature
 │   │   └── index.ts     # API CÔNG KHAI — mặt import duy nhất
 │   └── profile/         # ← FEATURE THAM CHIẾU cho module ĐẶC BIỆT (config-driven theo tier/status)
+├── domain/              # Nghiệp vụ THUẦN (no React/AntD) dùng chung nhiều feature
+│   └── diagram/         # model + engine luật/suy ra của module Sơ đồ (xem DESIGN.md)
 ├── pages/               # Page cấp route không gắn với một feature nào
 ├── locales/             # json i18n (vi, en)
 ├── styles/              # index.css (Tailwind @theme)
 └── test/                # thiết lập test
 ```
+
+`src/domain/*` chứa logic nghiệp vụ độc lập framework (type + hàm thuần, có unit
+test), được `features/*` import qua `@/domain/...`. Tách khỏi `features` để engine
+kiểm thử được mà không cần render UI, và `shared` không import ngược từ đây.
 
 ## Ranh giới import (được thực thi theo quy ước)
 - Import một feature **chỉ** qua `index.ts` của nó. Không bao giờ chọc thẳng vào

@@ -9,6 +9,12 @@ export const diagramTypesApi = {
     return paginate(tables.templates, params, (t) => [t.name, t.description ?? '', t.id]);
   },
 
+  /** Every type, unpaginated — for pickers that must offer the full vocabulary. */
+  listAll: async (): Promise<DiagramTemplate[]> => {
+    await delay();
+    return tables.templates;
+  },
+
   get: async (id: string): Promise<DiagramTemplate> => {
     await delay();
     const found = tables.templates.find((t) => t.id === id);

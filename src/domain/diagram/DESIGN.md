@@ -77,6 +77,10 @@ Cùng một engine phục vụ cả hai — khác nhau chỉ ở dữ liệu dan
 - **ends / chain / same**: danh sách cho phép theo từng quan hệ (**OR**) — một cạnh
   hợp lệ nếu thoả ≥1 luật của quan hệ đó; quan hệ không có luật nào thì tự do.
 - `edgeWouldViolate()`: chặn cạnh phạm luật *trước khi* vẽ (chế độ nghiêm của canvas).
+  Với `limit`, đầu nào "nhận thêm" liên kết phụ thuộc hướng: `out` chỉ nguồn, `in`
+  chỉ đích, **`any` là cả hai**. (Bản đầu chỉ xét đích → quan hệ đối xứng như vợ
+  chồng vượt được max từ phía nguồn: `validate` báo lỗi nhưng canvas vẫn cho vẽ.
+  Đã sửa + có test hồi quy.)
 
 ## 7. Phạm vi danh mục: LOẠI SƠ ĐỒ sở hữu vốn từ vựng
 
@@ -100,9 +104,51 @@ vốn từ vựng của loại đó.
 3. ✅ **Workspace 3 tab** trong Loại sơ đồ: **Khối** (`block-types`), **Quan hệ**
    (`relation-types` — nền chính/phụ + suy ra đa-quan-hệ với builder câu dẫn + sơ đồ
    minh hoạ), **Bộ luật** (`rule-sets` — rule-builder 5 loại, ngôn từ trung lập).
-4. ⏳ **Sơ đồ** (`features/diagrams`): chọn loại, tick nhiều bộ luật, danh sách CRUD.
-5. ⏳ **Canvas editor** (Cytoscape.js): vẽ, áp nhiều bộ luật, validate trực tiếp,
-   overlay suy ra, thu gọn nhánh primary, lọc/ẩn hiện.
+4. ✅ **Sơ đồ** (`features/diagrams`): danh sách CRUD (Bảng ⇄ Lưới + lọc theo loại),
+   chọn 1 loại rồi **tick nhiều bộ luật** — nhưng chỉ trong vốn từ vựng của loại đó
+   (đúng mục 7: không stack chéo bộ luật của 2 loại, vì rule tham chiếu id khối/quan
+   hệ của loại kia sẽ không khớp node nào và **im lặng không chạy**). Đổi loại thì
+   mặc định tick hết bộ luật của loại mới; loại bị khoá khi sơ đồ đã có khối/liên
+   kết (vốn từ vựng đang được dùng).
+5. ✅ **Canvas editor** (Cytoscape 3, `features/diagrams/canvas` + `DiagramCanvas`):
+   vẽ khối/liên kết, áp nhiều bộ luật, validate trực tiếp (đánh dấu đỏ + panel),
+   chặn cạnh phạm luật **trước khi vẽ** (`edgeWouldViolate`), overlay suy ra
+   (ghostedge, `events:no` — không chọn/xoá được vì không phải dữ liệu), thu gọn
+   nhánh primary, lọc/ẩn hiện. Nội dung canvas lưu qua `saveContent` (tách khỏi
+   `update` của form: hai người ghi khác nhau, không được đè nhau).
+   - **Nối khối (theo demo):** bật nút *Nối khối* → chạm khối NGUỒN → chạm khối
+     ĐÍCH → `EdgeFormModal` mới hỏi **loại quan hệ + nhãn**. Không chọn quan hệ
+     trước ở toolbar. Quan hệ nào phạm luật thì option bị khoá kèm lý do, và modal
+     mặc định chọn quan hệ hợp lệ đầu tiên. Chạm nền = huỷ.
+   - **Chạm liên kết** → `EdgeDetailModal`: sửa nhãn, *nét chạy*, xoá. Style còn
+     lại **không** sửa ở đây — style thuộc loại quan hệ (mục 7); demo cho sửa
+     từng cạnh, ta cố ý không theo.
+   - **Nhãn liên kết** (như demo): nhãn riêng của cạnh → nếu trống thì hiện **tên
+     loại quan hệ** → toggle *Nhãn liên kết* tắt thì ẩn hết. Fallback nằm trong
+     stylesheet; đừng vá `label` bằng `cy.style().selector('edge')` sau đó — nó
+     thay luôn mapper và làm mất fallback.
+   - **Tìm khối:** ô tìm ở toolbar (demo: `qfSearch`) → bay tới + chọn khối.
+     So khớp **bỏ dấu tiếng Việt** (`canvas/search.ts#noDia`, có test — nhớ cả
+     `đ/Đ` vì NFD không tách chữ này).
+   - **Nét chạy (animation) — ngoại lệ duy nhất của mục 7:** `RelationStyle.animated`
+     là **mặc định của loại**; `DiagramEdge.animated?` **override cho riêng 1 cạnh**
+     (`undefined` = kế thừa → dùng `??`, **không** dùng `||`, để `false` tắt được
+     một loại đang bật). Resolve ở `canvas/cy-elements.ts#resolveAnimated` (có
+     test). Cytoscape không có dash animation sẵn → tự chạy `line-dash-offset`
+     bằng `requestAnimationFrame`; bỏ qua khi `prefers-reduced-motion`, và vòng
+     lặp chỉ chạy khi có ít nhất 1 cạnh animated (sơ đồ tĩnh = 0 CPU).
+   - **Nguồn sự thật:** state React; cy chỉ rebuild khi *cấu trúc* đổi — không
+     rebuild khi kéo khối, nếu không khối sẽ nhảy về dưới con trỏ.
+   - **Responsive:** chỉ ghim chiều cao từ `lg` trở lên (canvas | panel cạnh nhau,
+     mỗi cột full-height). Dưới `lg` thì xếp dọc và **trang tự cuộn** — ghim chiều
+     cao ở đó sẽ ép cột canvas co còn ~74px trong khi `min-h` của canvas đẩy nó
+     tràn ra đè lên panel.
+   - **Style:** map ở `canvas/cy-elements.ts` (thuần, có test). Màu theme lấy từ
+     design token nên canvas theo dark mode; màu khối/quan hệ là *dữ liệu*, không
+     phải token. `line-dash-pattern` chỉ nhận mảng literal → resolve bằng 1
+     selector cho mỗi line style, không dùng mapper.
+   - **Chưa làm (tối ưu sau):** demo có virtualization (`refreshWindow`) chỉ render
+     phần trong khung nhìn + cap; bản này render toàn bộ. Cần khi sơ đồ lớn.
 
 ## 9. Điểm mở còn cần chốt về sau
 

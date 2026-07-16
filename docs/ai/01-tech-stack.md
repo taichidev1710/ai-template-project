@@ -17,6 +17,7 @@ bộ tài liệu này, bởi các API được mô tả ở đây giả định 
 | Axios | 1 | HTTP client |
 | i18next / react-i18next | 25 / 15 | Đa ngôn ngữ (i18n) |
 | Recharts | 2 | Biểu đồ (tùy chọn) |
+| Cytoscape (`cytoscape`) | 3 | Canvas đồ thị cho module Sơ đồ (chỉ dùng trong `features/diagrams`) |
 | dayjs | 1 | Ngày tháng (peer của AntD) |
 | Vitest + Testing Library | 3 / 16 | Testing |
 
@@ -30,6 +31,9 @@ bộ tài liệu này, bởi các API được mô tả ở đây giả định 
   refresh nền, để bạn không phải tự tay quản lý cờ loading/error.
 - **Zustand** — store client-state nhỏ gọn, không rườm rà (boilerplate), dành cho
   UI state mà TanStack Query không nên sở hữu.
+- **Cytoscape 3** — engine đồ thị đã trưởng thành cho canvas Sơ đồ: layout, hit-test,
+  pan/zoom cho hàng nghìn node. Dùng `cytoscape` thuần, **không** dùng wrapper
+  `react-cytoscapejs` (bản này bỏ bê, chưa theo kịp React 19).
 
 ## Yêu cầu Node
 Node **22.12+** (mức nền của Vite 8 / React Router 7). Xem `.nvmrc`.

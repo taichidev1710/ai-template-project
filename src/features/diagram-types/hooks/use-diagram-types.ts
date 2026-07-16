@@ -14,6 +14,14 @@ export function useDiagramTypes(params: DiagramTypesListParams) {
   });
 }
 
+/** Every type, unpaginated — for pickers (e.g. a diagram choosing its type). */
+export function useAllDiagramTypes() {
+  return useQuery({
+    queryKey: diagramTypesKeys.options(),
+    queryFn: () => diagramTypesApi.listAll(),
+  });
+}
+
 export function useDiagramType(id: string, enabled = true) {
   return useQuery({
     queryKey: diagramTypesKeys.detail(id),
@@ -27,7 +35,8 @@ export function useDiagramTypeMutations() {
   const { message } = App.useApp();
   const { t } = useTranslation();
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: diagramTypesKeys.lists() });
+  // Covers lists, the picker's `options`, and details in one shot.
+  const invalidate = () => qc.invalidateQueries({ queryKey: diagramTypesKeys.all });
   const onError = (e: NormalizedError) => message.error(e.message || t('error.generic'));
 
   const create = useMutation({
@@ -41,9 +50,8 @@ export function useDiagramTypeMutations() {
 
   const update = useMutation({
     mutationFn: ({ id, input }: { id: string; input: DiagramTypeInput }) => diagramTypesApi.update(id, input),
-    onSuccess: (updated) => {
+    onSuccess: () => {
       void invalidate();
-      void qc.invalidateQueries({ queryKey: diagramTypesKeys.detail(updated.id) });
       message.success(t('action.save'));
     },
     onError,

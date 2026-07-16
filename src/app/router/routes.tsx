@@ -8,6 +8,7 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
 import { UsersPage } from '@/features/users';
 import { ProfilePage } from '@/features/profile';
 import { DiagramTypesPage, DiagramTypeEditorPage } from '@/features/diagram-types';
+import { DiagramsPage, DiagramEditorPage } from '@/features/diagrams';
 
 /**
  * Route table (React Router v7, data mode).
@@ -26,6 +27,8 @@ export const router = createBrowserRouter([
           { path: paths.dashboard, element: <DashboardPage /> },
           { path: paths.users, element: <UsersPage /> },
           { path: paths.profile, element: <ProfilePage /> },
+          { path: paths.diagrams, element: <DiagramsPage /> },
+          { path: `${paths.diagrams}/:id`, element: <DiagramEditorPage /> },
           { path: paths.diagramTypes, element: <DiagramTypesPage /> },
           { path: `${paths.diagramTypes}/:id`, element: <DiagramTypeEditorPage /> },
         ],

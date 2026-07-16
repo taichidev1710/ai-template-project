@@ -216,6 +216,13 @@ export interface DiagramEdge {
   source: string;
   target: string;
   label?: string;
+  /**
+   * Overrides the relation's `style.animated` for THIS edge only. The relation
+   * owns the rest of the style (see DESIGN.md §7); marching-ants is the one
+   * per-edge exception, so a single link can be called out without restyling
+   * every link of its kind. `undefined` = inherit the relation's default.
+   */
+  animated?: boolean;
 }
 
 /** First-class view state: what is shown/hidden on the canvas. */

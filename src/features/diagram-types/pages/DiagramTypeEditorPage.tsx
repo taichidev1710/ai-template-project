@@ -2,6 +2,7 @@ import { Alert, Button, Result, Skeleton, Space, Tabs, Typography } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { BlockTypesPanel } from '@/features/block-types';
+import { RelationsPanel } from '@/features/relation-types';
 import { paths } from '@/app/router/paths';
 import { useDiagramType } from '../hooks/use-diagram-types';
 
@@ -65,7 +66,7 @@ export function DiagramTypeEditorPage() {
         <Tabs
           items={[
             { key: 'blocks', label: `Khối (${type.blockTypes.length})`, children: <BlockTypesPanel typeId={type.id} /> },
-            { key: 'relations', label: `Quan hệ (${type.relations.length})`, children: soon('Quan hệ') },
+            { key: 'relations', label: `Quan hệ (${type.relations.length})`, children: <RelationsPanel typeId={type.id} /> },
             { key: 'rules', label: `Bộ luật (${type.ruleSets.length})`, children: soon('Bộ luật') },
           ]}
         />

@@ -21,7 +21,11 @@ export function useBlockTypeMutations(typeId: string) {
   const { message } = App.useApp();
   const { t } = useTranslation();
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: blockTypesKeys.lists(typeId) });
+  const invalidate = () => {
+    void qc.invalidateQueries({ queryKey: blockTypesKeys.lists(typeId) });
+    // Refresh the parent Loại sơ đồ so the editor's tab count stays accurate.
+    void qc.invalidateQueries({ queryKey: ['diagram-types'] });
+  };
   const onError = (e: NormalizedError) => message.error(e.message || t('error.generic'));
 
   const create = useMutation({

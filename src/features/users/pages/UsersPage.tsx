@@ -1,15 +1,19 @@
 import { useState } from 'react';
-import { App, Button, Input } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { App, Button, Input, Segmented, Select, Space } from 'antd';
+import { AppstoreOutlined, PlusOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { PageContainer } from '@/shared/ui';
 import { useDebounce } from '@/shared/hooks/use-debounce';
 import { UsersTable } from '../components/UsersTable';
+import { UsersGrid } from '../components/UsersGrid';
+import { UserDetailModal } from '../components/UserDetailModal';
 import { UserFormModal } from '../components/UserFormModal';
 import { useUsers, useUserMutations } from '../hooks/use-users';
-import type { User, UserInput } from '../types';
+import type { User, UserInput, UsersViewMode } from '../types';
 
-/** Container page: owns state, wires hooks to presentational components. */
+const ROLE_OPTIONS: User['role'][] = ['admin', 'editor', 'viewer'];
+
+/** Container page: owns list/filter/view/modal state and wires hooks to components. */
 export function UsersPage() {
   const { t } = useTranslation();
   const { modal } = App.useApp();
@@ -18,18 +22,24 @@ export function UsersPage() {
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search);
+  const [role, setRole] = useState<User['role'] | undefined>();
+  const [view, setView] = useState<UsersViewMode>('table');
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
+  const [detail, setDetail] = useState<User | null>(null);
 
-  const { data, isFetching } = useUsers({ page, pageSize, search: debouncedSearch });
+  const { data, isFetching } = useUsers({ page, pageSize, search: debouncedSearch, role });
   const { create, update, remove } = useUserMutations();
+
+  const resetPage = () => setPage(1);
 
   const openCreate = () => {
     setEditing(null);
     setModalOpen(true);
   };
   const openEdit = (user: User) => {
+    setDetail(null);
     setEditing(user);
     setModalOpen(true);
   };
@@ -53,6 +63,21 @@ export function UsersPage() {
     });
   };
 
+  const listProps = {
+    data: data?.items ?? [],
+    total: data?.total ?? 0,
+    page,
+    pageSize,
+    loading: isFetching,
+    onPageChange: (p: number, ps: number) => {
+      setPage(p);
+      setPageSize(ps);
+    },
+    onView: setDetail,
+    onEdit: openEdit,
+    onDelete: confirmDelete,
+  };
+
   return (
     <PageContainer
       title={t('nav.users')}
@@ -62,31 +87,44 @@ export function UsersPage() {
         </Button>
       }
     >
-      <div className="mb-4 max-w-xs">
-        <Input.Search
-          placeholder={t('action.search')}
-          allowClear
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <Space wrap>
+          <Input.Search
+            placeholder={t('action.search')}
+            allowClear
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              resetPage();
+            }}
+            className="w-60"
+          />
+          <Select<User['role']>
+            allowClear
+            placeholder={t('user.filterRole')}
+            value={role}
+            onChange={(value) => {
+              setRole(value);
+              resetPage();
+            }}
+            className="w-40"
+            options={ROLE_OPTIONS.map((value) => ({ value, label: value }))}
+          />
+        </Space>
+
+        <Segmented<UsersViewMode>
+          value={view}
+          onChange={setView}
+          options={[
+            { value: 'table', icon: <UnorderedListOutlined />, label: t('view.table') },
+            { value: 'grid', icon: <AppstoreOutlined />, label: t('view.grid') },
+          ]}
         />
       </div>
 
-      <UsersTable
-        data={data?.items ?? []}
-        total={data?.total ?? 0}
-        page={page}
-        pageSize={pageSize}
-        loading={isFetching}
-        onPageChange={(p, ps) => {
-          setPage(p);
-          setPageSize(ps);
-        }}
-        onEdit={openEdit}
-        onDelete={confirmDelete}
-      />
+      {view === 'table' ? <UsersTable {...listProps} /> : <UsersGrid {...listProps} />}
+
+      <UserDetailModal open={Boolean(detail)} user={detail} onEdit={openEdit} onClose={() => setDetail(null)} />
 
       <UserFormModal
         open={modalOpen}

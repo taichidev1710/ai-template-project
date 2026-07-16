@@ -1,6 +1,6 @@
 import { Button, Space, Table, Tag } from 'antd';
 import type { TablePaginationConfig } from 'antd';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { formatDate } from '@/shared/lib/utils';
 import type { User } from '../types';
@@ -12,6 +12,7 @@ interface UsersTableProps {
   pageSize: number;
   loading?: boolean;
   onPageChange: (page: number, pageSize: number) => void;
+  onView: (user: User) => void;
   onEdit: (user: User) => void;
   onDelete: (user: User) => void;
 }
@@ -30,6 +31,7 @@ export function UsersTable({
   pageSize,
   loading,
   onPageChange,
+  onView,
   onEdit,
   onDelete,
 }: UsersTableProps) {
@@ -65,9 +67,10 @@ export function UsersTable({
         {
           title: '',
           key: 'actions',
-          width: 96,
+          width: 132,
           render: (_, record) => (
             <Space>
+              <Button type="text" icon={<EyeOutlined />} aria-label="View" onClick={() => onView(record)} />
               <Button type="text" icon={<EditOutlined />} aria-label="Edit" onClick={() => onEdit(record)} />
               <Button type="text" danger icon={<DeleteOutlined />} aria-label="Delete" onClick={() => onDelete(record)} />
             </Space>

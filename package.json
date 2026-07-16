@@ -15,7 +15,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\"",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "generate:feature": "node scripts/generate-feature.mjs"
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.0",

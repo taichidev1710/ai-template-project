@@ -17,7 +17,13 @@
     "createdAt": "Ngày tạo",
     "createTitle": "Thêm người dùng",
     "editTitle": "Sửa người dùng",
+    "detailTitle": "Chi tiết người dùng",
+    "filterRole": "Lọc theo vai trò",
     "deleteConfirm": "Bạn có chắc muốn xoá người dùng này?"
+  },
+  "view": {
+    "table": "Bảng",
+    "grid": "Lưới"
   },
   "profile": {
     "demoHint": "Đổi cấp độ bên dưới để thấy cùng một dữ liệu hiển thị field / quyền lợi / action khác nhau — tất cả điều khiển bởi tier registry.",

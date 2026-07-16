@@ -1,14 +1,13 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { App } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { ListParams } from '@/shared/api';
 import type { NormalizedError } from '@/shared/api';
 import { usersApi } from '../api/users-api';
 import { usersKeys } from '../api/users-keys';
-import type { UserInput } from '../types';
+import type { UserInput, UsersListParams } from '../types';
 
 /** Read list. Server state → TanStack Query (per state-management rules). */
-export function useUsers(params: ListParams) {
+export function useUsers(params: UsersListParams) {
   return useQuery({
     queryKey: usersKeys.list(params),
     queryFn: () => usersApi.list(params),

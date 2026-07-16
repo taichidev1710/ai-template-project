@@ -18,13 +18,14 @@ src/
 │   ├── lib/             # tiện ích không phụ thuộc framework, query-client
 │   └── types/           # type TS dùng chung
 ├── features/            # Mỗi thư mục là một feature nghiệp vụ
-│   └── users/           # ← FEATURE THAM CHIẾU (sao chép hình dạng này)
-│       ├── api/         # users-api.ts (endpoint), users-keys.ts (query key)
-│       ├── hooks/       # use-users.ts (query + mutation)
-│       ├── components/  # trình bày: UsersTable, UserFormModal
-│       ├── pages/       # page bao (container): UsersPage (sở hữu state)
-│       ├── types.ts     # type của feature
-│       └── index.ts     # API CÔNG KHAI — mặt import duy nhất
+│   ├── users/           # ← FEATURE THAM CHIẾU cho module CHUẨN (sao chép hình dạng này)
+│   │   ├── api/         # users-api.ts (endpoint), users-keys.ts (query key)
+│   │   ├── hooks/       # use-users.ts (query + mutation)
+│   │   ├── components/  # trình bày: UsersTable, UsersGrid, UserDetailModal, UserFormModal
+│   │   ├── pages/       # page bao (container): UsersPage (sở hữu state: page/filter/view/modal)
+│   │   ├── types.ts     # type của feature
+│   │   └── index.ts     # API CÔNG KHAI — mặt import duy nhất
+│   └── profile/         # ← FEATURE THAM CHIẾU cho module ĐẶC BIỆT (config-driven theo tier/status)
 ├── pages/               # Page cấp route không gắn với một feature nào
 ├── locales/             # json i18n (vi, en)
 ├── styles/              # index.css (Tailwind @theme)

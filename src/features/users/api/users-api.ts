@@ -1,13 +1,13 @@
 import { apiClient } from '@/shared/api';
-import type { ListParams, Paginated } from '@/shared/api';
-import type { User, UserInput } from '../types';
+import type { Paginated } from '@/shared/api';
+import type { User, UserInput, UsersListParams } from '../types';
 
 /**
  * Feature API layer: the ONLY place that knows the endpoint URLs for users.
  * Hooks call these functions; components never call the API directly.
  */
 export const usersApi = {
-  list: async (params: ListParams): Promise<Paginated<User>> => {
+  list: async (params: UsersListParams): Promise<Paginated<User>> => {
     const { data } = await apiClient.get<Paginated<User>>('/users', { params });
     return data;
   },

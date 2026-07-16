@@ -15,7 +15,7 @@ Chỉ khi đó mới tạo mới. **Không trùng lặp component.**
   `shared/ui`. Dễ test và tái sử dụng.
 
 `src/features/users` minh họa điều này: `UsersPage` (container) →
-`UsersTable` + `UserFormModal` (trình bày).
+`UsersTable` / `UsersGrid` / `UserDetailModal` / `UserFormModal` (trình bày).
 
 ## Props
 - Định nghĩa một interface `Props`; destructure ngay trong chữ ký hàm.

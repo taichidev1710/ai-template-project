@@ -96,10 +96,10 @@ vốn từ vựng của loại đó.
 ## 8. Lộ trình build
 
 1. ✅ **Nền**: types + engine (validate + suy ra) + test — thư mục này.
-2. ✅ **Loại sơ đồ**: `features/diagram-types` (danh sách + editor có tab) và tab
-   **Khối** (`features/block-types/BlockTypesPanel`, phạm vi theo loại).
-3. ⏳ **Tab Quan hệ** (nền + suy ra) và **tab Bộ luật** (rule-builder 5 loại + tạo
-   catalog inline) trong màn Loại sơ đồ.
+2. ✅ **Loại sơ đồ**: `features/diagram-types` (danh sách + editor có tab).
+3. ✅ **Workspace 3 tab** trong Loại sơ đồ: **Khối** (`block-types`), **Quan hệ**
+   (`relation-types` — nền chính/phụ + suy ra đa-quan-hệ với builder câu dẫn + sơ đồ
+   minh hoạ), **Bộ luật** (`rule-sets` — rule-builder 5 loại, ngôn từ trung lập).
 4. ⏳ **Sơ đồ** (`features/diagrams`): chọn loại, tick nhiều bộ luật, danh sách CRUD.
 5. ⏳ **Canvas editor** (Cytoscape.js): vẽ, áp nhiều bộ luật, validate trực tiếp,
    overlay suy ra, thu gọn nhánh primary, lọc/ẩn hiện.

@@ -1,6 +1,6 @@
 import { Fragment } from 'react';
 import { Typography } from 'antd';
-import { directionPhrase } from '../types';
+import { directionPhrase, reachedNoun } from '../types';
 import type { BaseRelation, RelationStep } from '../types';
 
 interface PatternDiagramProps {
@@ -54,10 +54,11 @@ export function PatternDiagram({ pattern, baseRelations }: PatternDiagramProps) 
       {pattern.map((s, i) => {
         const rel = relById(s.relationId);
         const isLast = i === pattern.length - 1;
+        const noun = reachedNoun(rel, s.dir);
         return (
           <Fragment key={i}>
             <Connector name={rel?.name ?? '?'} phrase={directionPhrase(rel, s.dir)} />
-            <NodeChip label={isLast ? 'Kết quả' : `bước ${i + 1}`} tone={isLast ? 'end' : 'mid'} />
+            <NodeChip label={isLast ? `${noun} ⟵ kết quả` : noun} tone={isLast ? 'end' : 'mid'} />
           </Fragment>
         );
       })}

@@ -83,6 +83,18 @@ export function directionPhrase(rel: BaseRelation | undefined, dir: StepDir): st
   return dir === 'down' ? l.down : l.up;
 }
 
+/** The noun for the node a hop LANDS ON — e.g. down over "Cha mẹ – con" → "con". */
+export function reachedNoun(rel: BaseRelation | undefined, dir: StepDir): string {
+  if (!rel) return '?';
+  if (dir === 'both') return rel.name.toLowerCase();
+  const parts = rel.name
+    .split(/[–\-/]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (parts.length >= 2) return (dir === 'down' ? parts[parts.length - 1]! : parts[0]!).toLowerCase();
+  return rel.name.toLowerCase();
+}
+
 export const DIR_OPTIONS: { value: StepDir; label: string }[] = [
   { value: 'up', label: '↑ Lên (cha mẹ)' },
   { value: 'down', label: '↓ Xuống (con)' },

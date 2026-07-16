@@ -1,0 +1,71 @@
+@import 'tailwindcss';
+
+/*
+ * Tailwind v4 config lives here (no tailwind.config.js).
+ * We map Tailwind's design tokens onto the `--app-*` CSS variables that
+ * ThemeProvider injects at runtime from src/shared/theme/tokens.ts.
+ *
+ * Result: `bg-primary`, `text-secondary`, `border-app`, `rounded-app`, etc.
+ * all follow the SAME tokens Ant Design uses — and flip on dark mode for free.
+ */
+@theme {
+  /* colors → utilities: bg-primary, text-primary, border-primary ... */
+  --color-primary: var(--app-color-primary);
+  --color-success: var(--app-color-success);
+  --color-warning: var(--app-color-warning);
+  --color-error: var(--app-color-error);
+  --color-info: var(--app-color-info);
+
+  /* text: text-ink (main), text-muted (secondary), text-subtle (tertiary) */
+  --color-ink: var(--app-color-text);
+  --color-muted: var(--app-color-text-secondary);
+  --color-subtle: var(--app-color-text-tertiary);
+
+  /* surfaces: bg-canvas (page bg), bg-surface (card/container bg) */
+  --color-canvas: var(--app-color-bg-layout);
+  --color-surface: var(--app-color-bg-container);
+
+  /* borders: border-line, border-line-soft */
+  --color-line: var(--app-color-border);
+  --color-line-soft: var(--app-color-border-secondary);
+
+  /* radius: rounded-app, rounded-app-sm, rounded-app-lg */
+  --radius-app: var(--app-radius);
+  --radius-app-sm: var(--app-radius-sm);
+  --radius-app-lg: var(--app-radius-lg);
+
+  --font-sans: var(--app-font-family);
+}
+
+/*
+ * Fallback values so Tailwind utilities render correctly BEFORE the
+ * ThemeProvider effect runs (first paint / SSR). ThemeProvider overrides
+ * these on <html> at runtime. Keep in sync with tokens.ts light values.
+ */
+:root {
+  --app-color-primary: #1677ff;
+  --app-color-success: #52c41a;
+  --app-color-warning: #faad14;
+  --app-color-error: #ff4d4f;
+  --app-color-info: #1677ff;
+  --app-color-text: rgba(0, 0, 0, 0.88);
+  --app-color-text-secondary: rgba(0, 0, 0, 0.65);
+  --app-color-text-tertiary: rgba(0, 0, 0, 0.45);
+  --app-color-bg-base: #ffffff;
+  --app-color-bg-layout: #f5f5f5;
+  --app-color-bg-container: #ffffff;
+  --app-color-border: #d9d9d9;
+  --app-color-border-secondary: #f0f0f0;
+  --app-radius: 8px;
+  --app-radius-sm: 4px;
+  --app-radius-lg: 12px;
+  --app-font-family:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}

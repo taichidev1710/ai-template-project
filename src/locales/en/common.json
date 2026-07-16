@@ -1,0 +1,90 @@
+{
+  "app": { "name": "Admin Dashboard" },
+  "nav": { "dashboard": "Dashboard", "users": "Users", "profile": "Profile" },
+  "action": {
+    "create": "Create",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "search": "Search",
+    "logout": "Log out"
+  },
+  "user": {
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "createdAt": "Created at",
+    "createTitle": "Create user",
+    "editTitle": "Edit user",
+    "deleteConfirm": "Are you sure you want to delete this user?"
+  },
+  "profile": {
+    "demoHint": "Switch the tier below to see the same data render different fields / perks / actions — all driven by the tier registry.",
+    "previewTier": "Preview tier",
+    "previewStatus": "Preview status",
+    "surfaceExample": "By route/feature (preset \"billing\")",
+    "surfaceNote": "Same card via SURFACE_PRESETS.billing: hides bio + billing-only actions (adjustCredit locked unless active).",
+    "reuseExample": "Reuse example",
+    "reuseNote": "Same <ProfileCard>, compact variant: overridden actions, an extra custom button, hidden fields, and injected content.",
+    "embeddedIn": "Embedded in",
+    "actionFired": "Fired",
+    "perks": "Perks",
+    "createTitle": "Create profile",
+    "editTitle": "Edit profile",
+    "deleteConfirm": "Are you sure you want to delete this profile?",
+    "filterTier": "Filter by tier",
+    "filterStatus": "Filter by status",
+    "detailTitle": "Profile detail",
+    "field": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "joinedAt": "Joined",
+      "bio": "Bio",
+      "loyaltyPoints": "Loyalty points",
+      "accountManager": "Account manager",
+      "hotline": "Private hotline",
+      "creditLimit": "Credit limit",
+      "tier": "Tier",
+      "status": "Status"
+    },
+    "tier": {
+      "standard": "Standard",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "vip": "VIP"
+    },
+    "status": {
+      "active": "Active",
+      "pending": "Pending",
+      "suspended": "Suspended",
+      "closed": "Closed"
+    },
+    "statusBanner": {
+      "pending": "Profile is pending review — some actions are limited.",
+      "suspended": "Profile is suspended. Reactivate to continue."
+    },
+    "action": {
+      "upgrade": "Upgrade",
+      "message": "Message",
+      "viewPerks": "View perks",
+      "assignManager": "Assign manager",
+      "callHotline": "Call hotline",
+      "adjustCredit": "Adjust credit",
+      "reactivate": "Reactivate",
+      "flag": "Flag"
+    },
+    "perk": {
+      "prioritySupport": "Priority support",
+      "earlyAccess": "Early access to new features",
+      "dedicatedManager": "Dedicated account manager",
+      "hotline": "24/7 VIP hotline",
+      "creditLine": "Preferential credit line",
+      "exclusiveEvents": "Exclusive events"
+    }
+  },
+  "login": { "title": "Sign in", "email": "Email", "password": "Password", "submit": "Sign in" },
+  "empty": "No data",
+  "error": { "generic": "Something went wrong. Please try again." }
+}

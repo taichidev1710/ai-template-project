@@ -1,0 +1,90 @@
+{
+  "app": { "name": "Bảng điều khiển" },
+  "nav": { "dashboard": "Tổng quan", "users": "Người dùng", "profile": "Hồ sơ" },
+  "action": {
+    "create": "Thêm mới",
+    "edit": "Sửa",
+    "delete": "Xoá",
+    "save": "Lưu",
+    "cancel": "Huỷ",
+    "search": "Tìm kiếm",
+    "logout": "Đăng xuất"
+  },
+  "user": {
+    "name": "Họ tên",
+    "email": "Email",
+    "role": "Vai trò",
+    "createdAt": "Ngày tạo",
+    "createTitle": "Thêm người dùng",
+    "editTitle": "Sửa người dùng",
+    "deleteConfirm": "Bạn có chắc muốn xoá người dùng này?"
+  },
+  "profile": {
+    "demoHint": "Đổi cấp độ bên dưới để thấy cùng một dữ liệu hiển thị field / quyền lợi / action khác nhau — tất cả điều khiển bởi tier registry.",
+    "previewTier": "Xem theo cấp độ",
+    "previewStatus": "Xem theo trạng thái",
+    "surfaceExample": "Ví dụ theo route/feature (preset \"billing\")",
+    "surfaceNote": "Cùng card, dùng SURFACE_PRESETS.billing: ẩn bio + chỉ action thanh toán (adjustCredit bị khoá khi không active).",
+    "reuseExample": "Ví dụ tái sử dụng",
+    "reuseNote": "Cùng <ProfileCard> nhưng biến thể compact: ghi đè action, thêm nút riêng, ẩn bớt field và chèn nội dung tuỳ biến.",
+    "embeddedIn": "Nhúng trong",
+    "actionFired": "Đã bấm",
+    "perks": "Quyền lợi",
+    "createTitle": "Thêm hồ sơ",
+    "editTitle": "Sửa hồ sơ",
+    "deleteConfirm": "Bạn có chắc muốn xoá hồ sơ này?",
+    "filterTier": "Lọc theo cấp",
+    "filterStatus": "Lọc theo trạng thái",
+    "detailTitle": "Chi tiết hồ sơ",
+    "field": {
+      "name": "Họ tên",
+      "email": "Email",
+      "phone": "Số điện thoại",
+      "joinedAt": "Ngày tham gia",
+      "bio": "Giới thiệu",
+      "loyaltyPoints": "Điểm thưởng",
+      "accountManager": "Quản lý tài khoản",
+      "hotline": "Hotline riêng",
+      "creditLimit": "Hạn mức tín dụng",
+      "tier": "Cấp độ",
+      "status": "Trạng thái"
+    },
+    "tier": {
+      "standard": "Phổ thông",
+      "intermediate": "Trung cấp",
+      "advanced": "Cao cấp",
+      "vip": "VIP"
+    },
+    "status": {
+      "active": "Đang hoạt động",
+      "pending": "Chờ duyệt",
+      "suspended": "Bị tạm khoá",
+      "closed": "Đã đóng"
+    },
+    "statusBanner": {
+      "pending": "Hồ sơ đang chờ duyệt — một số thao tác bị hạn chế.",
+      "suspended": "Hồ sơ đang bị tạm khoá. Cần mở khoá để tiếp tục."
+    },
+    "action": {
+      "upgrade": "Nâng cấp",
+      "message": "Nhắn tin",
+      "viewPerks": "Xem quyền lợi",
+      "assignManager": "Gán quản lý",
+      "callHotline": "Gọi hotline",
+      "adjustCredit": "Điều chỉnh hạn mức",
+      "reactivate": "Mở khoá",
+      "flag": "Gắn cờ"
+    },
+    "perk": {
+      "prioritySupport": "Hỗ trợ ưu tiên",
+      "earlyAccess": "Truy cập sớm tính năng mới",
+      "dedicatedManager": "Quản lý tài khoản riêng",
+      "hotline": "Hotline VIP 24/7",
+      "creditLine": "Hạn mức tín dụng ưu đãi",
+      "exclusiveEvents": "Sự kiện độc quyền"
+    }
+  },
+  "login": { "title": "Đăng nhập", "email": "Email", "password": "Mật khẩu", "submit": "Đăng nhập" },
+  "empty": "Không có dữ liệu",
+  "error": { "generic": "Đã có lỗi xảy ra. Vui lòng thử lại." }
+}

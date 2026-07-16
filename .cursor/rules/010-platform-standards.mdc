@@ -1,0 +1,16 @@
+---
+description: Con trỏ tới platform standards (áp dụng toàn platform)
+alwaysApply: true
+---
+
+# Platform standards (nằm trong docs/ai/20-29)
+
+Các quy tắc xuyên suốt (cross-cutting) + data-model dùng chung nằm trong `docs/ai/`
+cùng với mọi tài liệu khác. Khi code, hãy tôn trọng:
+- `docs/ai/20-platform-critical-rules.md` (luôn-bật)
+- `docs/ai/22-platform-api-contract.md` (contract mà FE code theo)
+- `docs/ai/28-platform-data-model.md` (shape entity dùng chung — code theo chúng, không theo DB)
+
+Quy tắc đặc thù FE/React nằm trong `docs/ai/` (00–19) và các rule `100-*`.
+Cursor không tự động mở các file được liên kết — hãy tự mở `docs/ai/2x-platform-*.md`
+liên quan khi cần chi tiết.

@@ -1,0 +1,33 @@
+---
+description: Quy tắc toàn dự án cho admin dashboard template
+alwaysApply: true
+---
+
+# Quy tắc dự án (Cursor)
+
+Tài liệu đầy đủ nằm trong `docs/ai/`. Đọc `docs/ai/99-ai-rules.md` và
+`docs/ai/90-anti-patterns.md` trước khi sinh code.
+
+## Stack (đã pin)
+React 19 · TypeScript strict · Vite 8 · Ant Design 6 · Tailwind CSS 4 ·
+React Router 7 · TanStack Query 5 · Zustand 5 · Axios.
+
+## Bắt buộc tuân theo
+- **Chỉ dùng token.** Không bao giờ hardcode màu hex, spacing, radius, font. Dùng
+  AntD `token.*` hoặc các utility Tailwind ánh xạ tới token: `bg-surface`,
+  `bg-canvas`, `text-ink`, `text-muted`, `border-line`, `rounded-app`. Chi tiết:
+  `docs/ai/06-theming.md`.
+- **State.** Dữ liệu server → hook TanStack Query. Client/UI state → Zustand.
+  Không bao giờ gọi `fetch`/`axios` bên trong `useEffect`. Chi tiết:
+  `docs/ai/08-state-management.md`.
+- **Cấu trúc feature.** Feature CRUD mới sao chép `src/features/users`:
+  `api/` → `hooks/` → `components/` → `pages/` → `index.ts`. Component ở dạng trình
+  bày; page sở hữu state; chỉ `api/*` biết URL endpoint.
+- **Import.** Dùng alias `@/`. Chỉ import một feature qua `index.ts` của nó.
+- **Tái sử dụng.** Kiểm tra `src/shared/ui` trước khi tạo một component.
+- **A11y.** Phần tử tương tác cần label/role; focus bàn phím phải nhìn thấy được.
+
+## Đặt file ở đâu
+- Dùng lại được, xuyên feature → `src/shared/*`
+- Riêng cho feature → `src/features/<feature>/*`
+- Page cấp route được ráp trong `src/app/router/routes.tsx` dùng các hằng số `paths`.

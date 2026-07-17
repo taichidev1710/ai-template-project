@@ -34,8 +34,12 @@ const FAMILY_BLOCKS: BlockType[] = [
 ];
 const FAMILY_RELATIONS: Relation[] = [
   { id: 'rel_parent', name: 'Cha mẹ – con', kind: 'base', role: 'primary', style: solid('#5b647e') },
-  { id: 'rel_spouse', name: 'Vợ chồng', kind: 'base', role: 'secondary', style: dashed('#c46ba0') },
-  { id: 'rel_friend', name: 'Bạn bè', kind: 'base', role: 'secondary', style: dashed('#6fb1d8') },
+  // `symmetric`: lấy nhau / kết bạn là quan hệ HAI CHIỀU — vẽ ngược lại chỉ là nói
+  // lại đúng điều đó, không phải liên kết thứ hai. “Cha mẹ – con” thì không: đảo
+  // đầu là một sự thật khác hẳn. Vợ chồng còn được chính loại sơ đồ này xác nhận —
+  // `der_child_in_law` đi qua nó bằng `both`.
+  { id: 'rel_spouse', name: 'Vợ chồng', kind: 'base', role: 'secondary', symmetric: true, style: dashed('#c46ba0') },
+  { id: 'rel_friend', name: 'Bạn bè', kind: 'base', role: 'secondary', symmetric: true, style: dashed('#6fb1d8') },
   { id: 'der_grandparent', name: 'Ông bà (suy ra)', kind: 'derived', pattern: [up('rel_parent'), up('rel_parent')], style: faint('#b08d6a') },
   { id: 'der_grandchild', name: 'Cháu (suy ra)', kind: 'derived', pattern: [down('rel_parent'), down('rel_parent')], style: faint('#d97b6c') },
   { id: 'der_sibling', name: 'Anh chị em (suy ra)', kind: 'derived', pattern: [up('rel_parent'), down('rel_parent')], exclude: ['self'], style: faint('#5fb99a') },
@@ -81,7 +85,8 @@ const ORG_BLOCKS: BlockType[] = [
 ];
 const ORG_RELATIONS: Relation[] = [
   { id: 'rel_reports', name: 'Trực thuộc', kind: 'base', role: 'primary', style: solid('#5b647e', 'triangle', 'taxi') },
-  { id: 'rel_coord', name: 'Phối hợp', kind: 'base', role: 'secondary', style: dashed('#a5c46b') },
+  // A phối hợp với B thì B cũng phối hợp với A — một liên kết, không phải hai.
+  { id: 'rel_coord', name: 'Phối hợp', kind: 'base', role: 'secondary', symmetric: true, style: dashed('#a5c46b') },
   { id: 'der_skiplevel', name: 'Sếp cách cấp (suy ra)', kind: 'derived', pattern: [up('rel_reports'), up('rel_reports')], style: faint('#b08d6a') },
 ];
 const RS_ORG: RuleSet = {

@@ -161,17 +161,32 @@ export function DiagramEditorPage() {
     });
   };
 
-  /** Why `relationId` may not join the pending pair — rules first, then duplicates. */
+  /**
+   * Why `relationId` may not join the pending pair.
+   *
+   * The duplicate check used to live here and compared source→target only, so
+   * the reverse of a two-way link sailed straight past it and the pair ended up
+   * wearing the same relation twice. `edgeWouldViolate` owns it now — down in
+   * the engine, where the catalog says which relations have a direction at all.
+   */
   const relationBlockedFor = (relationId: string): string | null => {
-    if (!pendingPair || !workingDiagram || !draft) return null;
-    const candidate = { relationId, source: pendingPair.source, target: pendingPair.target };
-    const blocked = edgeWouldViolate(workingDiagram, rules, candidate, relations);
-    if (blocked) return blocked;
-    const duplicate = draft.edges.some(
-      (e) => e.relationId === relationId && e.source === candidate.source && e.target === candidate.target,
+    if (!pendingPair || !workingDiagram) return null;
+    return edgeWouldViolate(
+      workingDiagram,
+      rules,
+      { relationId, source: pendingPair.source, target: pendingPair.target },
+      relations,
     );
-    return duplicate ? 'Liên kết này đã tồn tại.' : null;
   };
+
+  /** What the pending pair already are to each other — stated, never judged. */
+  const existingLinks = useMemo(() => {
+    if (!pendingPair || !draft) return [];
+    const { source, target } = pendingPair;
+    return draft.edges
+      .filter((e) => (e.source === source && e.target === target) || (e.source === target && e.target === source))
+      .map((e) => relations.find((r) => r.id === e.relationId)?.name ?? e.relationId);
+  }, [pendingPair, draft, relations]);
 
   const handleEdgeSubmit = (values: EdgeFormValues) => {
     if (!draft || !pendingPair) return;
@@ -537,6 +552,7 @@ export function DiagramEditorPage() {
         pair={pendingPair}
         relations={relations}
         blockedByRule={relationBlockedFor}
+        existingLinks={existingLinks}
         onSubmit={handleEdgeSubmit}
         onCancel={closeLinking}
       />

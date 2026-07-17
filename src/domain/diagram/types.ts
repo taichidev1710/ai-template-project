@@ -63,6 +63,21 @@ export interface BaseRelation {
   name: string;
   kind: 'base';
   role: RelationRole;
+  /**
+   * The edge has NO direction: A→B and B→A are one link, not two. Vợ chồng, bạn
+   * bè, phối hợp — drawing it back the other way says the same thing twice.
+   *
+   * Left off, source→target points somewhere on purpose and the reverse is a
+   * DIFFERENT fact the author may well want: a flow step that loops back to an
+   * earlier one is a second, real edge, not a duplicate of the first.
+   *
+   * Graph vocabulary, not domain vocabulary — the engine learns only that the
+   * two ends are interchangeable, never what they hold. It is the same thing a
+   * derived pattern already says with `dir: 'both'`, said where an EDGE can read
+   * it; nothing else on a relation implies it (`role`, and the arrowhead in
+   * `style`, are about backbone and looks — a plain line is still directed).
+   */
+  symmetric?: boolean;
   style: RelationStyle;
 }
 

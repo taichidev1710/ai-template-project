@@ -108,6 +108,36 @@ function lazyAdjacency(diagram: Diagram): () => Map<string, Adjacency> {
 }
 
 /**
+ * The edge that already carries this exact fact, if any.
+ *
+ * Not a rule, and deliberately not one: no Loại sơ đồ would ever declare "do not
+ * say it twice", and there is no domain where storing one link two times means
+ * anything. It is the graph equivalent of a unique key.
+ *
+ * A `symmetric` relation counts either way round — redrawing "Vợ chồng" back
+ * from the wife duplicates the marriage rather than recording a second one. A
+ * directed relation does NOT: on a flow chart, Bước 2 → Bước 1 is a loop back to
+ * an earlier step, a real edge that the author meant to draw.
+ *
+ * With `relations` omitted, direction cannot be judged, so only an exact
+ * source→target repeat counts — the same quiet fallback `forbid` takes.
+ */
+function duplicateEdge(
+  diagram: Diagram,
+  candidate: { relationId: string; source: string; target: string },
+  relations: Relation[],
+): boolean {
+  const rel = relations.find((r) => r.id === candidate.relationId);
+  const eitherWay = Boolean(rel && isBaseRelation(rel) && rel.symmetric);
+  return diagram.edges.some(
+    (e) =>
+      e.relationId === candidate.relationId &&
+      ((e.source === candidate.source && e.target === candidate.target) ||
+        (eitherWay && e.source === candidate.target && e.target === candidate.source)),
+  );
+}
+
+/**
  * Validate a diagram. Returns every violation (node- and edge-level). An empty
  * array means the diagram fully satisfies its effective rules.
  *
@@ -217,9 +247,18 @@ function edgeSatisfies(rule: Rule, src: DiagramNode, tgt: DiagramNode): boolean 
 }
 
 /**
- * Would adding this candidate edge violate a `limit` or edge allow-list rule?
- * Used by the canvas to block illegal links before they are drawn (the demo's
- * "strict mode"). Returns the first blocking message, or null if allowed.
+ * Would drawing this edge break a rule — either because the edge itself breaks
+ * one, or because it breaks an edge ALREADY on the canvas? Used to block illegal
+ * links before they are drawn (the demo's "strict mode"). Returns the first
+ * blocking message, or null if allowed.
+ *
+ * This is the counterpart of `validate`, and the two must agree: anything this
+ * lets through, `validate` must accept. Where they disagree the canvas draws a
+ * link and the Vi phạm panel condemns it in the same breath.
+ *
+ * `relations` is the Loại sơ đồ's catalog. It resolves what a `forbid` rule's
+ * `when` names and whether a relation is `symmetric`; omit it and both fall
+ * quiet, exactly as a rule aimed at another type's vocabulary does.
  */
 export function edgeWouldViolate(
   diagram: Diagram,
@@ -231,6 +270,12 @@ export function edgeWouldViolate(
   const src = nodesById.get(candidate.source);
   const tgt = nodesById.get(candidate.target);
   if (!src || !tgt) return null;
+  const relName = (id: string) => relations.find((r) => r.id === id)?.name ?? id;
+
+  // Already on the canvas — drawing it again adds nothing.
+  if (duplicateEdge(diagram, candidate, relations)) {
+    return `“${src.label}” và “${tgt.label}” đã có liên kết “${relName(candidate.relationId)}” rồi.`;
+  }
 
   // Edge allow-list: must satisfy at least one rule if the relation has any.
   const allow = rules.filter(
@@ -248,6 +293,29 @@ export function edgeWouldViolate(
     if (r.type !== 'forbid' || r.relation !== candidate.relationId) continue;
     if (forbidHits(r, diagram, candidate.source, candidate.target, relations, adj)) {
       return `“${src.label}” và “${tgt.label}” đã có quan hệ “${forbidWhatName(r, relations)}”.`;
+    }
+  }
+
+  // Forbid, the other half: the candidate can break a link already drawn. A
+  // forbid rule bans a PAIRING, and a pairing is broken just as much by adding
+  // the link that MAKES two blocks kin as by adding the banned link itself.
+  // Reading only the candidate's own relation left this wide open: the canvas
+  // would marry two blocks, let you hand them a shared parent, and `validate`
+  // condemned the marriage the instant the parent link landed — the guard and
+  // the validator contradicting each other over the same rule.
+  const after: Diagram = { ...diagram, edges: [...diagram.edges, { id: '__candidate__', ...candidate }] };
+  const afterAdj = lazyAdjacency(after);
+  for (const r of rules) {
+    if (r.type !== 'forbid') continue;
+    for (const e of diagram.edges) {
+      if (e.relationId !== r.relation) continue;
+      // Already broken without the candidate: someone else's doing. Blocking on
+      // it would strand an invalid diagram, unable to be edited back to valid.
+      if (forbidHits(r, diagram, e.source, e.target, relations, adj)) continue;
+      if (!forbidHits(r, after, e.source, e.target, relations, afterAdj)) continue;
+      const a = nodesById.get(e.source)?.label ?? e.source;
+      const b = nodesById.get(e.target)?.label ?? e.target;
+      return `Nối xong thì “${a}” và “${b}” thành “${forbidWhatName(r, relations)}”, mà hai khối này đã có liên kết “${relName(r.relation)}”.`;
     }
   }
 

@@ -20,6 +20,8 @@ interface EdgeFormModalProps {
   relations: Relation[];
   /** Why a given relation may not join this pair; keyed by relation id. */
   blockedByRule: (relationId: string) => string | null;
+  /** Names of the links these two already have, either way round. */
+  existingLinks: string[];
   onSubmit: (values: EdgeFormValues) => void;
   onCancel: () => void;
 }
@@ -32,12 +34,16 @@ interface EdgeFormModalProps {
  * DESIGN.md §7), so an edge carries only which relation it is and an optional
  * label.
  */
-export function EdgeFormModal({ open, pair, relations, blockedByRule, onSubmit, onCancel }: EdgeFormModalProps) {
-  const [form] = Form.useForm<EdgeFormValues>();
-  // Tracked in state, not `Form.useWatch`: with `destroyOnHidden` the form
-  // unmounts on close and useWatch then warns that it has no Form (see the same
-  // note in relation-types/RelationFormModal). The value is also needed OUTSIDE
-  // the form, for the OK button's disabled state.
+export function EdgeFormModal({ open, pair, relations, blockedByRule, existingLinks, onSubmit, onCancel }: EdgeFormModalProps) {
+  const [form] = Form.useForm<{ label: string }>();
+
+  // The chosen relation is plain state driving a CONTROLLED Select — not a
+  // Form.Item. It used to live in the form, and that is exactly what let the box
+  // and the OK button disagree: `form` comes from `useForm()` on a component
+  // that never unmounts, so its store survived every close, and re-init merged
+  // `initialValues` UNDER the leftover (@rc-component/form: `merge(iv, store)`).
+  // The box then showed the PREVIOUS link's relation while the button judged
+  // this state and stayed enabled. One source of truth = they cannot drift.
   const [relationId, setRelationId] = useState<string>();
 
   // Only base relations can be drawn; derived ones are computed.
@@ -57,8 +63,6 @@ export function EdgeFormModal({ open, pair, relations, blockedByRule, onSubmit, 
     [baseRelations, blockedByRule],
   );
 
-  // Default to the first relation the rules actually allow, the way the demo
-  // falls back rather than opening on an unusable choice.
   // `blockedByRule` is rebuilt by the page every render; a ref keeps the memo
   // below from re-running on every one of them.
   const blockedRef = useRef(blockedByRule);
@@ -66,23 +70,24 @@ export function EdgeFormModal({ open, pair, relations, blockedByRule, onSubmit, 
 
   /**
    * Default to the first relation the rules allow, the way the demo falls back
-   * rather than opening on an unusable choice.
-   *
-   * Fed through `initialValues` + a keyed remount rather than a
-   * `form.setFieldsValue` effect: with `destroyOnHidden` the form is not mounted
-   * yet when such an effect fires, and antd then warns that the useForm instance
-   * is "not connected to any Form element".
+   * rather than opening on an unusable choice. Recomputed per pair; a `useEffect`
+   * then mirrors it into state so each new link opens fresh, with no dependence
+   * on any form store surviving (or being cleared) across opens.
    */
   const initialRelationId = useMemo(() => {
     if (!open || !pair) return undefined;
     return (baseRelations.find((r) => !blockedRef.current(r.id)) ?? baseRelations[0])?.id;
   }, [open, pair, baseRelations]);
 
-  // Mirrors the field into state for the OK button, which lives outside <Form>.
   useEffect(() => setRelationId(initialRelationId), [initialRelationId]);
 
   const blockedReason = relationId ? blockedByRule(relationId) : null;
   const allBlocked = baseRelations.length > 0 && baseRelations.every((r) => blockedByRule(r.id));
+
+  const submit = () => {
+    if (!relationId || blockedReason) return;
+    onSubmit({ relationId, label: form.getFieldValue('label') });
+  };
 
   return (
     <Modal
@@ -90,8 +95,8 @@ export function EdgeFormModal({ open, pair, relations, blockedByRule, onSubmit, 
       title="Tạo liên kết"
       okText="Nối"
       cancelText="Huỷ"
-      okButtonProps={{ disabled: Boolean(blockedReason) || baseRelations.length === 0 }}
-      onOk={() => form.submit()}
+      okButtonProps={{ disabled: Boolean(blockedReason) || !relationId }}
+      onOk={submit}
       onCancel={onCancel}
       destroyOnHidden
     >
@@ -102,6 +107,22 @@ export function EdgeFormModal({ open, pair, relations, blockedByRule, onSubmit, 
         </Typography.Paragraph>
       )}
 
+      {/* A pair that is already joined is the one case where the pre-selected
+          relation misleads: the box opens on the first relation the rules allow,
+          which is easy to read as "this pair is free" and confirm by reflex.
+          Saying what is already there costs a line and states a FACT — no rule
+          decides whether a second link is wanted here, so nobody but the person
+          drawing it can. */}
+      {existingLinks.length > 0 && (
+        <Alert
+          className="mb-4"
+          type="info"
+          showIcon
+          message={`Hai khối này đã có: ${existingLinks.join(', ')}`}
+          description="Nối tiếp là thêm một liên kết NỮA giữa chúng, không thay cái đang có."
+        />
+      )}
+
       {baseRelations.length === 0 ? (
         <Alert
           type="warning"
@@ -110,21 +131,17 @@ export function EdgeFormModal({ open, pair, relations, blockedByRule, onSubmit, 
           description="Thêm quan hệ ở màn Loại sơ đồ → tab Quan hệ trước khi nối khối."
         />
       ) : (
-        <Form<EdgeFormValues>
-          // Remount per pair so `initialValues` is re-applied for each new link.
-          key={pair ? `${pair.source}_${pair.target}` : 'none'}
-          form={form}
-          layout="vertical"
-          initialValues={{ relationId: initialRelationId, label: '' }}
-          onFinish={onSubmit}
-          onValuesChange={(changed: Partial<EdgeFormValues>) => {
-            if (changed.relationId !== undefined) setRelationId(changed.relationId);
-          }}
-          requiredMark={false}
-        >
-          <Form.Item name="relationId" label="Loại quan hệ" rules={[{ required: true, message: 'Chọn loại quan hệ' }]}>
-            <Select options={options} />
-          </Form.Item>
+        <>
+          <div className="mb-4">
+            <div className="mb-1.5 text-sm">Loại quan hệ</div>
+            <Select
+              className="w-full"
+              value={relationId}
+              options={options}
+              onChange={setRelationId}
+              placeholder="Chọn loại quan hệ"
+            />
+          </div>
 
           {allBlocked && (
             <Alert
@@ -139,10 +156,24 @@ export function EdgeFormModal({ open, pair, relations, blockedByRule, onSubmit, 
             <Alert className="mb-4" type="error" showIcon message={blockedReason} />
           )}
 
-          <Form.Item name="label" label="Nhãn (tuỳ chọn)" extra="Bỏ trống thì canvas hiển thị tên loại quan hệ.">
-            <Input placeholder="VD: vợ chồng, bạn thân…" />
-          </Form.Item>
-        </Form>
+          <Form<{ label: string }>
+            // Remount per pair so a label typed on the previous link never leaks
+            // into this one. `clearOnDestroy` finishes the job: the shared form
+            // store outlives a keyed remount, so the wipe-on-unmount is what
+            // actually resets `label` between links.
+            key={pair ? `${pair.source}_${pair.target}` : 'none'}
+            form={form}
+            layout="vertical"
+            clearOnDestroy
+            initialValues={{ label: '' }}
+            onFinish={submit}
+            requiredMark={false}
+          >
+            <Form.Item name="label" label="Nhãn (tuỳ chọn)" extra="Bỏ trống thì canvas hiển thị tên loại quan hệ.">
+              <Input placeholder="VD: vợ chồng, bạn thân…" onPressEnter={submit} />
+            </Form.Item>
+          </Form>
+        </>
       )}
     </Modal>
   );

@@ -20,6 +20,7 @@ interface FormShape {
   name: string;
   kind: 'base' | 'derived';
   role: 'primary' | 'secondary';
+  symmetric: boolean;
   pattern: RelationStep[];
   exclude: ('parents' | 'children' | 'siblings')[];
   style: {
@@ -36,6 +37,7 @@ const DEFAULTS: FormShape = {
   name: '',
   kind: 'base',
   role: 'secondary',
+  symmetric: false,
   pattern: [],
   exclude: [],
   style: { line: 'solid', arrow: 'triangle', curve: 'straight', color: '#5b647e', width: 2, animated: false },
@@ -52,7 +54,7 @@ function toFormShape(r: Relation): FormShape {
     const exclude = (r.exclude ?? []).filter((e): e is 'parents' | 'children' | 'siblings' => e !== 'self');
     return { ...base, pattern: [...r.pattern], exclude };
   }
-  return { ...base, role: r.role };
+  return { ...base, role: r.role, symmetric: Boolean(r.symmetric) };
 }
 
 export function RelationFormModal({ open, initialValue, relations, confirmLoading, onSubmit, onCancel }: RelationFormModalProps) {
@@ -71,7 +73,7 @@ export function RelationFormModal({ open, initialValue, relations, confirmLoadin
     if (v.kind === 'derived') {
       onSubmit({ name: v.name, kind: 'derived', pattern: v.pattern, exclude: v.exclude, style: v.style, visibleByDefault: false });
     } else {
-      onSubmit({ name: v.name, kind: 'base', role: v.role, style: v.style });
+      onSubmit({ name: v.name, kind: 'base', role: v.role, symmetric: v.symmetric, style: v.style });
     }
   };
 
@@ -119,9 +121,19 @@ export function RelationFormModal({ open, initialValue, relations, confirmLoadin
                 </Form.Item>
               </>
             ) : (
-              <Form.Item name="role" label="Vai trò">
-                <Select options={ROLE_OPTIONS} />
-              </Form.Item>
+              <>
+                <Form.Item name="role" label="Vai trò">
+                  <Select options={ROLE_OPTIONS} />
+                </Form.Item>
+                <Form.Item
+                  name="symmetric"
+                  label="Hai chiều"
+                  valuePropName="checked"
+                  extra="Bật khi A–B và B–A là CÙNG một liên kết (vợ chồng, bạn bè, phối hợp) — vẽ lại chiều ngược sẽ bị chặn vì trùng. Tắt khi chiều có ý nghĩa và chiều ngược là liên kết khác (quy trình quay lại bước trước)."
+                >
+                  <Switch />
+                </Form.Item>
+              </>
             )
           }
         </Form.Item>

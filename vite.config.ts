@@ -14,6 +14,7 @@ type ViteConfigWithTest = UserConfig & {
     environment?: string;
     setupFiles?: string[];
     css?: boolean;
+    exclude?: string[];
   };
 };
 
@@ -42,6 +43,12 @@ const config: ViteConfigWithTest = {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: true,
+    // `.claude/worktrees/*` are git worktrees an agent may leave behind, each a
+    // full copy of `src` pinned to an older commit. Vitest's default exclude does
+    // not know about them, so a plain `npm run test` was running every suite two
+    // or three times over — against stale code, which can only ever fail for
+    // reasons that no longer exist.
+    exclude: ['**/node_modules/**', '**/dist/**', '.claude/**'],
   },
 };
 

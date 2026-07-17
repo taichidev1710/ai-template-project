@@ -132,7 +132,7 @@ vốn từ vựng của loại đó.
 2. ✅ **Loại sơ đồ**: `features/diagram-types` (danh sách + editor có tab).
 3. ✅ **Workspace 3 tab** trong Loại sơ đồ: **Khối** (`block-types`), **Quan hệ**
    (`relation-types` — nền chính/phụ + suy ra đa-quan-hệ với builder câu dẫn + sơ đồ
-   minh hoạ), **Bộ luật** (`rule-sets` — rule-builder 5 loại, ngôn từ trung lập).
+   minh hoạ), **Bộ luật** (`rule-sets` — rule-builder 6 loại, ngôn từ trung lập).
 4. ✅ **Sơ đồ** (`features/diagrams`): danh sách CRUD (Bảng ⇄ Lưới + lọc theo loại),
    chọn 1 loại rồi **tick nhiều bộ luật** — nhưng chỉ trong vốn từ vựng của loại đó
    (đúng mục 7: không stack chéo bộ luật của 2 loại, vì rule tham chiếu id khối/quan
@@ -240,9 +240,10 @@ vốn từ vựng của loại đó.
 
 ## 9. Điểm mở còn cần chốt về sau
 
-- Danh sách `DerivedRelation` mặc định: hiện seed sẵn ông bà / cháu / anh chị em /
-  cô-chú cho gia đình. Có nên cho user **tự dựng pattern** qua UI hay chỉ chọn từ
-  thư viện dựng sẵn? (đề xuất: thư viện trước, builder sau).
+- ✅ Danh sách `DerivedRelation` mặc định + **user tự dựng pattern**: đã có
+  `PatternBuilder` (builder câu dẫn + sơ đồ minh hoạ) ở tab Quan hệ, và luật `forbid`
+  dùng lại chính nó cho lối "đường đi tự dựng". Gia đình seed sẵn ông bà / cháu /
+  anh chị em / cô-chú / **anh chị em họ** / con dâu-rể.
 - ✅ Suy ra đi trên **nhiều quan hệ**: mỗi bước là `RelationStep = {relationId, dir}`
   với `dir ∈ {up, down, both}` — khai báo được cả họ hàng bên vợ/chồng (con dâu/rể,
   thông gia…). `both` dùng cho quan hệ hai chiều (vợ chồng).

@@ -117,7 +117,7 @@ export function isDerivedRelation(r: Relation): r is DerivedRelation {
 }
 
 /* ============================================================
-   Rules — the constraint layer (5 types, matching the demo engine)
+   Rules — the constraint layer (6 types: the demo's 5, plus `forbid`)
    ============================================================ */
 
 export type RuleType = 'require' | 'limit' | 'ends' | 'chain' | 'same' | 'forbid';

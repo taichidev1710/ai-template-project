@@ -1,7 +1,7 @@
 import type { Paginated } from '@/shared/api';
-import { defaultVisibility, type Diagram } from '@/domain/diagram';
+import { defaultVisibility, generateSample, type Diagram } from '@/domain/diagram';
 import { delay, genId, getTypeOrThrow, paginate, tables } from '@/shared/diagram-db/db';
-import type { DiagramContentInput, DiagramInput, DiagramsListParams } from '../types';
+import type { DiagramContentInput, DiagramCreateInput, DiagramInput, DiagramsListParams } from '../types';
 
 function findOrThrow(id: string): Diagram {
   const found = tables.diagrams.find((d) => d.id === id);
@@ -34,16 +34,22 @@ export const diagramsApi = {
     return findOrThrow(id);
   },
 
-  create: async (input: DiagramInput): Promise<Diagram> => {
+  create: async (input: DiagramCreateInput): Promise<Diagram> => {
     await delay();
     const now = new Date().toISOString();
+    const ruleSetIds = scopedRuleSetIds(input.templateId, input.ruleSetIds);
+    // Seeded against the ticked sets only, so the sample obeys exactly the rules
+    // this diagram will be judged by.
+    const content = input.withSample
+      ? generateSample(getTypeOrThrow(input.templateId), ruleSetIds)
+      : { nodes: [], edges: [] };
     const created: Diagram = {
       id: genId('dg'),
       name: input.name,
       templateId: input.templateId,
-      nodes: [],
-      edges: [],
-      ruleSetIds: scopedRuleSetIds(input.templateId, input.ruleSetIds),
+      nodes: content.nodes,
+      edges: content.edges,
+      ruleSetIds,
       localRules: [],
       visibility: defaultVisibility(),
       createdAt: now,

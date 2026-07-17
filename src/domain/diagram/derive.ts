@@ -83,6 +83,25 @@ function walk(startId: string, pattern: RelationStep[], byRel: Map<string, Adjac
   return frontier;
 }
 
+/**
+ * Whether walking `pattern` from `fromId` arrives at `toId` — "is B my sister?"
+ * asked of the same engine that draws derived relations. The `forbid` rule is
+ * built on this, which is why a forbid rule and a derived relation speak the
+ * one vocabulary: if you can DRAW a relationship, you can BAN marrying it.
+ */
+export function patternConnects(
+  nodes: DiagramNode[],
+  edges: DiagramEdge[],
+  fromId: string,
+  toId: string,
+  pattern: RelationStep[],
+  byRel?: Map<string, Adjacency>,
+): boolean {
+  if (pattern.length === 0) return false;
+  const adjByRel = byRel ?? buildAdjacencyByRelation(nodes, edges);
+  return walk(fromId, pattern, adjByRel).has(toId);
+}
+
 /** Siblings of `id` over one relation (shared parent), for the `siblings` exclusion. */
 function siblingsOf(id: string, adj: Adjacency): Set<string> {
   const out = new Set<string>();

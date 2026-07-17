@@ -11,7 +11,7 @@ import { DiagramsGrid } from '../components/DiagramsGrid';
 import { DiagramDetailModal } from '../components/DiagramDetailModal';
 import { DiagramFormModal } from '../components/DiagramFormModal';
 import { useDiagrams, useDiagramMutations } from '../hooks/use-diagrams';
-import type { Diagram, DiagramInput, DiagramsViewMode } from '../types';
+import type { Diagram, DiagramCreateInput, DiagramsViewMode } from '../types';
 
 /** Container page: owns list/filter/view/modal state and wires hooks to components. */
 export function DiagramsPage() {
@@ -47,10 +47,11 @@ export function DiagramsPage() {
     setModalOpen(true);
   };
 
-  const handleSubmit = (values: DiagramInput) => {
+  const handleSubmit = (values: DiagramCreateInput) => {
     const onDone = () => setModalOpen(false);
     if (editing) update.mutate({ id: editing.id, input: values }, { onSuccess: onDone });
-    else create.mutate(values, { onSuccess: onDone });
+    // Seeded with sample data there is something to look at, so go straight to it.
+    else create.mutate(values, { onSuccess: (created) => { onDone(); if (values.withSample) openCanvas(created); } });
   };
 
   const confirmDelete = (item: Diagram) => {

@@ -14,6 +14,7 @@ const RULE_LABELS: Record<Violation['ruleType'], string> = {
   ends: 'đầu nối',
   chain: 'chuỗi tầng',
   same: 'cùng loại',
+  forbid: 'cấm nối',
 };
 
 /** The "Vi phạm" tab — live output of the rule engine. */

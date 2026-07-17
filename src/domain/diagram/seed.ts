@@ -40,16 +40,28 @@ const FAMILY_RELATIONS: Relation[] = [
   { id: 'der_grandchild', name: 'Cháu (suy ra)', kind: 'derived', pattern: [down('rel_parent'), down('rel_parent')], style: faint('#d97b6c') },
   { id: 'der_sibling', name: 'Anh chị em (suy ra)', kind: 'derived', pattern: [up('rel_parent'), down('rel_parent')], exclude: ['self'], style: faint('#5fb99a') },
   { id: 'der_uncle', name: 'Cô/dì/chú/bác (suy ra)', kind: 'derived', pattern: [up('rel_parent'), up('rel_parent'), down('rel_parent')], exclude: ['self', 'parents'], style: faint('#7d8cc4') },
+  // Khai báo Ở ĐÂY, trong vốn từ vựng — không nhét pattern vào trong luật. Nhờ vậy
+  // nó vừa BẬT/HIỆN được trên canvas, vừa là thứ luật cấm có thể tham chiếu tới.
+  { id: 'der_cousin', name: 'Anh chị em họ (suy ra)', kind: 'derived', pattern: [up('rel_parent'), up('rel_parent'), down('rel_parent'), down('rel_parent')], exclude: ['self', 'siblings'], style: faint('#8f9bb3') },
   { id: 'der_child_in_law', name: 'Con dâu/rể (suy ra)', kind: 'derived', pattern: [down('rel_parent'), both('rel_spouse')], exclude: ['self'], style: faint('#c46ba0') },
 ];
 const RS_FAMILY: RuleSet = {
   id: 'rs_family', name: 'Gia đình chuẩn', icon: '👪', builtin: true,
-  description: 'Mỗi khối tối đa 2 liên kết cha mẹ và (trừ “Chưa xác định”) cần đủ 2; vợ chồng tối đa 1 và cùng loại.',
+  description: 'Mỗi khối tối đa 2 liên kết cha mẹ và (trừ “Chưa xác định”) cần đủ 2; vợ chồng tối đa 1, cùng loại, và không phải họ hàng trong phạm vi ba đời.',
   rules: [
     { id: 'rf_limit_parent', type: 'limit', blockType: '*', relation: 'rel_parent', dir: 'in', max: 2 },
     { id: 'rf_require_parent', type: 'require', blockType: 'bt_person', relation: 'rel_parent', dir: 'in', min: 2 },
     { id: 'rf_limit_spouse', type: 'limit', blockType: '*', relation: 'rel_spouse', dir: 'any', max: 1 },
     { id: 'rf_same_spouse', type: 'same', relation: 'rel_spouse', blockTypes: ['bt_person'] },
+    // Luật HN&GĐ 2014 đ.5.2.d — cấm kết hôn trong phạm vi ba đời. Mỗi vế chỉ
+    // TRỎ TỚI một quan hệ đã khai báo ở trên, không tự mô tả lại đường đi: chưa
+    // có “Anh chị em họ (suy ra)” trong danh mục thì không có luật cấm nó. Đời 4
+    // không có quan hệ nào ⇒ không bị cấm, đúng luật. Nới/siết = sửa DỮ LIỆU.
+    { id: 'rf_no_lineal', type: 'forbid', relation: 'rel_spouse', when: 'rel_parent' },
+    { id: 'rf_no_grandlineal', type: 'forbid', relation: 'rel_spouse', when: 'der_grandparent' },
+    { id: 'rf_no_sibling', type: 'forbid', relation: 'rel_spouse', when: 'der_sibling' },
+    { id: 'rf_no_uncle', type: 'forbid', relation: 'rel_spouse', when: 'der_uncle' },
+    { id: 'rf_no_cousin', type: 'forbid', relation: 'rel_spouse', when: 'der_cousin' },
   ],
 };
 
@@ -94,11 +106,17 @@ const SCHOOL_RELATIONS: Relation[] = [
 ];
 const RS_SCHOOL: RuleSet = {
   id: 'rs_school', name: 'Trường học chuẩn', icon: '🏫', builtin: true,
-  description: 'Lớp trực thuộc trường; mỗi lớp đúng 1 giáo viên chủ nhiệm; học sinh học đúng 1 lớp.',
+  description: 'Lớp trực thuộc trường; mỗi lớp đúng 1 giáo viên chủ nhiệm. Học sinh học được nhiều lớp (Văn, Toán, nghề…).',
   rules: [
     { id: 'rc_ends', type: 'ends', relation: 'rel_belongs', from: ['bt_school', 'bt_class'], to: ['bt_class', 'bt_student'] },
     { id: 'rc_teach_limit', type: 'limit', blockType: 'bt_class', relation: 'rel_teach', dir: 'in', max: 1 },
-    { id: 'rc_student_limit', type: 'limit', blockType: 'bt_student', relation: 'rel_belongs', dir: 'out', max: 1 },
+    // Từng có `rc_student_limit`: limit bt_student / rel_belongs / dir 'out' / max 1,
+    // mô tả là “học sinh học đúng 1 lớp”. Luật CHẾT: `rc_ends` chỉ cho Trường/Lớp làm
+    // nguồn, nên học sinh luôn ở đầu ĐÍCH và số liên kết ĐI RA của nó vĩnh viễn = 0
+    // ⇒ 0 ≤ 1 ⇒ không bao giờ chạy (học sinh thuộc 2 lớp vẫn báo 0 vi phạm).
+    // Bỏ hẳn thay vì đổi sang 'in': “Lớp” ở đây là lớp môn học, học sinh học nhiều
+    // lớp là đúng. Muốn ràng buộc lớp chủ nhiệm thì khai báo quan hệ riêng cho nó
+    // rồi mới thêm luật — không có quan hệ thì không có luật.
   ],
 };
 

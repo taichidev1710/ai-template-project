@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Checkbox, Form, Input, Modal, Select, Space, Tag, Typography } from 'antd';
 import type { DiagramTemplate } from '@/features/diagram-types';
-import type { Diagram, DiagramInput } from '../types';
+import type { Diagram, DiagramCreateInput } from '../types';
 
 interface DiagramFormModalProps {
   open: boolean;
   initialValue?: Diagram | null;
   types: DiagramTemplate[];
   confirmLoading?: boolean;
-  onSubmit: (values: DiagramInput) => void;
+  onSubmit: (values: DiagramCreateInput) => void;
   onCancel: () => void;
 }
 
-const DEFAULTS = { name: '', templateId: undefined, ruleSetIds: [] };
+const DEFAULTS = { name: '', templateId: undefined, ruleSetIds: [], withSample: false };
 
 /**
  * Create/edit a Sơ đồ: name + the Loại sơ đồ that owns its vocabulary + which of
@@ -20,7 +20,7 @@ const DEFAULTS = { name: '', templateId: undefined, ruleSetIds: [] };
  * so a diagram can never apply rules written against another type's blocks.
  */
 export function DiagramFormModal({ open, initialValue, types, confirmLoading, onSubmit, onCancel }: DiagramFormModalProps) {
-  const [form] = Form.useForm<DiagramInput>();
+  const [form] = Form.useForm<DiagramCreateInput>();
   const isEdit = Boolean(initialValue);
 
   // State, not `Form.useWatch`: with `destroyOnHidden` the form unmounts on
@@ -67,7 +67,7 @@ export function DiagramFormModal({ open, initialValue, types, confirmLoading, on
       onCancel={onCancel}
       destroyOnHidden
     >
-      <Form<DiagramInput> form={form} layout="vertical" onFinish={onSubmit} requiredMark={false}>
+      <Form<DiagramCreateInput> form={form} layout="vertical" onFinish={onSubmit} requiredMark={false}>
         <Form.Item name="name" label="Tên" rules={[{ required: true, message: 'Nhập tên sơ đồ' }]}>
           <Input placeholder="VD: Sơ đồ phòng Kỹ thuật" />
         </Form.Item>
@@ -121,6 +121,18 @@ export function DiagramFormModal({ open, initialValue, types, confirmLoading, on
             </Space>
           </Checkbox.Group>
         </Form.Item>
+
+        {/* Only on create: sample data seeds the canvas, and editing must never
+            touch what the canvas owns. */}
+        {!isEdit && (
+          <Form.Item
+            name="withSample"
+            valuePropName="checked"
+            extra="Dựng sẵn khối và liên kết thoả mọi luật đã tick, đủ để thử canvas, suy ra, lọc và tìm kiếm. Vẫn sửa hay xoá được như thường."
+          >
+            <Checkbox disabled={!selectedType}>Tạo kèm dữ liệu mẫu</Checkbox>
+          </Form.Item>
+        )}
       </Form>
     </Modal>
   );

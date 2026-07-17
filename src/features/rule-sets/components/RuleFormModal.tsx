@@ -1,9 +1,10 @@
-import { Form, InputNumber, Modal, Select, Typography } from 'antd';
+import { Form, InputNumber, Modal, Segmented, Select, Typography } from 'antd';
 import { useEffect } from 'react';
 import type { BlockType, Relation, RuleType } from '@/domain/diagram';
 import { isBaseRelation } from '@/domain/diagram';
+import { PatternBuilder } from '@/features/relation-types';
 import { DIRECTION_OPTIONS, RULE_TYPE_OPTIONS } from '../types';
-import type { Rule, RuleInput } from '../types';
+import type { ForbidSource, RelationStep, Rule, RuleInput } from '../types';
 
 interface RuleFormModalProps {
   open: boolean;
@@ -25,6 +26,10 @@ interface RuleFormShape {
   to: string[];
   order: string[];
   blockTypes: string[];
+  /** forbid: name a declared relation, or spell the hops out — `forbidSource` picks. */
+  forbidSource: ForbidSource;
+  when: string;
+  pattern: RelationStep[];
 }
 
 const BASE_DEFAULTS: Omit<RuleFormShape, 'relation'> = {
@@ -36,6 +41,9 @@ const BASE_DEFAULTS: Omit<RuleFormShape, 'relation'> = {
   to: [],
   order: [],
   blockTypes: [],
+  forbidSource: 'when',
+  when: '',
+  pattern: [],
 };
 
 function toFormShape(r: Rule): RuleFormShape {
@@ -51,6 +59,13 @@ function toFormShape(r: Rule): RuleFormShape {
       return { ...base, order: [...r.order] };
     case 'same':
       return { ...base, blockTypes: [...(r.blockTypes ?? [])] };
+    case 'forbid':
+      return {
+        ...base,
+        forbidSource: r.when ? 'when' : 'pattern',
+        when: r.when ?? '',
+        pattern: (r.pattern ?? []).map((s) => ({ ...s })),
+      };
   }
 }
 
@@ -62,6 +77,9 @@ export function RuleFormModal({ open, initialValue, blockTypes, relations, confi
   const blockOptions = blockTypes.map((b) => ({ value: b.id, label: b.name }));
   const blockOptionsWithAny = [{ value: '*', label: 'Mọi khối' }, ...blockOptions];
   const relationOptions = baseRelations.map((r) => ({ value: r.id, label: r.name }));
+  // A forbid rule's `when` may name a DERIVED relation ("Anh chị em (suy ra)") —
+  // the relationship is real even though no one drew an edge for it.
+  const allRelationOptions = relations.map((r) => ({ value: r.id, label: r.name }));
 
   const defaults: RuleFormShape = { ...BASE_DEFAULTS, relation: baseRelations[0]?.id ?? '' };
 
@@ -82,6 +100,14 @@ export function RuleFormModal({ open, initialValue, blockTypes, relations, confi
         return onSubmit({ type: 'chain', relation: v.relation, order: v.order });
       case 'same':
         return onSubmit({ type: 'same', relation: v.relation, blockTypes: v.blockTypes });
+      case 'forbid':
+        // Exactly one of the two — carrying both would leave a stale path behind
+        // a named relation, and the engine would quietly ignore it.
+        return onSubmit(
+          v.forbidSource === 'when'
+            ? { type: 'forbid', relation: v.relation, when: v.when }
+            : { type: 'forbid', relation: v.relation, pattern: v.pattern },
+        );
     }
   };
 
@@ -114,8 +140,18 @@ export function RuleFormModal({ open, initialValue, blockTypes, relations, confi
           }}
         </Form.Item>
 
-        <Form.Item name="relation" label="Quan hệ (R)" rules={[{ required: true, message: 'Chọn quan hệ' }]}>
-          <Select options={relationOptions} placeholder="Chọn quan hệ nền" notFoundContent="Chưa có quan hệ nền — tạo ở tab Quan hệ" />
+        {/* For every other type this is the relation being constrained; for
+            `forbid` it is the one being banned, so the label has to say so. */}
+        <Form.Item noStyle shouldUpdate={(a, b) => a.type !== b.type}>
+          {({ getFieldValue }) => (
+            <Form.Item
+              name="relation"
+              label={getFieldValue('type') === 'forbid' ? 'Quan hệ bị cấm (R)' : 'Quan hệ (R)'}
+              rules={[{ required: true, message: 'Chọn quan hệ' }]}
+            >
+              <Select options={relationOptions} placeholder="Chọn quan hệ nền" notFoundContent="Chưa có quan hệ nền — tạo ở tab Quan hệ" />
+            </Form.Item>
+          )}
         </Form.Item>
 
         {/* shouldUpdate (not useWatch) — avoids the destroyOnHidden Modal close bug. */}
@@ -154,6 +190,45 @@ export function RuleFormModal({ open, initialValue, blockTypes, relations, confi
                 <Form.Item name="order" label="Thứ tự các loại khối (chọn lần lượt A → B → C)" rules={[{ required: true, message: 'Chọn thứ tự khối' }]}>
                   <Select mode="multiple" options={blockOptions} placeholder="Chọn lần lượt theo thứ tự" />
                 </Form.Item>
+              );
+            }
+            if (type === 'forbid') {
+              return (
+                <>
+                  <Form.Item name="forbidSource" label="Nếu 2 khối đã có…">
+                    <Segmented<ForbidSource>
+                      options={[
+                        { value: 'when', label: 'Quan hệ có sẵn' },
+                        { value: 'pattern', label: 'Đường đi tự dựng' },
+                      ]}
+                    />
+                  </Form.Item>
+                  <Form.Item noStyle shouldUpdate={(a, b) => a.forbidSource !== b.forbidSource}>
+                    {({ getFieldValue }) =>
+                      getFieldValue('forbidSource') === 'when' ? (
+                        <Form.Item
+                          name="when"
+                          rules={[{ required: true, message: 'Chọn quan hệ' }]}
+                          extra="Nên dùng cách này: quan hệ đã khai báo thì bật lên xem được trên canvas và dùng lại được ở luật khác."
+                        >
+                          <Select
+                            options={allRelationOptions}
+                            placeholder="Chọn quan hệ đã có (kể cả suy ra)"
+                            notFoundContent="Chưa có quan hệ nào — tạo ở tab Quan hệ"
+                          />
+                        </Form.Item>
+                      ) : (
+                        <Form.Item
+                          name="pattern"
+                          rules={[{ required: true, message: 'Thêm ít nhất 1 bước' }]}
+                          extra="Dùng khi chưa có quan hệ nào diễn đạt được. Lưu ý: đường đi này chỉ luật biết — không vẽ lên canvas được. Nếu dùng lại ở nhiều luật thì nên khai báo hẳn thành quan hệ suy ra."
+                        >
+                          <PatternBuilder baseRelations={baseRelations} />
+                        </Form.Item>
+                      )
+                    }
+                  </Form.Item>
+                </>
               );
             }
             // same

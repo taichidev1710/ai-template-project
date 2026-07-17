@@ -30,6 +30,15 @@ interface DiagramCanvasProps {
   violations: Violation[];
   /** Node awaiting its link partner, if a link is being drawn. */
   linkSourceId: string | null;
+  /**
+   * Bump to re-frame the graph. A counter, not a boolean, so two fits in a row
+   * are two distinct requests. Fitting is asked for HERE rather than through the
+   * `fit()` handle because cytoscape is rebuilt whenever this component
+   * remounts (StrictMode does exactly that in dev): a fit driven from the page
+   * would land on the instance that is about to be thrown away, and the
+   * replacement would come up unframed.
+   */
+  fitSignal?: number;
   onNodeMove: (id: string, pos: { x: number; y: number }) => void;
   onNodeTap: (id: string) => void;
   onNodeDoubleTap: (id: string) => void;
@@ -50,6 +59,7 @@ export function DiagramCanvas({
   relations,
   violations,
   linkSourceId,
+  fitSignal = 0,
   onNodeMove,
   onNodeTap,
   onNodeDoubleTap,
@@ -220,6 +230,14 @@ export function DiagramCanvas({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [structureKey]);
+
+  // Frame the graph on request. Declared AFTER the sync above so that on any
+  // pass — first mount, or a remount — the elements are already in place by the
+  // time this runs. Deliberately NOT keyed on `structureKey`: adding one block
+  // must not yank the viewport out from under the person who placed it.
+  useEffect(() => {
+    if (fitSignal > 0) cyRef.current?.fit(undefined, 48);
+  }, [fitSignal]);
 
   /**
    * Marching ants: walk `line-dash-offset` on every animated edge each frame.

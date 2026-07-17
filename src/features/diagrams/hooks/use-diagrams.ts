@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { NormalizedError } from '@/shared/api';
 import { diagramsApi } from '../api/diagrams-api';
 import { diagramsKeys } from '../api/diagrams-keys';
-import type { DiagramContentInput, DiagramInput, DiagramsListParams } from '../types';
+import type { DiagramContentInput, DiagramCreateInput, DiagramInput, DiagramsListParams } from '../types';
 
 /** Read list. Server state → TanStack Query. */
 export function useDiagrams(params: DiagramsListParams) {
@@ -33,7 +33,7 @@ export function useDiagramMutations() {
   const onError = (e: NormalizedError) => message.error(e.message || t('error.generic'));
 
   const create = useMutation({
-    mutationFn: (input: DiagramInput) => diagramsApi.create(input),
+    mutationFn: (input: DiagramCreateInput) => diagramsApi.create(input),
     onSuccess: () => {
       void invalidate();
       message.success(t('action.save'));

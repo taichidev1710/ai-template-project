@@ -6,6 +6,7 @@ import {
   NodeIndexOutlined,
   ExpandOutlined,
   ShrinkOutlined,
+  ExperimentOutlined,
 } from '@ant-design/icons';
 import type { BlockType, DiagramNode } from '@/domain/diagram';
 import { CanvasSearch } from './CanvasSearch';
@@ -31,6 +32,8 @@ interface CanvasToolbarProps {
   onFindNode: (nodeId: string) => void;
   onFit: () => void;
   onSave: () => void;
+  /** Replace the canvas with generated data that satisfies the applied rules. */
+  onFillSample: () => void;
 }
 
 /** Toolbar for the canvas: add blocks, draw links, delete, fit, save. */
@@ -53,6 +56,7 @@ export function CanvasToolbar({
   onFindNode,
   onFit,
   onSave,
+  onFillSample,
 }: CanvasToolbarProps) {
   const linkHint = !linking
     ? 'Bật chế độ nối, rồi chạm khối nguồn và khối đích'
@@ -91,6 +95,12 @@ export function CanvasToolbar({
         <Button danger icon={<DeleteOutlined />} onClick={onDeleteSelected} disabled={!selectedId}>
           Xoá
         </Button>
+
+        <Tooltip title="Dựng khối và liên kết mẫu thoả mọi luật đang áp, đủ để thử mọi chức năng">
+          <Button icon={<ExperimentOutlined />} onClick={onFillSample}>
+            Dữ liệu mẫu
+          </Button>
+        </Tooltip>
       </Space>
 
       <Space wrap size={8}>

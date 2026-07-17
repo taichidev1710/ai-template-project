@@ -120,7 +120,7 @@ export function isDerivedRelation(r: Relation): r is DerivedRelation {
    Rules — the constraint layer (5 types, matching the demo engine)
    ============================================================ */
 
-export type RuleType = 'require' | 'limit' | 'ends' | 'chain' | 'same';
+export type RuleType = 'require' | 'limit' | 'ends' | 'chain' | 'same' | 'forbid';
 export type Direction = 'in' | 'out' | 'any';
 
 /** `'*'` targets every block type. */
@@ -176,11 +176,55 @@ export interface SameRule {
   blockTypes?: string[]; // if set, restrict to these block types
 }
 
-export type Rule = RequireRule | LimitRule | EndsRule | ChainRule | SameRule;
+/**
+ * `relation` may NOT join two blocks that `when` ALREADY connects — "no marrying
+ * anyone you are a sibling of".
+ *
+ * Two things make this rule unlike the other five:
+ *
+ *  1. It reads the GRAPH, not block types. The others can say "Người may marry
+ *     Người"; none can say "…but not your own sister", because being someone's
+ *     sister is a PATH, not a type.
+ *  2. It FORBIDS. ends/chain/same are an OR allow-list, so folding this in with
+ *     them would let an edge through the moment it satisfied `same` alone. It
+ *     runs separately, as a veto over whatever the allow-list permitted.
+ *
+ * The relationship is named ONE of two ways, and `when` is the one to reach for:
+ *
+ *  - `when` NAMES a relation of this same Loại sơ đồ — base (“Cha mẹ – con”, an
+ *    edge really there) or derived (“Anh chị em (suy ra)”, a path computed).
+ *    This is §7 working as intended: the rule talks about vocabulary the type
+ *    declared, so the very thing being banned is also nameable, reusable across
+ *    rules, and VISIBLE — toggle it on and the canvas draws who is affected.
+ *  - `pattern` spells the hops out inline, for a relationship the catalog has no
+ *    name for. The escape hatch, not the default: what it describes cannot be
+ *    drawn, cannot be reused, and no one but this rule knows it exists. If the
+ *    same path shows up twice, it wanted to be a derived relation.
+ *
+ * Set both and `when` wins. Set neither and the rule matches nothing.
+ *
+ * Either way the check runs in BOTH directions, so a symmetric relation cannot
+ * slip through by being drawn the other way round.
+ *
+ * The engine stays domain-neutral: it never learns what a “đời” is, it only asks
+ * whether these two are already related that way. Over an org chart the same
+ * rule reads “no coordinating with someone under your own manager”.
+ */
+export interface ForbidRule {
+  id: string;
+  type: 'forbid';
+  relation: string;
+  when?: string;
+  pattern?: RelationStep[];
+}
+
+export type Rule = RequireRule | LimitRule | EndsRule | ChainRule | SameRule | ForbidRule;
 
 /** ends/chain/same are edge allow-lists; require/limit are node-degree checks. */
 export const EDGE_RULE_TYPES: RuleType[] = ['ends', 'chain', 'same'];
 export const NODE_RULE_TYPES: RuleType[] = ['require', 'limit'];
+/** Vetoes, applied on top of the allow-list — never OR'd into it. */
+export const EDGE_DENY_RULE_TYPES: RuleType[] = ['forbid'];
 
 export interface RuleSet {
   id: string;

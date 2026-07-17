@@ -2,7 +2,9 @@ import type {
   ChainRule,
   Direction,
   EndsRule,
+  ForbidRule,
   LimitRule,
+  RelationStep,
   RequireRule,
   Rule,
   RuleSet,
@@ -10,7 +12,10 @@ import type {
   SameRule,
 } from '@/domain/diagram';
 
-export type { Rule, RuleSet, RuleType, Direction };
+export type { Rule, RuleSet, RuleType, Direction, RelationStep };
+
+/** How a forbid rule names the relationship it bans. */
+export type ForbidSource = 'when' | 'pattern';
 
 /** Header fields of a rule set (its rules are edited one at a time). */
 export type RuleSetInput = Pick<RuleSet, 'name' | 'icon' | 'description'>;
@@ -21,7 +26,8 @@ export type RuleInput =
   | Omit<LimitRule, 'id'>
   | Omit<EndsRule, 'id'>
   | Omit<ChainRule, 'id'>
-  | Omit<SameRule, 'id'>;
+  | Omit<SameRule, 'id'>
+  | Omit<ForbidRule, 'id'>;
 
 /** Domain-neutral labels (block/relation, never "level/cấp"). */
 export const RULE_TYPE_OPTIONS: { value: RuleType; label: string; hint: string }[] = [
@@ -30,6 +36,7 @@ export const RULE_TYPE_OPTIONS: { value: RuleType; label: string; hint: string }
   { value: 'ends', label: 'Ràng buộc hai đầu', hint: 'Quan hệ chỉ được nối từ nhóm khối A đến nhóm khối B' },
   { value: 'chain', label: 'Chuỗi liền kề', hint: 'Quan hệ chỉ nối các loại khối theo thứ tự A → B → C' },
   { value: 'same', label: 'Cùng loại', hint: 'Quan hệ chỉ nối 2 khối cùng loại' },
+  { value: 'forbid', label: 'Cấm nối nếu đã có quan hệ khác', hint: 'Hai khối đã có sẵn quan hệ X thì KHÔNG được nối thêm quan hệ Y' },
 ];
 
 export const DIRECTION_OPTIONS: { value: Direction; label: string }[] = [
@@ -60,5 +67,13 @@ export function describeRule(r: Rule, blockName: (id: string) => string, relName
       return `“${relName(r.relation)}” chỉ nối liền kề: ${r.order.map(blockName).join(' → ')}`;
     case 'same':
       return `“${relName(r.relation)}” chỉ nối 2 khối cùng loại${r.blockTypes?.length ? ` (${r.blockTypes.map(blockName).join(', ')})` : ''}`;
+    case 'forbid': {
+      const what = r.when
+        ? `quan hệ “${relName(r.when)}”`
+        : `đường đi ${(r.pattern ?? [])
+            .map((s) => `${s.dir === 'up' ? '↑' : s.dir === 'down' ? '↓' : '↔'}${relName(s.relationId)}`)
+            .join(' → ') || '(chưa đặt)'}`;
+      return `Cấm “${relName(r.relation)}” nếu 2 khối đã có ${what}`;
+    }
   }
 }

@@ -22,6 +22,15 @@ export interface DiagramInput {
   ruleSetIds: string[];
 }
 
+/**
+ * Creating may seed the canvas with generated sample data. Only `create` takes
+ * it: `update` must never touch nodes/edges (that is `saveContent`'s job), so
+ * the flag would be a lie on the shared input.
+ */
+export interface DiagramCreateInput extends DiagramInput {
+  withSample?: boolean;
+}
+
 export type DiagramsListParams = ListParams & {
   /** Narrow the list to one Loại sơ đồ. */
   templateId?: string;

@@ -68,14 +68,43 @@ hệ, bật/tắt suy ra, bật/tắt secondary, thu gọn nhánh (`collapsed`),
 
 Cùng một engine phục vụ cả hai — khác nhau chỉ ở dữ liệu danh mục + luật.
 
-## 6. Engine luật (5 loại)
+## 6. Engine luật (6 loại)
 
-`rules.ts` — thuần, `validate(diagram, rules) → Violation[]`:
+`rules.ts` — thuần, `validate(diagram, rules, relations?) → Violation[]`:
 
 - **require / limit**: đếm bậc liên kết của node theo hướng (in/out/any), so min/max.
   `require` bỏ qua node `exempt` (khối "Chưa xác định").
 - **ends / chain / same**: danh sách cho phép theo từng quan hệ (**OR**) — một cạnh
   hợp lệ nếu thoả ≥1 luật của quan hệ đó; quan hệ không có luật nào thì tự do.
+- **forbid** (`ForbidRule {relation, when}`): **cấm quan hệ `relation` nếu hai khối
+  ĐÃ CÓ quan hệ `when`.** Hai điểm khác hẳn 5 luật kia:
+  1. Nó đọc **ĐỒ THỊ**, không đọc loại khối. Bốn luật cạnh/node nói được "Người lấy
+     Người" nhưng **không bao giờ** nói được "…trừ em ruột mày", vì *là em ruột* là
+     một **đường đi**, không phải một *loại*.
+  2. Nó **CẤM**. ends/chain/same là allow-list **OR**, nên gộp chung thì cạnh chỉ cần
+     thoả `same` là lọt → forbid chạy **riêng, như veto** (`EDGE_DENY_RULE_TYPES`).
+  - **`when` TRỎ TÊN một quan hệ của cùng loại sơ đồ, không tự mô tả đường đi.** Đây
+    là cả cái điểm (mục 7 — loại sơ đồ sở hữu vốn từ vựng): luật **chỉ được nói về
+    quan hệ đã khai báo**. Muốn cấm anh chị em họ thì **thêm “Anh chị em họ (suy ra)”
+    vào danh mục trước** — chỗ đó nó cũng thành thứ **nhìn thấy được trên canvas** —
+    rồi luật mới trỏ vào. Chưa tạo quan hệ đó thì **không có luật về nó**.
+  - `when` nhận cả quan hệ **nền** (cạnh có thật — “Cha mẹ – con”) lẫn **suy ra**
+    (đường đi engine tính — “Anh chị em (suy ra)”, qua `derive.ts#patternConnects`).
+  - Xét **cả hai chiều**: quan hệ đối xứng (vợ chồng) không lách được bằng cách vẽ ngược.
+  - `when` trỏ vào quan hệ không có trong danh mục ⇒ **im lặng không chạy**, đúng như
+    mọi luật viết cho vốn từ vựng của loại khác (mục 8.4).
+  - `validate`/`edgeWouldViolate` nhận thêm tham số `relations` để giải nghĩa `when`.
+    **Quên truyền = luật cấm im lặng biến mất** — `sample.test.ts` từng dính đúng bẫy
+    này (test xanh mà chẳng kiểm gì).
+  - **“Ba đời” là DỮ LIỆU.** `RS_FAMILY` viết Luật HN&GĐ 2014 đ.5.2.d thành 5 luật cấm
+    cho `rel_spouse`, mỗi luật trỏ 1 quan hệ **đã có**: `rel_parent`, `der_grandparent`,
+    `der_sibling`, `der_uncle`, `der_cousin`. Đời 4 **không có quan hệ nào** ⇒ không bị
+    cấm, đúng luật. Nới/siết = **sửa data**, không đụng engine.
+    - *Hai bản sai trước đó, ghi lại để đừng lặp:* (1) `KinRule {via, degree}` với
+      `degree` đếm **“đời”** → nhét thẳng khái niệm gia đình VN vào engine. (2) `pattern`
+      inline trong luật → **luật tự bịa ra vốn từ vựng** mà không ai khai báo và không
+      gì vẽ được, trái mục 7. Bản `when` đúng: cùng luật đó chạy trên sơ đồ tổ chức =
+      “cấm Phối hợp với người **Cùng sếp (suy ra)**” — có test.
 - `edgeWouldViolate()`: chặn cạnh phạm luật *trước khi* vẽ (chế độ nghiêm của canvas).
   Với `limit`, đầu nào "nhận thêm" liên kết phụ thuộc hướng: `out` chỉ nguồn, `in`
   chỉ đích, **`any` là cả hai**. (Bản đầu chỉ xét đích → quan hệ đối xứng như vợ
@@ -149,6 +178,38 @@ vốn từ vựng của loại đó.
      selector cho mỗi line style, không dùng mapper.
    - **Chưa làm (tối ưu sau):** demo có virtualization (`refreshWindow`) chỉ render
      phần trong khung nhìn + cap; bản này render toàn bộ. Cần khi sơ đồ lớn.
+6. ✅ **Dữ liệu mẫu** (`sample.ts`): `generateSample(loại, bộLuậtĐãTick)` dựng sẵn
+   khối + liên kết **thoả mọi luật** để test. Tổng quát như engine — chỉ đọc vốn từ
+   vựng + luật của chính loại đó, nên **loại do user tự tạo cũng chạy**, không phải
+   data tĩnh cho 7 loại dựng sẵn.
+   - **Vì sao hợp luật theo cấu trúc:** mọi cạnh đi qua `edgeWouldViolate` — *đúng
+     cái guard canvas dùng trước khi vẽ* — nên `limit`/`ends`/`chain`/`same` không
+     thể sai. Chỉ `require` (luật về cạnh **thiếu**) cần một lượt vá riêng ở cuối.
+   - **Cách dựng:** cây theo quan hệ **primary**, mỗi tầng một hàng. Gốc là loại
+     khối **không bị `require` bắt có liên kết vào** (gia đình: “Chưa xác định” —
+     nếu lấy “Người” làm gốc thì chính nó vi phạm “cần 2 cha mẹ”). Loại khối cây
+     không với tới (Giáo viên, Phụ huynh) được gắn bằng quan hệ còn rảnh; quan hệ
+     còn lại ghép **ngang trong cùng tầng** (đúng nghĩa `secondary`).
+   - **Cha mẹ là một CẶP, không phải hai anh em:** tầng trên chia thành nhóm liền
+     kề, con **chia vòng (round-robin)** nên hai node cạnh nhau luôn khác cha mẹ —
+     mà lượt ghép ngang lại ghép đúng hai node cạnh nhau. Vậy nhóm cha mẹ *chính là*
+     cặp vợ chồng. **Không luật nào phát biểu điều này**, nên chỉ test
+     `sample.test.ts` giữ nó (đổi round-robin → luật vẫn xanh, test cặp đôi mới đỏ).
+   - **Round-robin chỉ tách được anh em RUỘT, không tách anh em HỌ.** Vừa có luật
+     `forbid`, nó soi ngay ra mẫu Gia đình đang có **4 cặp anh chị em họ lấy nhau**.
+     Gốc: tầng 0 chỉ có 2 nhóm → hai node tầng 1 chung cha mẹ → con của chúng ở tầng
+     2 là anh em họ. Sửa: **tầng gốc cấp cho mỗi node tầng 1 một nhóm riêng**
+     (`MAX_TIER_WIDTH` nhóm ⇒ 8 khối “Chưa xác định”). Hệ quả **đúng và cố ý**: tầng
+     út toàn anh em họ nên **không cưới nhau** — engine chặn, đời thật cũng vậy.
+     `forbid.test.ts` giữ chỗ này.
+   - Generator **không cần biết** luật cấm tồn tại: mọi cạnh đã đi qua
+     `edgeWouldViolate`, nên thêm loại luật thứ 6 là nó tự tuân theo.
+   - **Giới hạn có chủ đích:** quan hệ **không có** luật `ends`/`chain`/`same` thì
+     nối gì cũng hợp lệ → generator phải **đoán** (ưu tiên gợi ý từ `limit(x, R,
+     'in')`, rồi tầng sâu nhất chưa ai gắn). ⇒ *Mẫu chỉ chính xác bằng đúng độ chặt
+     của luật.* Muốn mẫu đẹp hơn thì thêm luật `ends`, đừng sửa generator.
+   - **Luật mâu thuẫn** (vd `require` min 3 + `limit` max 2): dừng sau 4 vòng vá và
+     **để vi phạm hiện ở panel Vi phạm** — nói thật, không giả vờ đã xong.
 
 ## 9. Điểm mở còn cần chốt về sau
 

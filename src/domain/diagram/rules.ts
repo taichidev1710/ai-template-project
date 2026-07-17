@@ -10,10 +10,14 @@
  *
  * Pure functions — no framework, fully unit-testable.
  */
+import { buildAdjacencyByRelation, patternConnects, type Adjacency } from './derive';
+import { isBaseRelation, type Relation } from './types';
 import type {
   Diagram,
   DiagramNode,
   Direction,
+  ForbidRule,
+  RelationStep,
   Rule,
   RuleSet,
   Violation,
@@ -46,13 +50,75 @@ function dirLabel(dir: Direction): string {
   return dir === 'in' ? 'liên kết đến' : dir === 'out' ? 'liên kết đi' : 'liên kết';
 }
 
+/* ---- forbid: the one rule evaluated over the graph, not over block types ---- */
+
+/**
+ * Whether the relationship the rule names already links these two, either way
+ * round. Both directions, because the rule bans a PAIRING: drawing "vợ chồng"
+ * from the sister to the brother must fail exactly as the other way round.
+ *
+ * A `when` naming nothing in `relations` means the rule was written against
+ * another type's catalog, so it matches nothing and stays quiet — same as every
+ * other out-of-scope rule (DESIGN §8.4).
+ */
+function forbidHits(
+  rule: ForbidRule,
+  diagram: Diagram,
+  a: string,
+  b: string,
+  relations: Relation[],
+  byRel: () => Map<string, Adjacency>,
+): boolean {
+  const bothWays = (pattern: RelationStep[]) => {
+    const reach = (from: string, to: string) =>
+      patternConnects(diagram.nodes, diagram.edges, from, to, pattern, byRel());
+    return reach(a, b) || reach(b, a);
+  };
+
+  if (rule.when) {
+    const when = relations.find((r) => r.id === rule.when);
+    if (!when) return false;
+    if (isBaseRelation(when)) {
+      return diagram.edges.some(
+        (e) =>
+          e.relationId === when.id &&
+          ((e.source === a && e.target === b) || (e.source === b && e.target === a)),
+      );
+    }
+    return bothWays(when.pattern);
+  }
+  return rule.pattern?.length ? bothWays(rule.pattern) : false;
+}
+
+/** How to say, in a violation message, what these two already are to each other. */
+function forbidWhatName(rule: ForbidRule, relations: Relation[]): string {
+  if (rule.when) return relations.find((r) => r.id === rule.when)?.name ?? rule.when;
+  return (rule.pattern ?? [])
+    .map((s) => {
+      const arrow = s.dir === 'up' ? '↑' : s.dir === 'down' ? '↓' : '↔';
+      return `${arrow}${relations.find((r) => r.id === s.relationId)?.name ?? s.relationId}`;
+    })
+    .join(' → ');
+}
+
+/** Adjacency for every relation — built once, and only if a forbid rule asks. */
+function lazyAdjacency(diagram: Diagram): () => Map<string, Adjacency> {
+  let cache: Map<string, Adjacency> | null = null;
+  return () => (cache ??= buildAdjacencyByRelation(diagram.nodes, diagram.edges));
+}
+
 /**
  * Validate a diagram. Returns every violation (node- and edge-level). An empty
  * array means the diagram fully satisfies its effective rules.
+ *
+ * `relations` is the Loại sơ đồ's catalog, needed only to resolve what a
+ * `forbid` rule's `when` names. Omitting it leaves forbid rules unresolved — and
+ * so quiet — exactly as a rule pointing at another type's vocabulary would be.
  */
-export function validate(diagram: Diagram, rules: Rule[]): Violation[] {
+export function validate(diagram: Diagram, rules: Rule[], relations: Relation[] = []): Violation[] {
   const nodesById = new Map(diagram.nodes.map((n) => [n.id, n]));
   const violations: Violation[] = [];
+  const adj = lazyAdjacency(diagram);
 
   // --- Node-degree rules: require / limit ---
   for (const r of rules) {
@@ -109,6 +175,26 @@ export function validate(diagram: Diagram, rules: Rule[]): Violation[] {
     }
   }
 
+  // --- Edge deny rules: forbid (a veto, applied on top of the allow-list) ---
+  for (const r of rules) {
+    if (r.type !== 'forbid') continue;
+    const whenName = forbidWhatName(r, relations);
+    for (const e of diagram.edges) {
+      if (e.relationId !== r.relation) continue;
+      const src = nodesById.get(e.source);
+      const tgt = nodesById.get(e.target);
+      if (!src || !tgt) continue;
+      if (!forbidHits(r, diagram, e.source, e.target, relations, adj)) continue;
+      violations.push({
+        kind: 'edge',
+        id: e.id,
+        ruleId: r.id,
+        ruleType: 'forbid',
+        message: `“${src.label}” và “${tgt.label}” đã có quan hệ “${whenName}” nên không được nối liên kết này.`,
+      });
+    }
+  }
+
   return violations;
 }
 
@@ -139,6 +225,7 @@ export function edgeWouldViolate(
   diagram: Diagram,
   rules: Rule[],
   candidate: { relationId: string; source: string; target: string },
+  relations: Relation[] = [],
 ): string | null {
   const nodesById = new Map(diagram.nodes.map((n) => [n.id, n]));
   const src = nodesById.get(candidate.source);
@@ -153,6 +240,15 @@ export function edgeWouldViolate(
   );
   if (allow.length > 0 && !allow.some((r) => edgeSatisfies(r, src, tgt))) {
     return `Loại quan hệ này không được phép nối “${src.label} → ${tgt.label}”.`;
+  }
+
+  // Forbid: a veto, so it is checked even when the allow-list above said yes.
+  const adj = lazyAdjacency(diagram);
+  for (const r of rules) {
+    if (r.type !== 'forbid' || r.relation !== candidate.relationId) continue;
+    if (forbidHits(r, diagram, candidate.source, candidate.target, relations, adj)) {
+      return `“${src.label}” và “${tgt.label}” đã có quan hệ “${forbidWhatName(r, relations)}”.`;
+    }
   }
 
   // Limit: adding the edge must not push either endpoint over a max. Which end

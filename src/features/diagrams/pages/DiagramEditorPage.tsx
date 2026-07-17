@@ -6,6 +6,7 @@ import {
   buildAdjacency,
   edgeWouldViolate,
   effectiveRules,
+  generateSample,
   isBaseRelation,
   validate,
   type DiagramEdge,
@@ -54,6 +55,7 @@ export function DiagramEditorPage() {
   const [pendingPair, setPendingPair] = useState<EdgePair | null>(null);
   const [editingNode, setEditingNode] = useState<DiagramNode | null>(null);
   const [editingEdge, setEditingEdge] = useState<DiagramEdge | null>(null);
+  const [fitSignal, setFitSignal] = useState(0);
 
   const type = types?.find((t) => t.id === diagram?.templateId);
   const blockTypes = useMemo(() => type?.blockTypes ?? [], [type]);
@@ -73,11 +75,17 @@ export function DiagramEditorPage() {
     setSelectedId(null);
     setLinkSourceId(null);
     setLinking(false);
+    // A diagram that arrives WITH content was laid out elsewhere (saved earlier,
+    // or seeded with sample data), so the default viewport frames none of it —
+    // it opens showing a corner. Blocks added by hand land at the viewport
+    // centre instead, so an empty canvas needs no fit.
+    if (diagram.nodes.length > 0) setFitSignal((t) => t + 1);
   }, [diagram?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!addBlockTypeId && blockTypes[0]) setAddBlockTypeId(blockTypes[0].id);
   }, [blockTypes, addBlockTypeId]);
+
 
   /** The draft as a full Diagram — what the pure engine functions expect. */
   const workingDiagram = useMemo(() => (diagram && draft ? { ...diagram, ...draft } : null), [diagram, draft]);
@@ -88,8 +96,9 @@ export function DiagramEditorPage() {
   );
 
   const violations = useMemo(
-    () => (workingDiagram ? validate(workingDiagram, rules) : []),
-    [workingDiagram, rules],
+    // `relations` is what lets a forbid rule resolve the relation it names.
+    () => (workingDiagram ? validate(workingDiagram, rules, relations) : []),
+    [workingDiagram, rules, relations],
   );
 
   const primaryRelation = relations.find((r) => isBaseRelation(r) && r.role === 'primary');
@@ -156,7 +165,7 @@ export function DiagramEditorPage() {
   const relationBlockedFor = (relationId: string): string | null => {
     if (!pendingPair || !workingDiagram || !draft) return null;
     const candidate = { relationId, source: pendingPair.source, target: pendingPair.target };
-    const blocked = edgeWouldViolate(workingDiagram, rules, candidate);
+    const blocked = edgeWouldViolate(workingDiagram, rules, candidate, relations);
     if (blocked) return blocked;
     const duplicate = draft.edges.some(
       (e) => e.relationId === relationId && e.source === candidate.source && e.target === candidate.target,
@@ -256,6 +265,41 @@ export function DiagramEditorPage() {
     setEditingNode(null);
   };
 
+  /**
+   * Fill the canvas with generated data obeying the rule sets this diagram
+   * applies — enough blocks, links and depth to exercise every feature at once.
+   * It lands in the draft like any other edit, so it is undone by leaving
+   * without saving.
+   */
+  const handleFillSample = () => {
+    if (!draft || !type || !diagram) return;
+    const fill = () => {
+      const { nodes, edges } = generateSample(type, diagram.ruleSetIds);
+      patch({
+        nodes,
+        edges,
+        // `collapsed` holds node ids and every old node is going away.
+        visibility: { ...draft.visibility, collapsed: [] },
+      });
+      setSelectedId(null);
+      closeLinking();
+      setFitSignal((t) => t + 1); // the sample is laid out around the origin, not the current view
+    };
+
+    if (draft.nodes.length === 0) {
+      fill();
+      return;
+    }
+    modal.confirm({
+      title: 'Thay bằng dữ liệu mẫu?',
+      content: `${draft.nodes.length} khối và ${draft.edges.length} liên kết đang có sẽ bị thay hết. Chưa bấm Lưu thì bản đã lưu vẫn còn nguyên.`,
+      okText: 'Thay',
+      okButtonProps: { danger: true },
+      cancelText: 'Huỷ',
+      onOk: fill,
+    });
+  };
+
   const handleSave = () => {
     if (!draft) return;
     save.mutate(draft, { onSuccess: () => setDirty(false) });
@@ -353,6 +397,7 @@ export function DiagramEditorPage() {
             }}
             onFit={() => canvasRef.current?.fit()}
             onSave={handleSave}
+            onFillSample={handleFillSample}
           />
           {/* Stacked: a fixed slice of the viewport. Side by side: fill the column. */}
           <div className="h-[55vh] min-h-[300px] lg:h-auto lg:min-h-0 lg:flex-1">
@@ -363,6 +408,7 @@ export function DiagramEditorPage() {
               relations={relations}
               violations={violations}
               linkSourceId={linkSourceId}
+              fitSignal={fitSignal}
               onNodeMove={(nodeId, pos) =>
                 patch({ nodes: draft.nodes.map((n) => (n.id === nodeId ? { ...n, pos } : n)) })
               }

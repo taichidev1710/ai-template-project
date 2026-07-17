@@ -286,7 +286,6 @@ export function generateSample(template: DiagramTemplate, ruleSetIds?: string[])
 
   const onPath = new Set(path);
   const usedRelations = new Set<string>([primary.id]);
-  const targetedTiers = new Set<number>();
   let extraRow = path.length;
 
   /** Where a block type sits on the primary path (-1 when it is off it). */
@@ -295,20 +294,18 @@ export function generateSample(template: DiagramTemplate, ruleSetIds?: string[])
   for (const bt of blockTypes) {
     if (onPath.has(bt.id)) continue;
 
-    // Pick the first relation still free that is allowed to carry this type onto
-    // the tree. A `limit(x, R, 'in')` rule is the author saying x RECEIVES R, so
-    // it is the best hint available for which end to attach to; failing that,
-    // prefer a tier nothing else has attached to, and the deepest one.
+    // Take the first free relation the rules ALLOW to carry this type onto the
+    // tree, and the first endpoint they allow — nothing more.
+    //
+    // This used to read a `limit(x, R, 'in')` as the author "meaning" x to be the
+    // target, and to rank candidate tiers by depth and novelty. That was inferring
+    // rules nobody wrote: with a real `ends` rule there is exactly one candidate
+    // and the guesswork was never needed; without one, the type genuinely has not
+    // said, and picking a favourite would only dress a coin-flip up as intent.
     const attachment = bases
       .filter((r) => !usedRelations.has(r.id))
       .map((relation) => {
-        const options = pairs(relation.id).filter(([s, t]) => s === bt.id && onPath.has(t));
-        const hinted = options.filter(([, t]) => limitMax(t, relation.id, 'in', rules) < Infinity);
-        const pool = hinted.length > 0 ? hinted : options;
-        const target = [...pool].sort((a, b) => {
-          const fresh = Number(targetedTiers.has(tierOf(a[1]))) - Number(targetedTiers.has(tierOf(b[1])));
-          return fresh !== 0 ? fresh : tierOf(b[1]) - tierOf(a[1]);
-        })[0];
+        const target = pairs(relation.id).find(([s, t]) => s === bt.id && onPath.has(t));
         return target ? { relation, targetBt: target[1] } : null;
       })
       .find((a) => a !== null);
@@ -324,10 +321,7 @@ export function generateSample(template: DiagramTemplate, ruleSetIds?: string[])
       );
       if (attachment && anchor) link(attachment.relation.id, node.id, anchor.id);
     }
-    if (attachment) {
-      usedRelations.add(attachment.relation.id);
-      targetedTiers.add(tierOf(attachment.targetBt));
-    }
+    if (attachment) usedRelations.add(attachment.relation.id);
     extraRow++;
   }
 

@@ -49,10 +49,15 @@ const RS_FAMILY: RuleSet = {
   id: 'rs_family', name: 'Gia đình chuẩn', icon: '👪', builtin: true,
   description: 'Mỗi khối tối đa 2 liên kết cha mẹ và (trừ “Chưa xác định”) cần đủ 2; vợ chồng tối đa 1, cùng loại, và không phải họ hàng trong phạm vi ba đời.',
   rules: [
+    // Cha mẹ có thể là khối “Chưa xác định” (không rõ tổ tiên), nhưng CON thì luôn
+    // là một Người cụ thể — chiều ngược lại vô nghĩa. Không khai báo thì luật cho
+    // phép “Người → Chưa xác định”, và generator phải tự đoán hai đầu.
+    { id: 'rf_ends_parent', type: 'ends', relation: 'rel_parent', from: ['bt_person', 'bt_unknown'], to: ['bt_person'] },
     { id: 'rf_limit_parent', type: 'limit', blockType: '*', relation: 'rel_parent', dir: 'in', max: 2 },
     { id: 'rf_require_parent', type: 'require', blockType: 'bt_person', relation: 'rel_parent', dir: 'in', min: 2 },
     { id: 'rf_limit_spouse', type: 'limit', blockType: '*', relation: 'rel_spouse', dir: 'any', max: 1 },
     { id: 'rf_same_spouse', type: 'same', relation: 'rel_spouse', blockTypes: ['bt_person'] },
+    { id: 'rf_same_friend', type: 'same', relation: 'rel_friend', blockTypes: ['bt_person'] },
     // Luật HN&GĐ 2014 đ.5.2.d — cấm kết hôn trong phạm vi ba đời. Mỗi vế chỉ
     // TRỎ TỚI một quan hệ đã khai báo ở trên, không tự mô tả lại đường đi: chưa
     // có “Anh chị em họ (suy ra)” trong danh mục thì không có luật cấm nó. Đời 4
@@ -86,6 +91,9 @@ const RS_ORG: RuleSet = {
     { id: 'ro_limit', type: 'limit', blockType: '*', relation: 'rel_reports', dir: 'in', max: 1 },
     { id: 'ro_chain', type: 'chain', relation: 'rel_reports', order: ['bt_company', 'bt_dept', 'bt_manager', 'bt_employee'] },
     { id: 'ro_require', type: 'require', blockType: 'bt_employee', relation: 'rel_reports', dir: 'in', min: 1 },
+    // Phối hợp là quan hệ NGANG: chỉ giữa hai khối cùng tầng. Không khai báo thì
+    // “Công ty phối hợp với Nhân viên” cũng hợp lệ.
+    { id: 'ro_same_coord', type: 'same', relation: 'rel_coord' },
   ],
 };
 
@@ -109,6 +117,11 @@ const RS_SCHOOL: RuleSet = {
   description: 'Lớp trực thuộc trường; mỗi lớp đúng 1 giáo viên chủ nhiệm. Học sinh học được nhiều lớp (Văn, Toán, nghề…).',
   rules: [
     { id: 'rc_ends', type: 'ends', relation: 'rel_belongs', from: ['bt_school', 'bt_class'], to: ['bt_class', 'bt_student'] },
+    // Hai luật `ends` này trước đây KHÔNG có, nên generator phải đoán “Chủ nhiệm”
+    // và “Phụ huynh của” nối gì với gì — nó đoán trúng, nhưng bằng suy diễn chứ
+    // không phải vì loại sơ đồ nói thế. Nói hẳn ra thì hết phải đoán.
+    { id: 'rc_ends_teach', type: 'ends', relation: 'rel_teach', from: ['bt_teacher'], to: ['bt_class'] },
+    { id: 'rc_ends_guardian', type: 'ends', relation: 'rel_guardian', from: ['bt_parent'], to: ['bt_student'] },
     { id: 'rc_teach_limit', type: 'limit', blockType: 'bt_class', relation: 'rel_teach', dir: 'in', max: 1 },
     // Từng có `rc_student_limit`: limit bt_student / rel_belongs / dir 'out' / max 1,
     // mô tả là “học sinh học đúng 1 lớp”. Luật CHẾT: `rc_ends` chỉ cho Trường/Lớp làm

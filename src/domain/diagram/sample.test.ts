@@ -60,6 +60,39 @@ describe.each(BUILTIN_TEMPLATES.map((t) => [t.name, t] as const))('generateSampl
   });
 });
 
+describe('generator không suy diễn ý tác giả', () => {
+  // Generator từng đọc `limit(x, R, 'in')` như tác giả "ngụ ý" x là đầu nhận, rồi
+  // xếp hạng tầng theo độ sâu — tức bịa ra luật không ai viết. Cách chữa là DỮ
+  // LIỆU: loại sơ đồ nói hẳn hai đầu ra bằng `ends`/`chain`/`same`. Test này chốt
+  // rằng các loại dựng sẵn ĐÃ nói, nên chẳng còn gì để đoán.
+  const SHOULD_DECLARE = ['tpl_family', 'tpl_org', 'tpl_school'];
+  // Bốn loại này CỐ Ý không ràng buộc — "nối gì cũng được" là ý đồ, không phải thiếu.
+  const FREEFORM = ['tpl_process', 'tpl_network', 'tpl_mindmap', 'tpl_free'];
+
+  it.each(SHOULD_DECLARE)('%s: mọi quan hệ nền đều tự khai báo hai đầu', (id) => {
+    const t = BUILTIN_TEMPLATES.find((x) => x.id === id)!;
+    const rules = t.ruleSets.flatMap((rs) => rs.rules);
+    const undeclared = t.relations
+      .filter(isBaseRelation)
+      .filter(
+        (r) =>
+          !rules.some(
+            (x) => (x.type === 'ends' || x.type === 'chain' || x.type === 'same') && x.relation === r.id,
+          ),
+      );
+    expect(undeclared.map((r) => r.name)).toEqual([]);
+  });
+
+  it('các loại tự do vẫn dựng được mẫu dù không khai báo gì', () => {
+    for (const id of FREEFORM) {
+      const t = BUILTIN_TEMPLATES.find((x) => x.id === id)!;
+      const { nodes, edges } = generateSample(t);
+      expect(nodes.length, id).toBeGreaterThan(0);
+      expect(edges.length, id).toBeGreaterThan(0);
+    }
+  });
+});
+
 describe('Trường học — không giữ luật chết', () => {
   // `rc_student_limit` cũ đếm liên kết ĐI RA của Học sinh, nhưng `rc_ends` chỉ cho
   // Trường/Lớp làm nguồn ⇒ số đó vĩnh viễn = 0 ⇒ luật không bao giờ chạy. Test này

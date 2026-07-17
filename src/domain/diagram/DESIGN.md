@@ -218,10 +218,23 @@ vốn từ vựng của loại đó.
      `forbid.test.ts` giữ chỗ này.
    - Generator **không cần biết** luật cấm tồn tại: mọi cạnh đã đi qua
      `edgeWouldViolate`, nên thêm loại luật thứ 6 là nó tự tuân theo.
-   - **Giới hạn có chủ đích:** quan hệ **không có** luật `ends`/`chain`/`same` thì
-     nối gì cũng hợp lệ → generator phải **đoán** (ưu tiên gợi ý từ `limit(x, R,
-     'in')`, rồi tầng sâu nhất chưa ai gắn). ⇒ *Mẫu chỉ chính xác bằng đúng độ chặt
-     của luật.* Muốn mẫu đẹp hơn thì thêm luật `ends`, đừng sửa generator.
+   - **Generator KHÔNG suy diễn ý tác giả.** Nó chỉ đọc luật; hai đầu của mỗi quan
+     hệ lấy từ `ends`/`chain`/`same`, không từ đâu khác. Luật không nói thì nó lấy
+     **cặp hợp lệ đầu tiên** — tuỳ tiện nhưng *hợp lệ*, đúng thứ mà loại sơ đồ cho
+     phép. Nó **không** cố đoán xem tác giả *định* nói gì.
+     - *Bản đầu sai:* đọc `limit(x, R, 'in')` như tác giả “ngụ ý” x là đầu nhận,
+       rồi xếp hạng tầng theo độ sâu / chưa-ai-gắn. Đó là **bịa ra luật không ai
+       viết** — cùng loại lỗi với `KinRule.degree` và `pattern` inline (mục 6).
+       Từng định vá bằng “báo cáo phỏng đoán”; user chốt đúng: **đừng báo cáo
+       phỏng đoán, đừng phỏng đoán nữa.**
+     - **Cách sửa là DỮ LIỆU, không phải code:** mẫu ra sai ⇒ **luật đang lỏng** ⇒
+       thêm `ends`/`same` cho loại đó. Đã làm đúng vậy cho các loại dựng sẵn:
+       `rel_parent` (Người/Chưa-xác-định → Người), `rel_friend` + `rel_coord`
+       (`same`), `rel_teach` (Giáo viên → Lớp), `rel_guardian` (Phụ huynh → Học
+       sinh). Trước đó cả 5 cái đều do generator đoán.
+     - Còn cố ý để trống: **Quy trình / Mạng lưới / Sơ đồ tư duy / Tự do** — chúng
+       *là* loại không ràng buộc, nên “nối gì cũng được” chính là ý đồ, không phải
+       thiếu sót.
    - **Luật mâu thuẫn** (vd `require` min 3 + `limit` max 2): dừng sau 4 vòng vá và
      **để vi phạm hiện ở panel Vi phạm** — nói thật, không giả vờ đã xong.
 

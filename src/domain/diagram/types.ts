@@ -275,11 +275,17 @@ export interface DiagramVisibility {
   hiddenBlockTypes: string[];
   /** Relation ids (base or derived) that are hidden. */
   hiddenRelations: string[];
+  /**
+   * Relation ids drawn WITHOUT their label. Separate from `hiddenRelations`:
+   * on a dense diagram the lines are the point and the labels are the clutter,
+   * so muting the text has to be possible without losing the link itself.
+   */
+  hiddenLabels: string[];
   /** Show computed derived relations (faint overlay). */
   showDerived: boolean;
   /** Show `secondary` (phụ) base relations. */
   showSecondary: boolean;
-  /** Render edge labels. */
+  /** Master switch over every label; `hiddenLabels` then mutes them per relation. */
   edgeLabels: boolean;
   /** Node ids whose primary-relation subtree is collapsed. */
   collapsed: string[];
@@ -289,6 +295,7 @@ export function defaultVisibility(): DiagramVisibility {
   return {
     hiddenBlockTypes: [],
     hiddenRelations: [],
+    hiddenLabels: [],
     showDerived: false,
     showSecondary: true,
     edgeLabels: true,

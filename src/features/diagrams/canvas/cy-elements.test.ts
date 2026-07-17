@@ -124,6 +124,15 @@ describe('derivedEdgeDef', () => {
     const b = derivedEdgeDef('der_x', 'n2', 'n1', relation.style);
     expect(a.data.id).not.toBe(b.data.id);
   });
+
+  it('carries the relation name, which is the only label it can ever have', () => {
+    // Nobody drew a derived edge, so it has no per-edge label to fall back FROM:
+    // without `relName` the stylesheet mapper resolves to '' and every derived
+    // link renders anonymous. That was the bug.
+    const def = derivedEdgeDef('der_grandparent', 'a', 'b', relation.style, 'Ông bà (suy ra)');
+    expect(def.data.relName).toBe('Ông bà (suy ra)');
+    expect(def.data.rel).toBe('der_grandparent');
+  });
 });
 
 describe('edgeStyleData', () => {

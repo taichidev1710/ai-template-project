@@ -33,12 +33,18 @@ type CyLineStyle = 'solid' | 'dashed' | 'dotted';
 type CyCurve = 'straight' | 'taxi' | 'unbundled-bezier' | 'segments';
 
 /**
- * `edgeLabels` is baked in here rather than patched on afterwards: a later
- * `cy.style().selector('edge')` call would replace the label mapper and silently
- * drop the relation-name fallback below.
+ * `edgeLabels` (all) and `hiddenLabels` (per relation) are baked in here rather
+ * than patched on afterwards: a later `cy.style().selector('edge')` call would
+ * replace the label mapper and silently drop the relation-name fallback below.
  */
-export function buildStylesheet(t: CanvasTheme, reducedMotion: boolean, edgeLabels: boolean): cytoscape.StylesheetJson {
+export function buildStylesheet(
+  t: CanvasTheme,
+  reducedMotion: boolean,
+  edgeLabels: boolean,
+  hiddenLabels: string[] = [],
+): cytoscape.StylesheetJson {
   const transition = reducedMotion ? 0 : 180;
+  const muted = new Set(hiddenLabels);
 
   return [
     {
@@ -102,8 +108,10 @@ export function buildStylesheet(t: CanvasTheme, reducedMotion: boolean, edgeLabe
         'arrow-scale': 1.15,
         // An edge with no label of its own falls back to its relation's name —
         // what the link modals promise ("bỏ trống thì hiển thị tên loại quan hệ").
-        label: (e: cytoscape.EdgeSingular) =>
-          edgeLabels ? String(e.data('label') || e.data('relName') || '') : '',
+        label: (e: cytoscape.EdgeSingular) => {
+          if (!edgeLabels || muted.has(String(e.data('rel')))) return '';
+          return String(e.data('label') || e.data('relName') || '');
+        },
         'font-size': 10.5,
         'font-family': t.fontFamily,
         color: t.colorTextSecondary,

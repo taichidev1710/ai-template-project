@@ -95,7 +95,11 @@ export function DiagramCanvas({
     },
   }));
 
-  const { hiddenBlockTypes, hiddenRelations, showDerived, showSecondary, edgeLabels, collapsed } = diagram.visibility;
+  const { hiddenBlockTypes, hiddenRelations, hiddenLabels, showDerived, showSecondary, edgeLabels, collapsed } =
+    diagram.visibility;
+  // A stable dep: the array identity changes on every visibility patch, and the
+  // stylesheet only needs rebuilding when the CONTENTS move.
+  const mutedKey = (hiddenLabels ?? []).join(',');
 
   /** Nodes hidden because an ancestor's primary subtree is collapsed. */
   const collapsedHidden = useMemo(() => {
@@ -143,7 +147,7 @@ export function DiagramCanvas({
         if (hiddenRelations.includes(relation.id)) continue;
         for (const pair of computeDerivedPairs(diagram, relation)) {
           if (!visibleNodeIds.has(pair.source) || !visibleNodeIds.has(pair.target)) continue;
-          defs.push(derivedEdgeDef(relation.id, pair.source, pair.target, relation.style));
+          defs.push(derivedEdgeDef(relation.id, pair.source, pair.target, relation.style, relation.name));
         }
       }
     }
@@ -211,9 +215,10 @@ export function DiagramCanvas({
         },
         reduced,
         edgeLabels,
+        mutedKey ? mutedKey.split(',') : [],
       ),
     );
-  }, [token, mode, edgeLabels]);
+  }, [token, mode, edgeLabels, mutedKey]);
 
   // Sync graph structure.
   useEffect(() => {

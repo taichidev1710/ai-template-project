@@ -1,4 +1,5 @@
-import { Checkbox, Divider, Empty, Space, Switch, Typography } from 'antd';
+import { Button, Checkbox, Divider, Empty, Space, Switch, Tooltip, Typography } from 'antd';
+import { TagOutlined, TagsOutlined } from '@ant-design/icons';
 import { isDerivedRelation, type BlockType, type DiagramVisibility, type Relation } from '@/domain/diagram';
 
 interface VisibilityPanelProps {
@@ -15,6 +16,14 @@ export function VisibilityPanel({ blockTypes, relations, visibility, onChange }:
   // The panel lists what is SHOWN, but the model stores what is HIDDEN.
   const shownBlockTypes = blockTypes.filter((b) => !visibility.hiddenBlockTypes.includes(b.id)).map((b) => b.id);
   const shownRelations = relations.filter((r) => !visibility.hiddenRelations.includes(r.id)).map((r) => r.id);
+
+  const hiddenLabels = visibility.hiddenLabels ?? [];
+  const toggleLabel = (id: string) =>
+    onChange({
+      hiddenLabels: hiddenLabels.includes(id) ? hiddenLabels.filter((x) => x !== id) : [...hiddenLabels, id],
+    });
+  const setAllLabels = (show: boolean) =>
+    onChange({ edgeLabels: true, hiddenLabels: show ? [] : relations.map((r) => r.id) });
 
   return (
     <div className="flex flex-col gap-3">
@@ -76,33 +85,69 @@ export function VisibilityPanel({ blockTypes, relations, visibility, onChange }:
 
       <Divider className="!my-2" />
 
-      <Typography.Text strong className="text-xs">
-        Loại quan hệ
-      </Typography.Text>
+      <div className="flex items-center justify-between gap-2">
+        <Typography.Text strong className="text-xs">
+          Loại quan hệ
+        </Typography.Text>
+        {relations.length > 0 && (
+          <Space size={2}>
+            <Button size="small" type="link" className="!px-1 !text-xs" onClick={() => setAllLabels(true)}>
+              Hiện nhãn all
+            </Button>
+            <Button size="small" type="link" className="!px-1 !text-xs" onClick={() => setAllLabels(false)}>
+              Ẩn all
+            </Button>
+          </Space>
+        )}
+      </div>
       {relations.length === 0 ? (
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Chưa có quan hệ" />
       ) : (
-        <Checkbox.Group
-          value={shownRelations}
-          onChange={(shown) =>
-            onChange({ hiddenRelations: relations.filter((r) => !shown.includes(r.id)).map((r) => r.id) })
-          }
-        >
-          <Space orientation="vertical" size={4}>
-            {relations.map((r) => (
-              <Checkbox key={r.id} value={r.id}>
-                <Space size={6}>
-                  <span
-                    className="inline-block h-0.5 w-4"
-                    style={{ backgroundColor: r.style.color }}
-                    aria-hidden="true"
-                  />
-                  {r.name}
-                </Space>
-              </Checkbox>
-            ))}
-          </Space>
-        </Checkbox.Group>
+        <>
+          <Typography.Text type="secondary" className="text-[11px]">
+            Tick để hiện đường; nút 🏷 bật/tắt riêng nhãn của loại đó.
+          </Typography.Text>
+          <Checkbox.Group
+            className="w-full"
+            value={shownRelations}
+            onChange={(shown) =>
+              onChange({ hiddenRelations: relations.filter((r) => !shown.includes(r.id)).map((r) => r.id) })
+            }
+          >
+            <Space orientation="vertical" size={4} className="w-full">
+              {relations.map((r) => {
+                const labelOn = !hiddenLabels.includes(r.id);
+                return (
+                  <div key={r.id} className="flex w-full items-center justify-between gap-1">
+                    <Checkbox value={r.id}>
+                      <Space size={6}>
+                        <span
+                          className="inline-block h-0.5 w-4"
+                          style={{ backgroundColor: r.style.color }}
+                          aria-hidden="true"
+                        />
+                        {r.name}
+                      </Space>
+                    </Checkbox>
+                    <Tooltip title={labelOn ? `Ẩn nhãn “${r.name}”` : `Hiện nhãn “${r.name}”`}>
+                      <Button
+                        size="small"
+                        type="text"
+                        // Disabled, not hidden: with the master switch off the
+                        // per-relation state still exists and comes back with it.
+                        disabled={!visibility.edgeLabels}
+                        aria-label={labelOn ? `Ẩn nhãn ${r.name}` : `Hiện nhãn ${r.name}`}
+                        aria-pressed={labelOn}
+                        icon={labelOn ? <TagOutlined /> : <TagsOutlined className="opacity-35" />}
+                        onClick={() => toggleLabel(r.id)}
+                      />
+                    </Tooltip>
+                  </div>
+                );
+              })}
+            </Space>
+          </Checkbox.Group>
+        </>
       )}
     </div>
   );

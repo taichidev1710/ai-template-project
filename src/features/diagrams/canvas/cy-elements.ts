@@ -124,8 +124,18 @@ export function edgeDef(edge: DiagramEdge, relation: Relation | undefined): CyEl
 /**
  * A computed derived edge — drawn faint, never stored, never hit-testable.
  * Id is prefixed so it can be removed wholesale without touching real edges.
+ *
+ * `relName` carries the label: a derived edge has no per-edge label of its own to
+ * fall back FROM (nobody drew it), so without the relation's name the stylesheet
+ * mapper resolves to '' and every derived link renders anonymous.
  */
-export function derivedEdgeDef(relationId: string, source: string, target: string, style: RelationStyle): CyElementDef {
+export function derivedEdgeDef(
+  relationId: string,
+  source: string,
+  target: string,
+  style: RelationStyle,
+  relName = '',
+): CyElementDef {
   return {
     group: 'edges',
     classes: 'ghostedge',
@@ -135,6 +145,7 @@ export function derivedEdgeDef(relationId: string, source: string, target: strin
       target,
       label: '',
       rel: relationId,
+      relName,
       ...edgeStyleData(style),
     },
   };

@@ -38,7 +38,7 @@ const newId = (prefix: string) => `${prefix}_${Math.random().toString(36).slice(
 export function DiagramEditorPage() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
-  const { modal } = App.useApp();
+  const { modal, message } = App.useApp();
 
   const { data: diagram, isLoading, isError } = useDiagram(id);
   const { data: types } = useAllDiagramTypes();
@@ -265,6 +265,61 @@ export function DiagramEditorPage() {
     setEditingNode(null);
   };
 
+  /** Save the open node, then arm link mode with it already chosen as source. */
+  const handleNodeLink = (values: NodeFormValues) => {
+    if (!editingNode) return;
+    handleNodeSubmit(values);
+    setLinking(true);
+    setLinkSourceId(editingNode.id);
+    setSelectedId(editingNode.id);
+  };
+
+  /**
+   * Add a child of the open node, joined by the PRIMARY relation — that is what
+   * "con" means here (DESIGN §4: primary is the structural backbone).
+   *
+   * The child's block type is not guessed: each type is probed with the SAME
+   * guard the canvas uses, and the first the rules accept wins. On an org chart
+   * that turns "Thêm con" on a Phòng ban into a Quản lý, because `chain` allows
+   * nothing else — no org-specific code anywhere.
+   */
+  const handleAddChild = (values: NodeFormValues) => {
+    if (!draft || !editingNode || !workingDiagram || !primaryRelation) return;
+    const parent = editingNode;
+    handleNodeSubmit(values);
+
+    const child: DiagramNode = {
+      id: newId('n'),
+      blockTypeId: blockTypes[0]?.id ?? parent.blockTypeId,
+      label: 'Khối mới',
+      pos: { x: parent.pos.x, y: parent.pos.y + 150 },
+    };
+    // Probe on a copy: `edgeWouldViolate` needs both endpoints to really exist.
+    const probeBase = { ...workingDiagram, nodes: [...draft.nodes, child] };
+    const legalType = blockTypes.find(
+      (bt) =>
+        !edgeWouldViolate(
+          { ...probeBase, nodes: probeBase.nodes.map((n) => (n.id === child.id ? { ...n, blockTypeId: bt.id } : n)) },
+          rules,
+          { relationId: primaryRelation.id, source: parent.id, target: child.id },
+          relations,
+        ),
+    );
+    if (!legalType) {
+      message.warning(`Luật đang áp không cho “${parent.label}” có thêm khối con nào theo quan hệ chính.`);
+      return;
+    }
+    child.blockTypeId = legalType.id;
+    child.label = legalType.name;
+
+    patch({
+      nodes: [...draft.nodes, child],
+      edges: [...draft.edges, { id: newId('e'), relationId: primaryRelation.id, source: parent.id, target: child.id }],
+    });
+    setSelectedId(child.id);
+    setEditingNode(child); // straight into naming it
+  };
+
   /**
    * Fill the canvas with generated data obeying the rule sets this diagram
    * applies — enough blocks, links and depth to exercise every feature at once.
@@ -468,6 +523,11 @@ export function DiagramEditorPage() {
         open={Boolean(editingNode)}
         node={editingNode}
         blockTypes={blockTypes}
+        addChildBlocked={
+          primaryRelation ? null : 'Loại sơ đồ này chưa có quan hệ chính nên chưa xác định được “con” là gì.'
+        }
+        onLink={handleNodeLink}
+        onAddChild={handleAddChild}
         onSubmit={handleNodeSubmit}
         onCancel={() => setEditingNode(null)}
       />

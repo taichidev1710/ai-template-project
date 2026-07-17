@@ -156,6 +156,20 @@ vốn từ vựng của loại đó.
      loại quan hệ** → toggle *Nhãn liên kết* tắt thì ẩn hết. Fallback nằm trong
      stylesheet; đừng vá `label` bằng `cy.style().selector('edge')` sau đó — nó
      thay luôn mapper và làm mất fallback.
+     - `visibility.hiddenLabels[]` **tắt nhãn theo TỪNG loại**, tách khỏi
+       `hiddenRelations[]` (ẩn cả đường): bật suy ra lên là canvas ngập chữ, mà
+       lúc đó **đường mới là thứ cần xem, nhãn mới là thứ gây rối**. Cả hai đều
+       nướng vào `buildStylesheet` (lý do ở trên), nên `mutedKey` là dep của effect
+       style — không phải mảng, vì identity đổi mỗi lần patch visibility.
+     - `derivedEdgeDef` **phải** truyền `relName`: cạnh suy ra không ai vẽ nên
+       không có nhãn riêng để fallback TỪ đó — thiếu `relName` là mapper ra `''`
+       và **mọi quan hệ suy ra hiện lên vô danh**. Đã từng bị đúng vậy.
+   - **Chi tiết khối** (`NodeFormModal`) có *Nối khối* (lưu rồi bật link mode với
+     chính khối đó làm **nguồn** sẵn — đỡ một lần chạm) và *Thêm con* (tạo khối
+     con nối bằng **quan hệ chính**, đúng nghĩa "con" ở mục 4). Loại khối của con
+     **không đoán**: probe từng loại bằng chính `edgeWouldViolate`, loại nào luật
+     nhận thì lấy → trên sơ đồ tổ chức, "Thêm con" ở Phòng ban ra **Quản lý** vì
+     `chain` không cho gì khác. Không một dòng code nào biết về tổ chức.
    - **Tìm khối:** ô tìm ở toolbar (demo: `qfSearch`) → bay tới + chọn khối.
      So khớp **bỏ dấu tiếng Việt** (`canvas/search.ts#noDia`, có test — nhớ cả
      `đ/Đ` vì NFD không tách chữ này).

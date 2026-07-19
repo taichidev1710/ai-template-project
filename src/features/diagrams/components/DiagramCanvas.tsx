@@ -1,4 +1,4 @@
-import { useEffect, useImperativeHandle, useMemo, useRef, type Ref } from 'react';
+import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from 'react';
 import { theme } from 'antd';
 import cytoscape from 'cytoscape';
 import {
@@ -13,7 +13,18 @@ import {
 } from '@/domain/diagram';
 import { useThemeStore } from '@/shared/theme';
 import { buildStylesheet } from '../canvas/cy-style';
+import { visibleWindow } from '../canvas/cull';
 import { derivedEdgeDef, edgeDef, nodeDef, type CyElementDef } from '../canvas/cy-elements';
+
+/**
+ * Viewport-window constants, straight from the demo: a 35% buffer ring keeps a
+ * pan from revealing blank canvas before the debounce fires, and the cap bounds
+ * what a fully zoomed-out view can mount at once.
+ */
+const WINDOW_MARGIN = 0.35;
+const WINDOW_CAP = 300;
+/** How long a pan/zoom must settle before the window is re-evaluated. */
+const WINDOW_DEBOUNCE_MS = 150;
 
 /** Imperative bits the page needs; everything else flows through props. */
 export interface DiagramCanvasHandle {
@@ -52,6 +63,14 @@ interface DiagramCanvasProps {
  * rebuilt only when its STRUCTURE changes (ids/labels/styles), never when a
  * position changes — otherwise every drag would rebuild and the node would snap
  * back under the cursor. Positions flow one way, canvas → `onNodeMove` → state.
+ *
+ * Only the slice of the graph inside the viewport window is MOUNTED (the demo's
+ * `refreshWindow`): cytoscape redraws every element it holds each frame, so on a
+ * big diagram mounting everything makes panning crawl even with most of it off
+ * screen. `visibleWindow` picks the slice; pan/zoom re-evaluates it after a
+ * debounce. Consequences handled below: fit and focus must work from MODEL
+ * positions (the target may not be mounted), and marks/ants re-apply whenever
+ * the mounted set changes (`windowVersion`).
  */
 export function DiagramCanvas({
   diagram,
@@ -76,24 +95,6 @@ export function DiagramCanvas({
   // listeners can stay bound for the canvas's whole lifetime.
   const handlers = useRef({ onNodeMove, onNodeTap, onNodeDoubleTap, onEdgeTap, onBackgroundTap });
   handlers.current = { onNodeMove, onNodeTap, onNodeDoubleTap, onEdgeTap, onBackgroundTap };
-
-  useImperativeHandle(ref, () => ({
-    fit: () => cyRef.current?.fit(undefined, 48),
-    viewportCenter: () => {
-      const cy = cyRef.current;
-      if (!cy) return { x: 0, y: 0 };
-      const e = cy.extent();
-      return { x: Math.round((e.x1 + e.x2) / 2), y: Math.round((e.y1 + e.y2) / 2) };
-    },
-    focus: (id: string) => {
-      const cy = cyRef.current;
-      const el = cy?.getElementById(id);
-      if (!cy || !el || el.empty()) return;
-      cy.animate({ center: { eles: el }, duration: 220 });
-      cy.elements().unselect();
-      el.select();
-    },
-  }));
 
   const { hiddenBlockTypes, hiddenRelations, hiddenLabels, showDerived, showSecondary, edgeLabels, collapsed } =
     diagram.visibility;
@@ -166,6 +167,146 @@ export function DiagramCanvas({
     [elements],
   );
 
+  /** `elements` reshaped for the culler: defs by id, plus geometry-only lists. */
+  const windowModel = useMemo(() => {
+    const nodeDefs = new Map<string, CyElementDef>();
+    const edgeDefs = new Map<string, CyElementDef>();
+    for (const def of elements) (def.group === 'nodes' ? nodeDefs : edgeDefs).set(String(def.data.id), def);
+    return {
+      nodeDefs,
+      edgeDefs,
+      cullNodes: [...nodeDefs.values()].map((d) => ({
+        id: String(d.data.id),
+        x: d.position?.x ?? 0,
+        y: d.position?.y ?? 0,
+      })),
+      cullEdges: [...edgeDefs.values()].map((d) => ({
+        id: String(d.data.id),
+        source: String(d.data.source),
+        target: String(d.data.target),
+      })),
+    };
+  }, [elements]);
+  // Read through a ref so refreshWindow can stay one stable callback: it is
+  // wired into cy's pan/zoom listener once, at mount.
+  const windowModelRef = useRef(windowModel);
+  windowModelRef.current = windowModel;
+
+  /** Bumped whenever the MOUNTED set changes, so marks and ants re-apply. */
+  const [windowVersion, setWindowVersion] = useState(0);
+
+  /** Sync what cytoscape holds to the slice of the model the viewport can see. */
+  const refreshWindow = useCallback(() => {
+    const cy = cyRef.current;
+    if (!cy) return;
+    const { nodeDefs, edgeDefs, cullNodes, cullEdges } = windowModelRef.current;
+    const { nodeIds, edgeIds } = visibleWindow({
+      nodes: cullNodes,
+      edges: cullEdges,
+      extent: cy.extent(),
+      margin: WINDOW_MARGIN,
+      cap: WINDOW_CAP,
+    });
+
+    let removed = 0;
+    const frag: CyElementDef[] = [];
+    cy.batch(() => {
+      // Unmount what left the window; connected edges leave with their nodes.
+      cy.nodes().forEach((n) => {
+        if (!nodeIds.has(n.id())) {
+          n.remove();
+          removed += 1;
+        }
+      });
+      // Nodes before edges — cytoscape rejects an edge whose endpoint isn't in yet.
+      for (const id of nodeIds) {
+        const def = nodeDefs.get(id);
+        if (!def || !cy.getElementById(id).empty()) continue;
+        // Fresh position object: cytoscape keeps (and mutates) what it is handed.
+        frag.push({ ...def, position: { x: def.position?.x ?? 0, y: def.position?.y ?? 0 } });
+      }
+      for (const id of edgeIds) {
+        const def = edgeDefs.get(id);
+        if (def && cy.getElementById(id).empty()) frag.push(def);
+      }
+      if (frag.length > 0) cy.add(frag as cytoscape.ElementDefinition[]);
+    });
+    if (removed > 0 || frag.length > 0) setWindowVersion((v) => v + 1);
+  }, []);
+
+  /**
+   * Frame every visible node. `cy.fit` only measures MOUNTED elements — under
+   * culling that is just the current window — so the frame is computed from the
+   * model instead, demo-style, and the window re-mounted for the new viewport.
+   */
+  const fitAll = useCallback(() => {
+    const cy = cyRef.current;
+    const { cullNodes } = windowModelRef.current;
+    if (!cy || cullNodes.length === 0) return;
+    let x1 = Infinity;
+    let y1 = Infinity;
+    let x2 = -Infinity;
+    let y2 = -Infinity;
+    for (const n of cullNodes) {
+      x1 = Math.min(x1, n.x);
+      x2 = Math.max(x2, n.x);
+      y1 = Math.min(y1, n.y);
+      y2 = Math.max(y2, n.y);
+    }
+    // Node bodies and labels hang off their centre points, hence the wide pad;
+    // the 1.2 ceiling stops a two-block diagram from filling the screen.
+    const pad = 90;
+    const w = cy.width();
+    const h = cy.height();
+    const zoom = Math.max(
+      cy.minZoom(),
+      Math.min((w - 2 * pad) / Math.max(1, x2 - x1), (h - 2 * pad) / Math.max(1, y2 - y1), 1.2),
+    );
+    cy.viewport({ zoom, pan: { x: w / 2 - (zoom * (x1 + x2)) / 2, y: h / 2 - (zoom * (y1 + y2)) / 2 } });
+    refreshWindow();
+  }, [refreshWindow]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      fit: fitAll,
+      viewportCenter: () => {
+        const cy = cyRef.current;
+        if (!cy) return { x: 0, y: 0 };
+        const e = cy.extent();
+        return { x: Math.round((e.x1 + e.x2) / 2), y: Math.round((e.y1 + e.y2) / 2) };
+      },
+      focus: (id: string) => {
+        const cy = cyRef.current;
+        if (!cy) return;
+        // The target may be culled, so aim by MODEL position: a node's own, or
+        // the midpoint of an edge's endpoints (violations focus edges too).
+        const { nodeDefs, edgeDefs } = windowModelRef.current;
+        let pos = nodeDefs.get(id)?.position;
+        if (!pos) {
+          const edge = edgeDefs.get(id);
+          const s = edge && nodeDefs.get(String(edge.data.source))?.position;
+          const t = edge && nodeDefs.get(String(edge.data.target))?.position;
+          if (s && t) pos = { x: (s.x + t.x) / 2, y: (s.y + t.y) / 2 };
+        }
+        if (!pos) return;
+        const { x, y } = pos;
+        const zoom = cy.zoom();
+        cy.animate({
+          pan: { x: cy.width() / 2 - zoom * x, y: cy.height() / 2 - zoom * y },
+          duration: 220,
+          // Select AFTER landing: only then has refreshWindow mounted the target.
+          complete: () => {
+            refreshWindow();
+            cy.elements().unselect();
+            cy.getElementById(id).select();
+          },
+        });
+      },
+    }),
+    [fitAll, refreshWindow],
+  );
+
   // Mount once; never re-create on data change.
   useEffect(() => {
     if (!containerRef.current) return;
@@ -190,11 +331,21 @@ export function DiagramCanvas({
       if (evt.target === cy) handlers.current.onBackgroundTap();
     });
 
+    // Moving the viewport changes what falls in the window. Debounced: a wheel
+    // spin or drag-pan fires dozens of events, and the buffer ring means the
+    // in-between frames already have content.
+    let timer = 0;
+    cy.on('pan zoom', () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(refreshWindow, WINDOW_DEBOUNCE_MS);
+    });
+
     return () => {
+      window.clearTimeout(timer);
       cy.destroy();
       cyRef.current = null;
     };
-  }, []);
+  }, [refreshWindow]);
 
   // Restyle on theme / edge-label change without touching the graph.
   useEffect(() => {
@@ -220,29 +371,21 @@ export function DiagramCanvas({
     );
   }, [token, mode, edgeLabels, mutedKey]);
 
-  // Sync graph structure.
+  // Sync graph structure: clear, then let refreshWindow mount the visible slice.
   useEffect(() => {
     const cy = cyRef.current;
     if (!cy) return;
-    const positions = new Map(diagram.nodes.map((n) => [n.id, n.pos]));
-    cy.batch(() => {
-      cy.elements().remove();
-      cy.add(
-        elements.map((def) =>
-          def.group === 'nodes' ? { ...def, position: { ...(positions.get(String(def.data.id)) ?? { x: 0, y: 0 }) } } : def,
-        ) as cytoscape.ElementDefinition[],
-      );
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [structureKey]);
+    cy.elements().remove();
+    refreshWindow();
+  }, [structureKey, refreshWindow]);
 
   // Frame the graph on request. Declared AFTER the sync above so that on any
   // pass — first mount, or a remount — the elements are already in place by the
   // time this runs. Deliberately NOT keyed on `structureKey`: adding one block
   // must not yank the viewport out from under the person who placed it.
   useEffect(() => {
-    if (fitSignal > 0) cyRef.current?.fit(undefined, 48);
-  }, [fitSignal]);
+    if (fitSignal > 0) fitAll();
+  }, [fitSignal, fitAll]);
 
   /**
    * Marching ants: walk `line-dash-offset` on every animated edge each frame.
@@ -268,9 +411,10 @@ export function DiagramCanvas({
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [structureKey]);
+  }, [windowVersion]);
 
-  // Violation + collapse + link-source marks.
+  // Violation + collapse + link-source marks. Keyed on `windowVersion`, not
+  // `structureKey`: a pan can mount a marked node that missed the last pass.
   useEffect(() => {
     const cy = cyRef.current;
     if (!cy) return;
@@ -280,7 +424,7 @@ export function DiagramCanvas({
       for (const id of collapsed) cy.getElementById(id).addClass('collapsed');
       if (linkSourceId) cy.getElementById(linkSourceId).addClass('linksrc');
     });
-  }, [violations, collapsed, linkSourceId, structureKey]);
+  }, [violations, collapsed, linkSourceId, windowVersion]);
 
   return <div ref={containerRef} className="h-full w-full rounded-app bg-canvas" data-testid="diagram-canvas" />;
 }

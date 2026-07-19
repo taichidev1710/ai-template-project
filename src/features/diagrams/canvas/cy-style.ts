@@ -54,7 +54,13 @@ export function buildStylesheet(
         'background-color': (e: cytoscape.NodeSingular) => String(e.data('color')),
         width: 54,
         height: 54,
-        label: (e: cytoscape.NodeSingular) => String(e.data('label') ?? ''),
+        // A collapsed root carries `hc` — how many blocks its fold hides — set
+        // at mark time (the data, not the def: folding must not rebuild).
+        label: (e: cytoscape.NodeSingular) => {
+          const base = String(e.data('label') ?? '');
+          const hc = Number(e.data('hc') ?? 0);
+          return hc > 0 ? `${base} ⊕${hc}` : base;
+        },
         color: t.colorText,
         'font-family': t.fontFamily,
         'font-size': 12,

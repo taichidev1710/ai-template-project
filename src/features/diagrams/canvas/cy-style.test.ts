@@ -22,8 +22,26 @@ function labelOf(sheet: cytoscape.StylesheetJson, data: Record<string, unknown>)
   return mapper({ data: (k: string) => data[k] } as unknown as cytoscape.EdgeSingular);
 }
 
+/** Run the stylesheet's node `label` mapper over a fake node's data. */
+function nodeLabelOf(sheet: cytoscape.StylesheetJson, data: Record<string, unknown>): string {
+  const nodeRule = (sheet as { selector: string; style: Record<string, unknown> }[]).find(
+    (s) => s.selector === 'node',
+  );
+  const mapper = nodeRule?.style.label as (e: cytoscape.NodeSingular) => string;
+  return mapper({ data: (k: string) => data[k] } as unknown as cytoscape.NodeSingular);
+}
+
 const parentEdge = { rel: 'rel_parent', label: '', relName: 'Cha mẹ – con' };
 const derivedEdge = { rel: 'der_sibling', label: '', relName: 'Anh chị em (suy ra)' };
+
+describe('node label', () => {
+  it('appends ⊕N while the node hides a collapsed branch, and only then', () => {
+    const sheet = buildStylesheet(theme, false, true);
+    expect(nodeLabelOf(sheet, { label: 'Quản lý 2', hc: 3 })).toBe('Quản lý 2 ⊕3');
+    expect(nodeLabelOf(sheet, { label: 'Quản lý 2' })).toBe('Quản lý 2');
+    expect(nodeLabelOf(sheet, { label: 'Quản lý 2', hc: 0 })).toBe('Quản lý 2');
+  });
+});
 
 describe('edge label', () => {
   it('falls back to the relation name when the edge has none of its own', () => {

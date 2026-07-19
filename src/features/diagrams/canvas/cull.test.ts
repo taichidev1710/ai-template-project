@@ -31,19 +31,22 @@ describe('visibleWindow', () => {
     expect(visibleWindow(input({ nodes })).nodeIds.size).toBe(0);
   });
 
-  it('caps to the nodes nearest the viewport centre', () => {
-    const { nodeIds } = visibleWindow(
+  it('caps to the nodes nearest the viewport centre, and says so', () => {
+    const { nodeIds, capped } = visibleWindow(
       input({
         nodes: [node('centre', 50, 50), node('near', 60, 50), node('far', 90, 90)],
         cap: 2,
       }),
     );
     expect(nodeIds).toEqual(new Set(['centre', 'near']));
+    expect(capped).toBe(true);
   });
 
-  it('does not trim when the window holds exactly cap nodes', () => {
+  it('does not trim — nor report capped — when the window holds exactly cap nodes', () => {
     const nodes = Array.from({ length: 5 }, (_, i) => node(`n${i}`, 10 + i * 10, 50));
-    expect(visibleWindow(input({ nodes, cap: 5 })).nodeIds.size).toBe(5);
+    const result = visibleWindow(input({ nodes, cap: 5 }));
+    expect(result.nodeIds.size).toBe(5);
+    expect(result.capped).toBe(false);
   });
 
   it('breaks distance ties by id, so identical frames render identically', () => {

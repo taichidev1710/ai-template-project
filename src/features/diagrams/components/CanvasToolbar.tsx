@@ -1,4 +1,4 @@
-import { Button, Select, Space, Tooltip } from 'antd';
+import { Button, Dropdown, Select, Space, Tooltip } from 'antd';
 import {
   PlusOutlined,
   SaveOutlined,
@@ -34,7 +34,12 @@ interface CanvasToolbarProps {
   onSave: () => void;
   /** Replace the canvas with generated data that satisfies the applied rules. */
   onFillSample: () => void;
+  /** Replace the canvas with BIG data for a performance run — rules not obeyed. */
+  onFillStress: (count: number) => void;
 }
+
+/** Sizes offered under "Dữ liệu mẫu" — the demo's stress tool went to 20 000. */
+const STRESS_SIZES = [1000, 5000, 20000];
 
 /** Toolbar for the canvas: add blocks, draw links, delete, fit, save. */
 export function CanvasToolbar({
@@ -57,6 +62,7 @@ export function CanvasToolbar({
   onFit,
   onSave,
   onFillSample,
+  onFillStress,
 }: CanvasToolbarProps) {
   const linkHint = !linking
     ? 'Bật chế độ nối, rồi chạm khối nguồn và khối đích'
@@ -96,10 +102,19 @@ export function CanvasToolbar({
           Xoá
         </Button>
 
-        <Tooltip title="Dựng khối và liên kết mẫu thoả mọi luật đang áp, đủ để thử mọi chức năng">
-          <Button icon={<ExperimentOutlined />} onClick={onFillSample}>
-            Dữ liệu mẫu
-          </Button>
+        <Tooltip title="Dựng khối và liên kết mẫu thoả mọi luật đang áp. Mục xổ xuống tạo dữ liệu LỚN để thử hiệu năng — không theo luật.">
+          <Dropdown.Button
+            onClick={onFillSample}
+            menu={{
+              items: STRESS_SIZES.map((n) => ({
+                key: String(n),
+                label: `Dữ liệu lớn: ${n.toLocaleString('vi-VN')} khối`,
+              })),
+              onClick: ({ key }) => onFillStress(Number(key)),
+            }}
+          >
+            <ExperimentOutlined /> Dữ liệu mẫu
+          </Dropdown.Button>
         </Tooltip>
       </Space>
 

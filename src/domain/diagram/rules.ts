@@ -151,12 +151,42 @@ export function validate(diagram: Diagram, rules: Rule[], relations: Relation[] 
   const adj = lazyAdjacency(diagram);
 
   // --- Node-degree rules: require / limit ---
-  for (const r of rules) {
+  // Degrees come from ONE pass over the edges: calling `degree` per node made
+  // this O(nodes × edges), which froze the tab on stress-sized diagrams.
+  const degreeRules = rules.filter((r) => r.type === 'require' || r.type === 'limit');
+  // relation → node → counts. Nested rather than a joined string key: ids are
+  // author-typed, so no separator character is safely collision-free.
+  const degrees = new Map<string, Map<string, { in: number; out: number }>>();
+  if (degreeRules.length > 0) {
+    const at = (relation: string, nodeId: string) => {
+      let byNode = degrees.get(relation);
+      if (!byNode) {
+        byNode = new Map();
+        degrees.set(relation, byNode);
+      }
+      let d = byNode.get(nodeId);
+      if (!d) {
+        d = { in: 0, out: 0 };
+        byNode.set(nodeId, d);
+      }
+      return d;
+    };
+    for (const e of diagram.edges) {
+      at(e.relationId, e.target).in += 1;
+      at(e.relationId, e.source).out += 1;
+    }
+  }
+  const degreeOf = (nodeId: string, relation: string, dir: Direction): number => {
+    const d = degrees.get(relation)?.get(nodeId);
+    if (!d) return 0;
+    return dir === 'in' ? d.in : dir === 'out' ? d.out : d.in + d.out;
+  };
+  for (const r of degreeRules) {
     if (r.type !== 'require' && r.type !== 'limit') continue;
     for (const node of diagram.nodes) {
       if (r.blockType !== '*' && node.blockTypeId !== r.blockType) continue;
       if (r.type === 'require' && node.exempt) continue; // exempt nodes skip require
-      const c = degree(diagram, node.id, r.relation, r.dir);
+      const c = degreeOf(node.id, r.relation, r.dir);
       if (r.type === 'require' && c < r.min) {
         violations.push({
           kind: 'node',

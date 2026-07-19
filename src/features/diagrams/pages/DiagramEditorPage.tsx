@@ -7,6 +7,7 @@ import {
   edgeWouldViolate,
   effectiveRules,
   generateSample,
+  generateStress,
   isBaseRelation,
   validate,
   type DiagramEdge,
@@ -16,7 +17,7 @@ import {
 } from '@/domain/diagram';
 import { useAllDiagramTypes } from '@/features/diagram-types';
 import { paths } from '@/app/router/paths';
-import { DiagramCanvas, type DiagramCanvasHandle } from '../components/DiagramCanvas';
+import { DiagramCanvas, type DiagramCanvasHandle, type WindowStats } from '../components/DiagramCanvas';
 import { CanvasToolbar } from '../components/CanvasToolbar';
 import { VisibilityPanel } from '../components/VisibilityPanel';
 import { ViolationsPanel } from '../components/ViolationsPanel';
@@ -56,6 +57,8 @@ export function DiagramEditorPage() {
   const [editingNode, setEditingNode] = useState<DiagramNode | null>(null);
   const [editingEdge, setEditingEdge] = useState<DiagramEdge | null>(null);
   const [fitSignal, setFitSignal] = useState(0);
+  // Statline numbers, reported by the canvas whenever the mounted window moves.
+  const [windowStats, setWindowStats] = useState<WindowStats>({ mounted: 0, total: 0, capped: false });
 
   const type = types?.find((t) => t.id === diagram?.templateId);
   const blockTypes = useMemo(() => type?.blockTypes ?? [], [type]);
@@ -370,6 +373,32 @@ export function DiagramEditorPage() {
     });
   };
 
+  /**
+   * Fill the canvas with BIG generated data to measure rendering — the demo's
+   * stress tool. Unlike `handleFillSample` it does NOT obey the rules (random
+   * lateral links), so the violations panel lighting up afterwards is expected.
+   */
+  const handleFillStress = (count: number) => {
+    if (!draft || !type) return;
+    modal.confirm({
+      title: `Tạo ${count.toLocaleString('vi-VN')} khối để thử hiệu năng?`,
+      content:
+        `Dữ liệu đo hiệu năng KHÔNG theo luật — panel Vi phạm có thể sáng. ` +
+        (draft.nodes.length > 0 ? `${draft.nodes.length} khối đang có sẽ bị thay hết. ` : '') +
+        `Chưa bấm Lưu thì bản đã lưu vẫn còn nguyên.`,
+      okText: 'Tạo',
+      okButtonProps: { danger: draft.nodes.length > 0 },
+      cancelText: 'Huỷ',
+      onOk: () => {
+        const { nodes, edges } = generateStress(type, count);
+        patch({ nodes, edges, visibility: { ...draft.visibility, collapsed: [] } });
+        setSelectedId(null);
+        closeLinking();
+        setFitSignal((t) => t + 1);
+      },
+    });
+  };
+
   const handleSave = () => {
     if (!draft) return;
     save.mutate(draft, { onSuccess: () => setDirty(false) });
@@ -468,6 +497,7 @@ export function DiagramEditorPage() {
             onFit={() => canvasRef.current?.fit()}
             onSave={handleSave}
             onFillSample={handleFillSample}
+            onFillStress={handleFillStress}
           />
           {/* Stacked: a fixed slice of the viewport. Side by side: fill the column. */}
           <div className="h-[55vh] min-h-[300px] lg:h-auto lg:min-h-0 lg:flex-1">
@@ -493,8 +523,18 @@ export function DiagramEditorPage() {
                 // Tapping the background cancels link mode, as in the demo.
                 if (linking) closeLinking();
               }}
+              onWindowStats={setWindowStats}
             />
           </div>
+          {/* Statline (demo's #statline): the one place that says the render cap
+              is trimming the view — culling is invisible by design otherwise. */}
+          <Typography.Text type="secondary" className="mt-2 text-xs" data-testid="canvas-statline">
+            Hiện {windowStats.mounted.toLocaleString('vi-VN')}/{windowStats.total.toLocaleString('vi-VN')} khối
+            {' · '}
+            {draft.edges.length.toLocaleString('vi-VN')} liên kết
+            {violations.length > 0 && ` · ⚠ ${violations.length.toLocaleString('vi-VN')} vi phạm`}
+            {windowStats.capped && ' · đang giới hạn theo khung nhìn'}
+          </Typography.Text>
         </div>
 
         {/* Side by side: fixed width, scrolls on its own so a long relation list

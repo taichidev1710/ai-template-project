@@ -52,6 +52,8 @@ export interface CullInput {
 export interface CullResult {
   nodeIds: Set<string>;
   edgeIds: Set<string>;
+  /** True when the cap trimmed the window — the statline's "đang giới hạn". */
+  capped: boolean;
 }
 
 /**
@@ -86,5 +88,5 @@ export function visibleWindow({ nodes, edges, extent, margin, cap }: CullInput):
   for (const e of edges) {
     if (nodeIds.has(e.source) && nodeIds.has(e.target)) edgeIds.add(e.id);
   }
-  return { nodeIds, edgeIds };
+  return { nodeIds, edgeIds, capped: inWindow.length > cap };
 }

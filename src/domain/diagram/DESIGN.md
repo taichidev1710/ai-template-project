@@ -262,18 +262,29 @@ Kết quả rà toàn bộ demo sau khi port virtualization. Tên trong ngoặc 
 tương ứng trong `demo-sdqh/index.html` để tra khi làm. Thứ tự trong mỗi nhóm ≈ độ
 đáng làm (giá trị / công sức).
 
-**Đáng làm sớm — rẻ mà bù đúng chỗ virtualization vừa mở ra:**
+**Đáng làm sớm — rẻ mà bù đúng chỗ virtualization vừa mở ra: ✅ đã làm cả 4.**
 
-- **Dòng trạng thái** (`updateStatline`): "hiện x/y khối · z liên kết · ⚠n vi phạm
-  · đang giới hạn". Từ khi có cap, user cần biết lúc nào canvas đang cắt bớt;
-  hiện không có gì báo.
-- **Đếm ⊕N trên khối thu gọn** (`hc` trong label mapper): demo ghi số con đang ẩn
-  ngay trên nhãn; bản này chỉ đổi viền — không biết nhánh gọn to cỡ nào.
-- **minZoom 0.02 / maxZoom 4** (demo `makeCy`): bản này 0.2 / 3. Zoom-out 0.2
-  không bao quát nổi sơ đồ vài nghìn khối — mà giờ đã render nổi cỡ đó.
-- **Nới `generateSample` cỡ lớn / stress** (`makeStressState`, 100–20 000 khối):
-  demo có công cụ đo hiệu năng ngay trong app; bản này mẫu nhỏ nên chưa chứng
-  minh được cap. (Có thể chỉ cần một tham số cỡ trong flow "Dữ liệu mẫu".)
+- ✅ **Dòng trạng thái** (`updateStatline`): "Hiện x/y khối · z liên kết · ⚠n vi
+  phạm · đang giới hạn theo khung nhìn" — dưới canvas trong `DiagramEditorPage`.
+  Canvas báo `{mounted, total, capped}` qua prop `onWindowStats` (chỉ khi số đổi);
+  `capped` do `visibleWindow` trả — nơi duy nhất biết cap có cắt hay không.
+- ✅ **Đếm ⊕N trên khối thu gọn**: `DiagramCanvas` đếm subtree mỗi gốc gọn
+  (`collapsedCounts`, chung một lượt walk với `collapsedHidden`), gắn vào cy qua
+  `data('hc')` lúc đánh dấu — là DATA chứ không phải def, để gấp/mở không rebuild;
+  label mapper trong `cy-style.ts` nối " ⊕N" (có test).
+- ✅ **minZoom 0.02 / maxZoom 4** (theo demo): đo thực tế fit 5 000 khối cần zoom
+  0.020 — floor 0.2 cũ không thể nhìn toàn cảnh.
+- ✅ **Dữ liệu lớn / stress** (`domain/diagram/stress.ts#generateStress`, có test):
+  cây 2–4 con qua quan hệ **primary**, loại khối xoay theo tầng, ~5% liên kết
+  ngang ngẫu nhiên (25 cạnh đầu chạy nét) — **cố ý KHÔNG theo luật**, panel Vi
+  phạm sáng là đúng ý (demo cũng vậy). PRNG seed cứng nên tái lập được. UI: mục
+  xổ xuống của nút "Dữ liệu mẫu" (1 000 / 5 000 / 20 000 khối). Đo thật:
+  5 000 khối dựng + validate + render trong ~210ms.
+  - Kéo theo một tối ưu engine: `validate` từng gọi `degree()` quét cả mảng edges
+    cho TỪNG node (O(nodes×edges) — 5 000 khối là đứng hình); giờ require/limit
+    đọc từ chỉ mục degree dựng một lượt (map lồng quan hệ → khối, không ghép
+    chuỗi key vì id do user gõ). `edgeWouldViolate` vẫn dùng `degree()` — một
+    cạnh probe thì quét thẳng lại rẻ hơn dựng chỉ mục.
 
 **Chức năng demo có, bản này chưa có:**
 

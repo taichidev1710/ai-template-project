@@ -26,6 +26,16 @@ const WINDOW_CAP = 300;
 /** How long a pan/zoom must settle before the window is re-evaluated. */
 const WINDOW_DEBOUNCE_MS = 150;
 
+/** What the statline reports about the mounted window. */
+export interface WindowStats {
+  /** Blocks actually mounted in cytoscape right now. */
+  mounted: number;
+  /** Blocks the model would show (after visibility filters). */
+  total: number;
+  /** True while the render cap is trimming the view. */
+  capped: boolean;
+}
+
 /** Imperative bits the page needs; everything else flows through props. */
 export interface DiagramCanvasHandle {
   fit: () => void;
@@ -55,6 +65,8 @@ interface DiagramCanvasProps {
   onNodeDoubleTap: (id: string) => void;
   onEdgeTap: (id: string) => void;
   onBackgroundTap: () => void;
+  /** Fired when the mounted window changes — feeds the statline. */
+  onWindowStats?: (stats: WindowStats) => void;
   ref?: Ref<DiagramCanvasHandle>;
 }
 
@@ -84,6 +96,7 @@ export function DiagramCanvas({
   onNodeDoubleTap,
   onEdgeTap,
   onBackgroundTap,
+  onWindowStats,
   ref,
 }: DiagramCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -93,8 +106,8 @@ export function DiagramCanvas({
 
   // Handlers change identity every render; keep them in a ref so the cy
   // listeners can stay bound for the canvas's whole lifetime.
-  const handlers = useRef({ onNodeMove, onNodeTap, onNodeDoubleTap, onEdgeTap, onBackgroundTap });
-  handlers.current = { onNodeMove, onNodeTap, onNodeDoubleTap, onEdgeTap, onBackgroundTap };
+  const handlers = useRef({ onNodeMove, onNodeTap, onNodeDoubleTap, onEdgeTap, onBackgroundTap, onWindowStats });
+  handlers.current = { onNodeMove, onNodeTap, onNodeDoubleTap, onEdgeTap, onBackgroundTap, onWindowStats };
 
   const { hiddenBlockTypes, hiddenRelations, hiddenLabels, showDerived, showSecondary, edgeLabels, collapsed } =
     diagram.visibility;
@@ -102,21 +115,33 @@ export function DiagramCanvas({
   // stylesheet only needs rebuilding when the CONTENTS move.
   const mutedKey = (hiddenLabels ?? []).join(',');
 
-  /** Nodes hidden because an ancestor's primary subtree is collapsed. */
-  const collapsedHidden = useMemo(() => {
+  /**
+   * Nodes hidden because an ancestor's primary subtree is collapsed, plus how
+   * many blocks each collapsed root hides — the ⊕N on its label.
+   */
+  const { collapsedHidden, collapsedCounts } = useMemo(() => {
     const hidden = new Set<string>();
+    const counts = new Map<string, number>();
     const primary = relations.find((r) => isBaseRelation(r) && r.role === 'primary');
-    if (!primary || collapsed.length === 0) return hidden;
+    if (!primary || collapsed.length === 0) return { collapsedHidden: hidden, collapsedCounts: counts };
     const adj = buildAdjacency(diagram.nodes, diagram.edges, primary.id);
-    const walk = (id: string) => {
-      for (const child of adj.children.get(id) ?? []) {
-        if (hidden.has(child)) continue;
-        hidden.add(child);
-        walk(child);
+    // Each root walks its OWN subtree: a collapsed root nested inside another
+    // fold still shows its own count, so the cycle guard is per root.
+    for (const rootId of collapsed) {
+      const seen = new Set<string>([rootId]);
+      const stack = [rootId];
+      while (stack.length > 0) {
+        const id = stack.pop() as string;
+        for (const child of adj.children.get(id) ?? []) {
+          if (seen.has(child)) continue;
+          seen.add(child);
+          hidden.add(child);
+          stack.push(child);
+        }
       }
-    };
-    for (const rootId of collapsed) walk(rootId);
-    return hidden;
+      counts.set(rootId, seen.size - 1);
+    }
+    return { collapsedHidden: hidden, collapsedCounts: counts };
   }, [diagram.nodes, diagram.edges, relations, collapsed]);
 
   /** Structural elements — excludes positions (see the component doc). */
@@ -194,13 +219,15 @@ export function DiagramCanvas({
 
   /** Bumped whenever the MOUNTED set changes, so marks and ants re-apply. */
   const [windowVersion, setWindowVersion] = useState(0);
+  /** Last stats handed to `onWindowStats` — report only actual changes. */
+  const lastStatsRef = useRef<WindowStats | null>(null);
 
   /** Sync what cytoscape holds to the slice of the model the viewport can see. */
   const refreshWindow = useCallback(() => {
     const cy = cyRef.current;
     if (!cy) return;
     const { nodeDefs, edgeDefs, cullNodes, cullEdges } = windowModelRef.current;
-    const { nodeIds, edgeIds } = visibleWindow({
+    const { nodeIds, edgeIds, capped } = visibleWindow({
       nodes: cullNodes,
       edges: cullEdges,
       extent: cy.extent(),
@@ -232,6 +259,15 @@ export function DiagramCanvas({
       if (frag.length > 0) cy.add(frag as cytoscape.ElementDefinition[]);
     });
     if (removed > 0 || frag.length > 0) setWindowVersion((v) => v + 1);
+
+    // Statline feed. Compared to the last report, not to the mutation flags:
+    // `capped` can flip while the kept set stays identical.
+    const stats = { mounted: cy.nodes().length, total: nodeDefs.size, capped };
+    const last = lastStatsRef.current;
+    if (!last || last.mounted !== stats.mounted || last.total !== stats.total || last.capped !== stats.capped) {
+      lastStatsRef.current = stats;
+      handlers.current.onWindowStats?.(stats);
+    }
   }, []);
 
   /**
@@ -313,8 +349,11 @@ export function DiagramCanvas({
     const cy = cytoscape({
       container: containerRef.current,
       elements: [],
-      minZoom: 0.2,
-      maxZoom: 3,
+      // The demo's range. 0.2 could not take in a thousand-block diagram at
+      // once — and culling caps what a wide view mounts, so deep zoom-out is
+      // cheap now.
+      minZoom: 0.02,
+      maxZoom: 4,
       wheelSensitivity: 0.25,
       layout: { name: 'preset' },
     });
@@ -420,11 +459,17 @@ export function DiagramCanvas({
     if (!cy) return;
     cy.batch(() => {
       cy.elements().removeClass('viol collapsed linksrc');
+      cy.nodes().removeData('hc');
       for (const v of violations) cy.getElementById(v.id).addClass('viol');
-      for (const id of collapsed) cy.getElementById(id).addClass('collapsed');
+      for (const id of collapsed) {
+        const el = cy.getElementById(id);
+        el.addClass('collapsed');
+        // `hc` puts ⊕N on the label (see the stylesheet's node label mapper).
+        el.data('hc', collapsedCounts.get(id) ?? 0);
+      }
       if (linkSourceId) cy.getElementById(linkSourceId).addClass('linksrc');
     });
-  }, [violations, collapsed, linkSourceId, windowVersion]);
+  }, [violations, collapsed, collapsedCounts, linkSourceId, windowVersion]);
 
   return <div ref={containerRef} className="h-full w-full rounded-app bg-canvas" data-testid="diagram-canvas" />;
 }

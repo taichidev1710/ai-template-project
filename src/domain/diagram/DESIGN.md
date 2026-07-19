@@ -190,8 +190,16 @@ vốn từ vựng của loại đó.
      design token nên canvas theo dark mode; màu khối/quan hệ là *dữ liệu*, không
      phải token. `line-dash-pattern` chỉ nhận mảng literal → resolve bằng 1
      selector cho mỗi line style, không dùng mapper.
-   - **Chưa làm (tối ưu sau):** demo có virtualization (`refreshWindow`) chỉ render
-     phần trong khung nhìn + cap; bản này render toàn bộ. Cần khi sơ đồ lớn.
+   - **Virtualization (đã làm, theo `refreshWindow` của demo):** canvas chỉ mount
+     lát cắt trong khung nhìn + vành đệm 35%, cap 300 khối gần tâm nhìn nhất;
+     pan/zoom đánh giá lại cửa sổ sau debounce 150ms. Phần chọn lát cắt là hàm
+     thuần `canvas/cull.ts#visibleWindow` (chỉ biết hình học, có test). Hệ quả đã
+     xử lý trong `DiagramCanvas`: *Vừa khung* và focus (tìm kiếm, vi phạm) tính từ
+     toạ độ **model** vì đích có thể chưa mount; marks + marching-ants áp lại theo
+     `windowVersion` mỗi khi tập mount đổi. **Bẫy cho tính năng sau:** thứ gì đọc
+     từ `cy` chỉ thấy phần ĐANG mount — vd xuất PNG kiểu demo
+     (`cy.png({full:true})`) sẽ thiếu khối ngoài cửa sổ; phải tính trên model
+     hoặc mount tạm toàn bộ rồi trả lại.
 6. ✅ **Dữ liệu mẫu** (`sample.ts`): `generateSample(loại, bộLuậtĐãTick)` dựng sẵn
    khối + liên kết **thoả mọi luật** để test. Tổng quát như engine — chỉ đọc vốn từ
    vựng + luật của chính loại đó, nên **loại do user tự tạo cũng chạy**, không phải
@@ -247,3 +255,63 @@ vốn từ vựng của loại đó.
 - ✅ Suy ra đi trên **nhiều quan hệ**: mỗi bước là `RelationStep = {relationId, dir}`
   với `dir ∈ {up, down, both}` — khai báo được cả họ hàng bên vợ/chồng (con dâu/rể,
   thông gia…). `both` dùng cho quan hệ hai chiều (vợ chồng).
+
+## 10. Đối chiếu demo-sdqh (rà 2026-07) — còn thiếu gì so với demo
+
+Kết quả rà toàn bộ demo sau khi port virtualization. Tên trong ngoặc là hàm/khu
+tương ứng trong `demo-sdqh/index.html` để tra khi làm. Thứ tự trong mỗi nhóm ≈ độ
+đáng làm (giá trị / công sức).
+
+**Đáng làm sớm — rẻ mà bù đúng chỗ virtualization vừa mở ra:**
+
+- **Dòng trạng thái** (`updateStatline`): "hiện x/y khối · z liên kết · ⚠n vi phạm
+  · đang giới hạn". Từ khi có cap, user cần biết lúc nào canvas đang cắt bớt;
+  hiện không có gì báo.
+- **Đếm ⊕N trên khối thu gọn** (`hc` trong label mapper): demo ghi số con đang ẩn
+  ngay trên nhãn; bản này chỉ đổi viền — không biết nhánh gọn to cỡ nào.
+- **minZoom 0.02 / maxZoom 4** (demo `makeCy`): bản này 0.2 / 3. Zoom-out 0.2
+  không bao quát nổi sơ đồ vài nghìn khối — mà giờ đã render nổi cỡ đó.
+- **Nới `generateSample` cỡ lớn / stress** (`makeStressState`, 100–20 000 khối):
+  demo có công cụ đo hiệu năng ngay trong app; bản này mẫu nhỏ nên chưa chứng
+  minh được cap. (Có thể chỉ cần một tham số cỡ trong flow "Dữ liệu mẫu".)
+
+**Chức năng demo có, bản này chưa có:**
+
+- **Bố cục tự động** (`applyLayout` + `layoutModal`): 5 kiểu — cây dọc, cây ngang,
+  tròn lan toả, vành theo cấp, lưới. Tính trên model (không đệ quy, hợp
+  virtualization); cây đi theo quan hệ **primary** nên bản trung lập dùng đúng
+  khái niệm sẵn có ở mục 4. Gap chức năng lớn nhất.
+- **Wizard sửa từng lỗi** (`startFixWizard`/`fixShow`): thanh "Lỗi i/N · Mở & sửa
+  · Tiếp ▸", bay tới từng vi phạm. Bản này mới có panel bấm-để-bay.
+- **Lọc & bay tới** (`applyFilter` + class `hl`/`dim`): lọc theo từ khoá + loại
+  khối → làm nổi cả TẬP kết quả, mờ phần còn lại, bay tới bbox kết quả. Bản này
+  tìm kiếm chỉ bay tới từng khối một.
+- **Xuất/nhập JSON, xuất PNG** (`doExport`/`doImport`/`cy.png`): chưa có. PNG dính
+  bẫy virtualization đã ghi ở mục 8.5.
+- **Lưu & khôi phục viewport theo sơ đồ** (`saveViewport`, `vpKey`): demo mở lại
+  đúng chỗ đang xem (chỉ vài chục byte, debounce); bản này luôn fit lại từ đầu.
+- **Nhóm theo cấp / nhóm tự tạo** (`groupModal`, class `lvgroup`/`lvbox`/`aggedge`):
+  khung cha bao nhóm, thu gọn nhóm thành hộp, liên kết gộp về hộp. Bản trung lập
+  = nhóm theo **loại khối** (hoặc nhóm user tự đặt tên). Nặng công nhất.
+- **Cụm mẫu** (`insertTemplate` + "lưu nhánh thành mẫu riêng"): cụm dựng sẵn của
+  demo là data gia đình (không port thẳng được — phạm trung lập); phần **user lưu
+  nhánh của mình thành mẫu rồi chèn lại** thì trung lập và port được.
+- **Ẩn từng liên kết riêng + hiện mờ liên kết đã ẩn** (`hidedge`/`hidsoft`,
+  `showHidden`): bản này chỉ ẩn theo cả loại quan hệ.
+- **Cài đặt cap render** (`settingsModal`, `CAPS`): demo cho chọn 150–300–…; bản
+  này hằng cứng 300 trong `DiagramCanvas`.
+- **Nền canvas chọn kiểu** (`themeModal`: chấm/lưới/kẻ/trơn): bản này nền phẳng
+  theo token. Nếu làm, màu nền vẫn phải từ token — chỉ *hoạ tiết* là lựa chọn.
+
+**Khác biệt cố ý — KHÔNG phải gap (đừng "sửa"):**
+
+- Style từng cạnh không sửa được (thuộc loại quan hệ — mục 7; demo cho sửa, ta
+  cố ý không theo). Ngoại lệ duy nhất: `animated`.
+- Màu hardcode của demo → design token (mục 8.5); i18n cụm sơ đồ vẫn tiếng Việt
+  cứng (ghi ở memory dự án).
+- localStorage của demo → API mock + TanStack Query; "Dọn bộ nhớ" của demo vô
+  nghĩa ở đây.
+- Test tự chạy trong trang của demo → vitest.
+
+**Vặt (làm khi tiện tay):** fade-in khối mới (`newborn`), fit có animation 600ms
+(`flyToBox(bb, true)` — bản này nhảy thẳng), toast tổng kết sau các thao tác lớn.

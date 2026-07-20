@@ -366,7 +366,10 @@ export function DiagramEditorPage() {
       edges: [...draft.edges, { id: newId('e'), relationId: primaryRelation.id, source: parent.id, target: child.id }],
     });
     setSelectedId(child.id);
-    setEditingNode(child); // straight into naming it
+    // The modal CLOSES here (user feedback): adding a child finishes the
+    // interaction. It used to chain into a second modal to name the newborn,
+    // which read as "the modal never closed".
+    message.success(`Đã thêm “${child.label}” — nhấp đúp khối để đổi tên.`);
   };
 
   /**

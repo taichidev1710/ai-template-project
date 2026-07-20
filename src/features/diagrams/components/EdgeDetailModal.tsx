@@ -1,8 +1,9 @@
+import type { ReactNode } from 'react';
 import { Button, ColorPicker, Form, Input, Modal, Select, Space, Tag, Typography } from 'antd';
 import type { AggregationColor } from 'antd/es/color-picker/color';
 import { DeleteOutlined } from '@ant-design/icons';
 import type { ArrowShape, CurveStyle, DiagramEdge, LineStyle, Relation } from '@/domain/diagram';
-import { ARROW_OPTIONS, CURVE_OPTIONS, LINE_OPTIONS } from '@/features/relation-types';
+import { ARROW_OPTIONS, ArrowGlyph, CURVE_OPTIONS, CurveGlyph, LINE_OPTIONS, LineGlyph } from '@/features/relation-types';
 
 /** `inherit` keeps following the relation; the others pin this edge. */
 export type AnimatedChoice = 'inherit' | 'on' | 'off';
@@ -37,13 +38,26 @@ function toChoice(edge: DiagramEdge): AnimatedChoice {
 
 const WIDTH_OPTIONS = [1, 1.5, 2, 2.5, 3, 4];
 
-/** Prepend "theo loại quan hệ (…)" showing what inheriting currently means. */
+/**
+ * Prepend "theo loại quan hệ (…)" showing what inheriting currently means.
+ * Every choice is drawn next to its name (the demo did), so picking "Zíc zắc"
+ * never requires imagining it — including on the inherit row.
+ */
 function withInherit<V extends string | number>(
-  options: { value: V; label: string }[],
+  options: { value: V; label: string; glyph: ReactNode }[],
   inherited: V | undefined,
-): { value: V | 'inherit'; label: string }[] {
-  const current = options.find((o) => o.value === inherited)?.label ?? String(inherited ?? '—');
-  return [{ value: 'inherit' as const, label: `Theo loại quan hệ (${current})` }, ...options];
+): { value: V | 'inherit'; label: ReactNode }[] {
+  const current = options.find((o) => o.value === inherited);
+  const draw = (glyph: ReactNode, text: string) => (
+    <span className="flex items-center gap-2">
+      {glyph}
+      {text}
+    </span>
+  );
+  return [
+    { value: 'inherit' as const, label: draw(current?.glyph, `Theo loại quan hệ (${current?.label ?? '—'})`) },
+    ...options.map((o) => ({ value: o.value, label: draw(o.glyph, o.label) })),
+  ];
 }
 
 /**
@@ -134,18 +148,33 @@ export function EdgeDetailModal({
 
             <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-2">
               <Form.Item name="curve" label="Đường">
-                <Select options={withInherit(CURVE_OPTIONS, relation?.style.curve)} />
+                <Select
+                  options={withInherit(
+                    CURVE_OPTIONS.map((o) => ({ ...o, glyph: <CurveGlyph curve={o.value} /> })),
+                    relation?.style.curve,
+                  )}
+                />
               </Form.Item>
               <Form.Item name="line" label="Nét">
-                <Select options={withInherit(LINE_OPTIONS, relation?.style.line)} />
+                <Select
+                  options={withInherit(
+                    LINE_OPTIONS.map((o) => ({ ...o, glyph: <LineGlyph line={o.value} /> })),
+                    relation?.style.line,
+                  )}
+                />
               </Form.Item>
               <Form.Item name="arrow" label="Mũi tên">
-                <Select options={withInherit(ARROW_OPTIONS, relation?.style.arrow)} />
+                <Select
+                  options={withInherit(
+                    ARROW_OPTIONS.map((o) => ({ ...o, glyph: <ArrowGlyph arrow={o.value} /> })),
+                    relation?.style.arrow,
+                  )}
+                />
               </Form.Item>
               <Form.Item name="width" label="Độ dày">
                 <Select
                   options={withInherit(
-                    WIDTH_OPTIONS.map((w) => ({ value: w, label: `${w}px` })),
+                    WIDTH_OPTIONS.map((w) => ({ value: w, label: `${w}px`, glyph: <LineGlyph line="solid" width={w} /> })),
                     relation?.style.width,
                   )}
                 />

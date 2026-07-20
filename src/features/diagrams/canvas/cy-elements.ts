@@ -26,6 +26,7 @@ const LINE_SPECS: Record<LineStyle, LineSpec> = {
   solid: { dash: 'solid', pattern: [1], cap: 'butt' },
   dashed: { dash: 'dashed', pattern: [9, 5], cap: 'butt' },
   dotted: { dash: 'dotted', pattern: [2, 4], cap: 'round' },
+  'dots-lg': { dash: 'dashed', pattern: [2, 9], cap: 'round' },
   longdash: { dash: 'dashed', pattern: [18, 7], cap: 'butt' },
   dashdot: { dash: 'dashed', pattern: [13, 5, 2, 5], cap: 'round' },
 };
@@ -100,9 +101,22 @@ export function nodeDef(node: DiagramNode, blockType: BlockType | undefined): Cy
   };
 }
 
-/** A stored edge. `relation` must be a base relation (derived is never stored). */
+/** What an edge with no relation to lean on looks like. */
+const ORPHAN_EDGE_STYLE: RelationStyle = {
+  curve: 'straight',
+  line: 'solid',
+  arrow: 'triangle',
+  color: '#5b647e',
+  width: 2,
+};
+
+/**
+ * A stored edge. `relation` must be a base relation (derived is never stored).
+ * The edge's own `style` overrides win field by field over the relation's —
+ * anything the edge does not pin keeps following its relation.
+ */
 export function edgeDef(edge: DiagramEdge, relation: Relation | undefined): CyElementDef {
-  const style = relation?.style;
+  const style: RelationStyle = { ...(relation?.style ?? ORPHAN_EDGE_STYLE), ...edge.style };
   return {
     group: 'edges',
     data: {
@@ -112,9 +126,7 @@ export function edgeDef(edge: DiagramEdge, relation: Relation | undefined): CyEl
       label: edge.label ?? '',
       rel: edge.relationId,
       relName: relation?.name ?? '',
-      ...(style
-        ? edgeStyleData(style)
-        : { curve: 'straight', line: 'solid', arrow: 'triangle', color: '#5b647e', width: 2 }),
+      ...edgeStyleData(style),
       // Must come after the spread: the edge's own flag wins over the relation's.
       animated: resolveAnimated(edge, relation),
     },

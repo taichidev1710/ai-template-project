@@ -15,7 +15,7 @@ import type { ArrowShape, LineStyle, NodeShape } from '@/domain/diagram';
 import { lineSpec } from './cy-elements';
 
 /** Every domain line style, resolved by selector (see `edgeStyleData`). */
-const LINE_STYLES: LineStyle[] = ['solid', 'dashed', 'dotted', 'dashdot', 'longdash'];
+const LINE_STYLES: LineStyle[] = ['solid', 'dashed', 'dotted', 'dots-lg', 'dashdot', 'longdash'];
 
 /** The slice of the AntD token set the canvas needs. */
 export interface CanvasTheme {

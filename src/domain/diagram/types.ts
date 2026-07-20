@@ -22,9 +22,13 @@ export type NodeShape =
   | 'round-rectangle'
   | 'rectangle'
   | 'hexagon'
+  | 'pentagon'
+  | 'octagon'
   | 'diamond'
   | 'triangle'
   | 'star'
+  | 'tag'
+  | 'rhomboid'
   | 'barrel';
 
 /** A classification of a node. Intrinsic — carries NO ordering. */
@@ -35,8 +39,8 @@ export interface BlockType {
   color: string; // hex
 }
 
-export type LineStyle = 'solid' | 'dashed' | 'dotted' | 'dashdot' | 'longdash';
-export type ArrowShape = 'none' | 'triangle' | 'vee';
+export type LineStyle = 'solid' | 'dashed' | 'dotted' | 'dots-lg' | 'dashdot' | 'longdash';
+export type ArrowShape = 'none' | 'triangle' | 'vee' | 'circle' | 'diamond' | 'tee';
 export type CurveStyle = 'straight' | 'taxi' | 'bezier' | 'segments';
 
 export interface RelationStyle {
@@ -276,12 +280,17 @@ export interface DiagramEdge {
   target: string;
   label?: string;
   /**
-   * Overrides the relation's `style.animated` for THIS edge only. The relation
-   * owns the rest of the style (see DESIGN.md §7); marching-ants is the one
-   * per-edge exception, so a single link can be called out without restyling
-   * every link of its kind. `undefined` = inherit the relation's default.
+   * Overrides the relation's `style.animated` for THIS edge only.
+   * `undefined` = inherit the relation's default.
    */
   animated?: boolean;
+  /**
+   * Per-edge style overrides — anything unset follows the relation's style.
+   * Originally the relation owned ALL of it (DESIGN.md §7) with `animated` the
+   * one exception; user asked for the demo's per-edge freedom, so every visual
+   * field may now be pinned per link, defaulting to inheritance.
+   */
+  style?: Partial<Pick<RelationStyle, 'line' | 'arrow' | 'curve' | 'color' | 'width'>>;
 }
 
 /** First-class view state: what is shown/hidden on the canvas. */

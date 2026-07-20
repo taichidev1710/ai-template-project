@@ -95,6 +95,29 @@ describe('generateStress', () => {
     expect(edges.some((e) => e.animated)).toBe(true);
   });
 
+  it('never stacks two blocks on top of each other', () => {
+    // Spatial hash: only neighbours within a cell radius can collide, so this
+    // stays linear even at stress sizes. 60 ≈ node size (54) + breathing room.
+    const MIN = 60;
+    const { nodes } = generateStress(template(), ['rs1'], 3000);
+    const cell = new Map<string, { x: number; y: number }[]>();
+    const keyOf = (cx: number, cy: number) => `${cx}:${cy}`;
+    for (const n of nodes) {
+      const cx = Math.floor(n.pos.x / MIN);
+      const cy = Math.floor(n.pos.y / MIN);
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          for (const p of cell.get(keyOf(cx + dx, cy + dy)) ?? []) {
+            const d = Math.hypot(p.x - n.pos.x, p.y - n.pos.y);
+            expect(d).toBeGreaterThanOrEqual(MIN);
+          }
+        }
+      }
+      const k = keyOf(cx, cy);
+      cell.set(k, [...(cell.get(k) ?? []), n.pos]);
+    }
+  });
+
   it('is deterministic — same request, same diagram', () => {
     expect(generateStress(template(), ['rs1'], 300)).toEqual(generateStress(template(), ['rs1'], 300));
   });

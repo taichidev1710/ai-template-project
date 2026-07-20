@@ -84,6 +84,18 @@ describe('edgeDef', () => {
     });
   });
 
+  it("the edge's own overrides win FIELD BY FIELD; the rest keep inheriting", () => {
+    const pinned: DiagramEdge = { ...edge, style: { color: '#e0a94e', curve: 'straight' } };
+    const def = edgeDef(pinned, relation);
+    expect(def.data).toMatchObject({
+      color: '#e0a94e', // pinned
+      curve: 'straight', // pinned
+      line: 'dashed', // still the relation's
+      arrow: 'vee',
+      width: 3,
+    });
+  });
+
   it('falls back to a visible default when the relation is missing', () => {
     const def = edgeDef(edge, undefined);
     expect(def.data.color).toBeTruthy();

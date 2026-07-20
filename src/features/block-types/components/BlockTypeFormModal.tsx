@@ -1,6 +1,7 @@
-import { ColorPicker, Form, Input, Modal, Select } from 'antd';
+import { ColorPicker, Form, Input, Modal, Select, theme } from 'antd';
 import type { AggregationColor } from 'antd/es/color-picker/color';
 import { useEffect } from 'react';
+import { BlockGlyph } from './BlockGlyph';
 import { SHAPE_OPTIONS } from '../types';
 import type { BlockType, BlockTypeInput } from '../types';
 
@@ -18,6 +19,18 @@ const DEFAULTS: BlockTypeInput = { name: '', shape: 'ellipse', color: '#5fb99a' 
 export function BlockTypeFormModal({ open, initialValue, confirmLoading, onSubmit, onCancel }: BlockTypeFormModalProps) {
   const [form] = Form.useForm<BlockTypeInput>();
   const isEdit = Boolean(initialValue);
+  const { token } = theme.useToken();
+
+  // Every shape drawn next to its name, the demo's pill-grid idea in a Select.
+  const shapeOptions = SHAPE_OPTIONS.map((o) => ({
+    value: o.value,
+    label: (
+      <span className="flex items-center gap-2">
+        <BlockGlyph shape={o.value} color={token.colorTextSecondary} size={18} />
+        {o.label}
+      </span>
+    ),
+  }));
 
   useEffect(() => {
     if (open) form.setFieldsValue(initialValue ?? DEFAULTS);
@@ -39,7 +52,7 @@ export function BlockTypeFormModal({ open, initialValue, confirmLoading, onSubmi
           <Input placeholder="VD: Người, Phòng ban, Bước…" />
         </Form.Item>
         <Form.Item name="shape" label="Hình" rules={[{ required: true }]}>
-          <Select options={SHAPE_OPTIONS} />
+          <Select options={shapeOptions} />
         </Form.Item>
         <Form.Item
           name="color"

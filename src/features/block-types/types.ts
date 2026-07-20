@@ -16,9 +16,13 @@ export const SHAPE_OPTIONS: { value: NodeShape; label: string }[] = [
   { value: 'round-rectangle', label: 'Chữ nhật bo' },
   { value: 'rectangle', label: 'Chữ nhật' },
   { value: 'hexagon', label: 'Lục giác' },
+  { value: 'pentagon', label: 'Ngũ giác' },
+  { value: 'octagon', label: 'Bát giác' },
   { value: 'diamond', label: 'Thoi' },
   { value: 'triangle', label: 'Tam giác' },
   { value: 'star', label: 'Sao' },
+  { value: 'tag', label: 'Thẻ' },
+  { value: 'rhomboid', label: 'Bình hành' },
   { value: 'barrel', label: 'Thùng' },
 ];
 

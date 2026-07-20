@@ -26,6 +26,7 @@ export const LINE_OPTIONS: { value: LineStyle; label: string }[] = [
   { value: 'solid', label: 'Nét liền' },
   { value: 'dashed', label: 'Nét đứt' },
   { value: 'dotted', label: 'Chấm' },
+  { value: 'dots-lg', label: 'Chấm thưa' },
   { value: 'dashdot', label: 'Gạch-chấm' },
   { value: 'longdash', label: 'Gạch dài' },
 ];
@@ -33,6 +34,9 @@ export const LINE_OPTIONS: { value: LineStyle; label: string }[] = [
 export const ARROW_OPTIONS: { value: ArrowShape; label: string }[] = [
   { value: 'triangle', label: 'Tam giác' },
   { value: 'vee', label: 'Mũi tên' },
+  { value: 'circle', label: 'Tròn' },
+  { value: 'diamond', label: 'Kim cương' },
+  { value: 'tee', label: 'Chữ T' },
   { value: 'none', label: 'Không mũi' },
 ];
 

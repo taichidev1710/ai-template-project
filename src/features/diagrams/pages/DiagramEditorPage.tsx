@@ -262,6 +262,16 @@ export function DiagramEditorPage() {
         // edge off and stop it following the relation.
         if (values.animated === 'inherit') delete next.animated;
         else next.animated = values.animated === 'on';
+        // Style overrides: only what is PINNED is stored; an empty override set
+        // removes the key entirely so the edge is back to pure inheritance.
+        const style: NonNullable<DiagramEdge['style']> = {};
+        if (values.curve !== 'inherit') style.curve = values.curve;
+        if (values.line !== 'inherit') style.line = values.line;
+        if (values.arrow !== 'inherit') style.arrow = values.arrow;
+        if (values.width !== 'inherit') style.width = values.width;
+        if (values.color) style.color = values.color;
+        if (Object.keys(style).length > 0) next.style = style;
+        else delete next.style;
         return next;
       }),
     });
@@ -278,7 +288,21 @@ export function DiagramEditorPage() {
   const handleNodeSubmit = (values: NodeFormValues) => {
     if (!draft || !editingNode) return;
     patch({
-      nodes: draft.nodes.map((n) => (n.id === editingNode.id ? { ...n, ...values } : n)),
+      nodes: draft.nodes.map((n) => {
+        if (n.id !== editingNode.id) return n;
+        // `inherit`/null markers mean "no override" — REMOVE the key rather
+        // than store the marker, so the node keeps following its block type.
+        const next: DiagramNode = { ...n, label: values.label, blockTypeId: values.blockTypeId, exempt: values.exempt };
+        if (values.notes?.trim()) next.notes = values.notes;
+        else delete next.notes;
+        if (values.shape !== 'inherit') next.shape = values.shape;
+        else delete next.shape;
+        if (values.color) next.color = values.color;
+        else delete next.color;
+        if (values.image) next.image = values.image;
+        else delete next.image;
+        return next;
+      }),
     });
     setEditingNode(null);
   };
@@ -306,11 +330,18 @@ export function DiagramEditorPage() {
     const parent = editingNode;
     handleNodeSubmit(values);
 
+    // Fan siblings out around the slot below the parent: 0, +150, −150, +300…
+    // A fixed spot stacked every next child EXACTLY on the previous one, and
+    // two perfectly overlapping blocks read as one until dragged apart.
+    const siblings = draft.edges.filter(
+      (e) => e.relationId === primaryRelation.id && e.source === parent.id,
+    ).length;
+    const fan = siblings === 0 ? 0 : (siblings % 2 === 1 ? 1 : -1) * Math.ceil(siblings / 2) * 150;
     const child: DiagramNode = {
       id: newId('n'),
       blockTypeId: blockTypes[0]?.id ?? parent.blockTypeId,
       label: 'Khối mới',
-      pos: { x: parent.pos.x, y: parent.pos.y + 150 },
+      pos: { x: parent.pos.x + fan, y: parent.pos.y + 150 },
     };
     // Probe on a copy: `edgeWouldViolate` needs both endpoints to really exist.
     const probeBase = { ...workingDiagram, nodes: [...draft.nodes, child] };

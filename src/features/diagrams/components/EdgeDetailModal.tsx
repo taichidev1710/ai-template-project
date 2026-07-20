@@ -1,6 +1,8 @@
-import { Button, Form, Input, Modal, Select, Space, Tag, Typography } from 'antd';
+import { Button, ColorPicker, Form, Input, Modal, Select, Space, Tag, Typography } from 'antd';
+import type { AggregationColor } from 'antd/es/color-picker/color';
 import { DeleteOutlined } from '@ant-design/icons';
-import type { DiagramEdge, Relation } from '@/domain/diagram';
+import type { ArrowShape, CurveStyle, DiagramEdge, LineStyle, Relation } from '@/domain/diagram';
+import { ARROW_OPTIONS, CURVE_OPTIONS, LINE_OPTIONS } from '@/features/relation-types';
 
 /** `inherit` keeps following the relation; the others pin this edge. */
 export type AnimatedChoice = 'inherit' | 'on' | 'off';
@@ -8,6 +10,12 @@ export type AnimatedChoice = 'inherit' | 'on' | 'off';
 export interface EdgeDetailValues {
   label?: string;
   animated: AnimatedChoice;
+  curve: CurveStyle | 'inherit';
+  line: LineStyle | 'inherit';
+  arrow: ArrowShape | 'inherit';
+  width: number | 'inherit';
+  /** `null` = follow the relation's colour. */
+  color?: string | null;
 }
 
 interface EdgeDetailModalProps {
@@ -27,10 +35,21 @@ function toChoice(edge: DiagramEdge): AnimatedChoice {
   return edge.animated ? 'on' : 'off';
 }
 
+const WIDTH_OPTIONS = [1, 1.5, 2, 2.5, 3, 4];
+
+/** Prepend "theo loại quan hệ (…)" showing what inheriting currently means. */
+function withInherit<V extends string | number>(
+  options: { value: V; label: string }[],
+  inherited: V | undefined,
+): { value: V | 'inherit'; label: string }[] {
+  const current = options.find((o) => o.value === inherited)?.label ?? String(inherited ?? '—');
+  return [{ value: 'inherit' as const, label: `Theo loại quan hệ (${current})` }, ...options];
+}
+
 /**
- * Opened by tapping a link. Only label + marching-ants are editable: the rest of
- * the style belongs to the relation (DESIGN.md §7), so changing it here would
- * silently restyle every link of that kind.
+ * Opened by tapping a link. Every style field may be pinned for THIS edge only;
+ * whatever stays "theo loại quan hệ" keeps following the relation — the demo's
+ * per-edge freedom, kept honest by defaulting every field to inheritance.
  */
 export function EdgeDetailModal({
   open,
@@ -45,7 +64,7 @@ export function EdgeDetailModal({
   const [form] = Form.useForm<EdgeDetailValues>();
 
   const relationAnimates = Boolean(relation?.style.animated);
-  const solidLine = relation?.style.line === 'solid';
+  const solidLine = (edge?.style?.line ?? relation?.style.line) === 'solid';
 
   return (
     <Modal
@@ -97,7 +116,15 @@ export function EdgeDetailModal({
             form={form}
             layout="vertical"
             clearOnDestroy
-            initialValues={{ label: edge.label ?? '', animated: toChoice(edge) }}
+            initialValues={{
+              label: edge.label ?? '',
+              animated: toChoice(edge),
+              curve: edge.style?.curve ?? 'inherit',
+              line: edge.style?.line ?? 'inherit',
+              arrow: edge.style?.arrow ?? 'inherit',
+              width: edge.style?.width ?? 'inherit',
+              color: edge.style?.color ?? null,
+            }}
             onFinish={onSubmit}
             requiredMark={false}
           >
@@ -105,12 +132,41 @@ export function EdgeDetailModal({
               <Input placeholder="VD: vợ chồng, bạn thân…" />
             </Form.Item>
 
+            <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-2">
+              <Form.Item name="curve" label="Đường">
+                <Select options={withInherit(CURVE_OPTIONS, relation?.style.curve)} />
+              </Form.Item>
+              <Form.Item name="line" label="Nét">
+                <Select options={withInherit(LINE_OPTIONS, relation?.style.line)} />
+              </Form.Item>
+              <Form.Item name="arrow" label="Mũi tên">
+                <Select options={withInherit(ARROW_OPTIONS, relation?.style.arrow)} />
+              </Form.Item>
+              <Form.Item name="width" label="Độ dày">
+                <Select
+                  options={withInherit(
+                    WIDTH_OPTIONS.map((w) => ({ value: w, label: `${w}px` })),
+                    relation?.style.width,
+                  )}
+                />
+              </Form.Item>
+            </div>
+
+            <Form.Item
+              name="color"
+              label="Màu riêng"
+              extra="Nút xoá trong bảng màu = quay về màu của loại quan hệ."
+              getValueFromEvent={(c: AggregationColor | null) => (c ? c.toHexString() : null)}
+            >
+              <ColorPicker format="hex" showText allowClear onClear={() => form.setFieldValue('color', null)} />
+            </Form.Item>
+
             <Form.Item
               name="animated"
               label="Nét chạy"
               extra={
                 solidLine
-                  ? 'Nét liền không thấy hiệu ứng chạy — đổi kiểu nét của loại quan hệ sang gạch/chấm để thấy rõ.'
+                  ? 'Nét liền không thấy hiệu ứng chạy — đổi kiểu nét sang gạch/chấm để thấy rõ.'
                   : 'Hiệu ứng chỉ rõ với nét gạch/chấm. Tự tắt nếu máy bật “giảm chuyển động”.'
               }
             >

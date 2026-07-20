@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from 'react';
-import { theme } from 'antd';
+import { Button, Slider, Tooltip, theme } from 'antd';
+import { ZoomInOutlined, ZoomOutOutlined } from '@ant-design/icons';
 import cytoscape from 'cytoscape';
 import {
   buildAdjacency,
@@ -31,6 +32,16 @@ const WINDOW_CAP = 300;
 const WINDOW_EXTRA_CAP = 150;
 /** How long a pan/zoom must settle before the window is re-evaluated. */
 const WINDOW_DEBOUNCE_MS = 150;
+
+/**
+ * The demo's zoom range. Reaching across it with a 0.25-sensitivity wheel takes
+ * dozens of notches, hence the slider overlay — its scale is LOGARITHMIC, so
+ * each slider step feels like the same relative zoom change.
+ */
+const MIN_ZOOM = 0.02;
+const MAX_ZOOM = 4;
+const zoomToSlider = (z: number) => (Math.log(z / MIN_ZOOM) / Math.log(MAX_ZOOM / MIN_ZOOM)) * 100;
+const sliderToZoom = (t: number) => MIN_ZOOM * (MAX_ZOOM / MIN_ZOOM) ** (t / 100);
 
 /** What the statline reports about the mounted window. */
 export interface WindowStats {
@@ -193,7 +204,20 @@ export function DiagramCanvas({
   const structureKey = useMemo(
     () =>
       JSON.stringify(
-        elements.map((e) => [e.data.id, e.data.label, e.data.color, e.data.shape, e.data.width, e.data.animated]),
+        elements.map((e) => [
+          e.data.id,
+          e.data.label,
+          e.data.color,
+          e.data.shape,
+          e.data.width,
+          e.data.animated,
+          // Per-edge style overrides and node images change the DEF, and a def
+          // change that this key misses never reaches the canvas.
+          e.data.curve,
+          e.data.line,
+          e.data.arrow,
+          e.data.image,
+        ]),
       ),
     [elements],
   );
@@ -227,6 +251,30 @@ export function DiagramCanvas({
   const [windowVersion, setWindowVersion] = useState(0);
   /** Last stats handed to `onWindowStats` — report only actual changes. */
   const lastStatsRef = useRef<WindowStats | null>(null);
+  /** Mirrors `cy.zoom()` so the slider overlay can render it. */
+  const [zoomLevel, setZoomLevel] = useState(1);
+
+  /** Zoom about the viewport centre, clamped to the canvas's own range. */
+  const applyZoom = useCallback((level: number) => {
+    const cy = cyRef.current;
+    if (!cy) return;
+    cy.zoom({
+      level: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, level)),
+      renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 },
+    });
+  }, []);
+
+  /**
+   * Multiply the CURRENT cy zoom — not the mirrored state: two fast clicks in
+   * one frame would both read the stale render value and step only once.
+   */
+  const stepZoom = useCallback(
+    (factor: number) => {
+      const cy = cyRef.current;
+      if (cy) applyZoom(cy.zoom() * factor);
+    },
+    [applyZoom],
+  );
 
   /** Sync what cytoscape holds to the slice of the model the viewport can see. */
   const refreshWindow = useCallback(() => {
@@ -365,11 +413,10 @@ export function DiagramCanvas({
     const cy = cytoscape({
       container: containerRef.current,
       elements: [],
-      // The demo's range. 0.2 could not take in a thousand-block diagram at
-      // once — and culling caps what a wide view mounts, so deep zoom-out is
-      // cheap now.
-      minZoom: 0.02,
-      maxZoom: 4,
+      // 0.2 could not take in a thousand-block diagram at once — and culling
+      // caps what a wide view mounts, so deep zoom-out is cheap now.
+      minZoom: MIN_ZOOM,
+      maxZoom: MAX_ZOOM,
       wheelSensitivity: 0.25,
       layout: { name: 'preset' },
     });
@@ -394,6 +441,8 @@ export function DiagramCanvas({
       window.clearTimeout(timer);
       timer = window.setTimeout(refreshWindow, WINDOW_DEBOUNCE_MS);
     });
+    // Undebounced on purpose: the slider must track the wheel live.
+    cy.on('zoom', () => setZoomLevel(cy.zoom()));
 
     return () => {
       window.clearTimeout(timer);
@@ -487,5 +536,43 @@ export function DiagramCanvas({
     });
   }, [violations, collapsed, collapsedCounts, linkSourceId, windowVersion]);
 
-  return <div ref={containerRef} className="h-full w-full rounded-app bg-canvas" data-testid="diagram-canvas" />;
+  return (
+    <div className="relative h-full w-full">
+      <div ref={containerRef} className="h-full w-full rounded-app bg-canvas" data-testid="diagram-canvas" />
+      {/* Zoom overlay: wheel-only travel across 0.02→4 takes dozens of notches. */}
+      <div
+        className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-app bg-surface px-2 py-1 shadow-sm"
+        data-testid="canvas-zoombar"
+      >
+        <Button
+          size="small"
+          type="text"
+          aria-label="Thu nhỏ"
+          icon={<ZoomOutOutlined />}
+          onClick={() => stepZoom(1 / 1.5)}
+        />
+        <Slider
+          className="!my-0 w-24 sm:w-32"
+          min={0}
+          max={100}
+          step={1}
+          tooltip={{ formatter: null }}
+          value={zoomToSlider(zoomLevel)}
+          onChange={(t) => applyZoom(sliderToZoom(t))}
+        />
+        <Button
+          size="small"
+          type="text"
+          aria-label="Phóng to"
+          icon={<ZoomInOutlined />}
+          onClick={() => stepZoom(1.5)}
+        />
+        <Tooltip title="Về 100%">
+          <Button size="small" type="text" className="w-12 !px-0 tabular-nums" onClick={() => applyZoom(1)}>
+            {Math.round(zoomLevel * 100)}%
+          </Button>
+        </Tooltip>
+      </div>
+    </div>
+  );
 }

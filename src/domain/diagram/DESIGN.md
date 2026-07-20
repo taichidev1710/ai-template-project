@@ -149,9 +149,17 @@ vốn từ vựng của loại đó.
      ĐÍCH → `EdgeFormModal` mới hỏi **loại quan hệ + nhãn**. Không chọn quan hệ
      trước ở toolbar. Quan hệ nào phạm luật thì option bị khoá kèm lý do, và modal
      mặc định chọn quan hệ hợp lệ đầu tiên. Chạm nền = huỷ.
-   - **Chạm liên kết** → `EdgeDetailModal`: sửa nhãn, *nét chạy*, xoá. Style còn
-     lại **không** sửa ở đây — style thuộc loại quan hệ (mục 7); demo cho sửa
-     từng cạnh, ta cố ý không theo.
+   - **Chạm liên kết** → `EdgeDetailModal`: sửa nhãn, xoá, và (theo yêu cầu
+     user — đảo lại quyết định cũ "style thuộc loại quan hệ, không sửa từng
+     cạnh") **mọi trường style đều ghim được cho riêng cạnh đó**: đường, nét,
+     mũi tên, độ dày, màu, nét chạy. Cơ chế thống nhất là KẾ THỪA: field nào
+     không ghim thì theo loại quan hệ (`DiagramEdge.style` chỉ chứa phần ghim;
+     rỗng thì xoá key). `edgeDef` merge field-by-field (có test). Chi tiết khối
+     tương tự: `shape`/`color`/`image` riêng từng khối, không đặt thì theo loại
+     khối; ảnh upload thành data-URL (mock), canvas phủ kín nền khối.
+     **Bẫy đã dính:** `structureKey` phải chứa MỌI field của def (curve, line,
+     arrow, image…) — field nào thiếu thì đổi nó không rebuild và canvas im lặng
+     bỏ qua.
    - **Nhãn liên kết** (như demo): nhãn riêng của cạnh → nếu trống thì hiện **tên
      loại quan hệ** → toggle *Nhãn liên kết* tắt thì ẩn hết. Fallback nằm trong
      stylesheet; đừng vá `label` bằng `cy.style().selector('edge')` sau đó — nó
@@ -208,6 +216,18 @@ vốn từ vựng của loại đó.
        tỉa, hoặc tràn trần) đếm vào `farCut` → nhãn khối nối thêm **⇢N** ("N
        liên kết ngoài khung") qua `data('fl')` — cùng cách ⊕N, là DATA gắn mỗi
        lần refresh cửa sổ, không phải def.
+     - **Chế độ toàn cảnh (cap cắt) — KHÔNG lấy "gần tâm nhất":** demo lấy 300
+       khối gần tâm → đốm TRÒN giữa khung vuông (user chỉ đúng chỗ này). Giờ
+       khi `inWindow > cap`, `visibleWindow` chia cửa sổ thành lưới ô theo đúng
+       hình khung, round-robin mỗi ô một khối (gần tâm ô trước) tới hết ngân
+       sách — khung nhìn phủ ĐÚNG dấu chân sơ đồ từ mép tới mép, đo thật trên
+       20k: mount 300/300, phủ ngang −11895..11895 = trọn bề rộng dữ liệu. Ở
+       chế độ này KHÔNG mount đầu xa, KHÔNG đếm ⇢N — cả khung là ảnh lược mẫu,
+       statline đã nói "đang giới hạn"; ⇢N chỉ có nghĩa khi zoom gần.
+     - **Thanh zoom** (overlay góc dưới-phải canvas): wheel 0.25 đi từ 0.02→4
+       mất hàng chục nấc nên có slider (thang LOG), nút ±1.5× (đọc `cy.zoom()`
+       trực tiếp — đọc state React thì hai click nhanh trong một frame chỉ ăn
+       một bước), nút % bấm = về 100%.
 6. ✅ **Dữ liệu mẫu** (`sample.ts`): `generateSample(loại, bộLuậtĐãTick)` dựng sẵn
    khối + liên kết **thoả mọi luật** để test. Tổng quát như engine — chỉ đọc vốn từ
    vựng + luật của chính loại đó, nên **loại do user tự tạo cũng chạy**, không phải
@@ -330,8 +350,11 @@ tương ứng trong `demo-sdqh/index.html` để tra khi làm. Thứ tự trong 
 
 **Khác biệt cố ý — KHÔNG phải gap (đừng "sửa"):**
 
-- Style từng cạnh không sửa được (thuộc loại quan hệ — mục 7; demo cho sửa, ta
-  cố ý không theo). Ngoại lệ duy nhất: `animated`.
+- ~~Style từng cạnh không sửa được~~ — user đảo quyết định này (2026-07): giờ
+  style ghim được từng cạnh/từng khối với cơ chế kế thừa (mục 8.5). Danh mục
+  hình (12 như demo), nét (6), mũi tên (6) cũng đã theo demo, kèm ảnh trong
+  khối. Bài học: khoá bớt tự do của demo nhân danh kiến trúc thì phải hỏi
+  trước.
 - Màu hardcode của demo → design token (mục 8.5); i18n cụm sơ đồ vẫn tiếng Việt
   cứng (ghi ở memory dự án).
 - localStorage của demo → API mock + TanStack Query; "Dọn bộ nhớ" của demo vô

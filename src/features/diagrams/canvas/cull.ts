@@ -51,9 +51,9 @@ export interface CullInput {
   margin: number;
   /**
    * Hard cap on mounted NODES from the window itself. When more than this fall
-   * in the window — a graph zoomed far out — the ones nearest the viewport
-   * centre win, so what renders is a bounded slice around where the user is
-   * looking rather than everything.
+   * in the window — a graph zoomed far out — the view switches to OVERVIEW
+   * sampling: a bucket grid of the window's shape keeps one node per cell, so
+   * the budget covers the whole frame instead of blobbing around its centre.
    */
   cap: number;
   /**
@@ -87,10 +87,6 @@ export function visibleWindow({ nodes, edges, extent, margin, cap, extraCap }: C
   const y2 = extent.y2 + dy;
   const cx = (extent.x1 + extent.x2) / 2;
   const cy = (extent.y1 + extent.y2) / 2;
-  const dist2 = (n: CullNode) => (n.x - cx) * (n.x - cx) + (n.y - cy) * (n.y - cy);
-  /** Deterministic order: distance to the view centre, then id — stable frames. */
-  const nearestFirst = (a: CullNode, b: CullNode) =>
-    dist2(a) - dist2(b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const inWindow = nodes.filter((n) => n.x >= x1 && n.x <= x2 && n.y >= y1 && n.y <= y2);
@@ -98,27 +94,78 @@ export function visibleWindow({ nodes, edges, extent, margin, cap, extraCap }: C
 
   let kept = inWindow;
   const capped = inWindow.length > cap;
-  if (capped) kept = [...inWindow].sort(nearestFirst).slice(0, cap);
-  const nodeIds = new Set(kept.map((n) => n.id));
-
-  // Far endpoints: partners OUTSIDE the window whose edge would otherwise be
-  // invisible. A partner that IS in the window but lost to the cap stays out —
-  // resurrecting it would undo the cap one edge at a time.
-  const farWanted = new Map<string, CullNode>();
-  for (const e of edges) {
-    const sIn = nodeIds.has(e.source);
-    const tIn = nodeIds.has(e.target);
-    if (sIn === tIn) continue;
-    const farId = sIn ? e.target : e.source;
-    if (windowIds.has(farId) || farWanted.has(farId)) continue;
-    const far = byId.get(farId);
-    if (far) farWanted.set(farId, far);
+  if (capped) {
+    // Overview mode. "Nearest the centre first" painted a blob in the middle
+    // of the frame (the demo's circle) and left the corners empty — the
+    // window is a rectangle, so spread the budget over ALL of it instead: a
+    // bucket grid of the window's own shape, one node per cell (the one
+    // nearest its cell's centre; ties by id, so frames stay deterministic).
+    // The view then shows the diagram's true footprint edge to edge.
+    const w = Math.max(1, x2 - x1);
+    const h = Math.max(1, y2 - y1);
+    const cols = Math.min(cap, Math.max(1, Math.round(Math.sqrt((cap * w) / h))));
+    const rows = Math.max(1, Math.floor(cap / cols));
+    const cellW = w / cols;
+    const cellH = h / rows;
+    const cells = new Map<number, { node: CullNode; d: number }[]>();
+    for (const n of inWindow) {
+      const ci = Math.min(cols - 1, Math.floor((n.x - x1) / cellW));
+      const ri = Math.min(rows - 1, Math.floor((n.y - y1) / cellH));
+      const key = ri * cols + ci;
+      const dx = n.x - (x1 + (ci + 0.5) * cellW);
+      const dy = n.y - (y1 + (ri + 0.5) * cellH);
+      const list = cells.get(key) ?? [];
+      list.push({ node: n, d: dx * dx + dy * dy });
+      cells.set(key, list);
+    }
+    // Round-robin: everyone's FIRST pick lands before anyone's second, so the
+    // whole footprint shows before any part of it thickens — and empty cells
+    // (the diagram may cover only part of the window) hand their budget on
+    // instead of wasting it.
+    const ranked = [...cells.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([, list]) => list.sort((a, b) => a.d - b.d || (a.node.id < b.node.id ? -1 : 1)));
+    kept = [];
+    for (let round = 0; kept.length < cap; round++) {
+      let took = false;
+      for (const list of ranked) {
+        const pick = list[round];
+        if (!pick) continue;
+        kept.push(pick.node);
+        took = true;
+        if (kept.length >= cap) break;
+      }
+      if (!took) break;
+    }
   }
-  const extras = [...farWanted.values()].sort(nearestFirst).slice(0, extraCap);
-  for (const extra of extras) nodeIds.add(extra.id);
+  const nodeIds = new Set(kept.map((n) => n.id));
 
   const edgeIds = new Set<string>();
   const farCut = new Map<string, number>();
+
+  if (!capped) {
+    // Far endpoints: partners OUTSIDE the window whose edge would otherwise be
+    // invisible — a block whose partner sits a screen away must not read as an
+    // orphan. Skipped in overview mode: there the frame is a sampled footprint
+    // and nearly EVERY edge is undrawn, so pulling partners (or counting ⇢N)
+    // would only stack noise on a picture the statline already calls trimmed.
+    const dist2 = (n: CullNode) => (n.x - cx) * (n.x - cx) + (n.y - cy) * (n.y - cy);
+    const nearestFirst = (a: CullNode, b: CullNode) =>
+      dist2(a) - dist2(b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+    const farWanted = new Map<string, CullNode>();
+    for (const e of edges) {
+      const sIn = nodeIds.has(e.source);
+      const tIn = nodeIds.has(e.target);
+      if (sIn === tIn) continue;
+      const farId = sIn ? e.target : e.source;
+      if (windowIds.has(farId) || farWanted.has(farId)) continue;
+      const far = byId.get(farId);
+      if (far) farWanted.set(farId, far);
+    }
+    const extras = [...farWanted.values()].sort(nearestFirst).slice(0, extraCap);
+    for (const extra of extras) nodeIds.add(extra.id);
+  }
+
   for (const e of edges) {
     const sIn = nodeIds.has(e.source);
     const tIn = nodeIds.has(e.target);
@@ -126,6 +173,7 @@ export function visibleWindow({ nodes, edges, extent, margin, cap, extraCap }: C
       edgeIds.add(e.id);
       continue;
     }
+    if (capped) continue;
     // One end mounted, the other not drawable: count it on the visible end.
     if (sIn) farCut.set(e.source, (farCut.get(e.source) ?? 0) + 1);
     if (tIn) farCut.set(e.target, (farCut.get(e.target) ?? 0) + 1);

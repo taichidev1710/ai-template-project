@@ -25,6 +25,20 @@ function asDiagram(template: DiagramTemplate, ruleSetIds?: string[]): Diagram {
 const rulesOf = (template: DiagramTemplate) => template.ruleSets.flatMap((rs) => rs.rules);
 
 describe.each(BUILTIN_TEMPLATES.map((t) => [t.name, t] as const))('generateSample — %s', (_name, template) => {
+  it('never stacks two blocks on top of each other', () => {
+    // 60 ≈ node size (54) + breathing room. Small samples: plain O(n²) is fine.
+    const { nodes } = generateSample(template);
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i]?.pos;
+        const b = nodes[j]?.pos;
+        if (!a || !b) continue;
+        const d = Math.hypot(a.x - b.x, a.y - b.y);
+        expect(d, `${nodes[i]?.label} đè lên ${nodes[j]?.label}`).toBeGreaterThanOrEqual(60);
+      }
+    }
+  });
+
   it('satisfies every rule of the type', () => {
     const d = asDiagram(template);
     // `relations` matters: without the catalog a `forbid` rule resolves to

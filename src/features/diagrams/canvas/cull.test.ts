@@ -32,15 +32,28 @@ describe('visibleWindow', () => {
     expect(visibleWindow(input({ nodes })).nodeIds.size).toBe(0);
   });
 
-  it('caps to the nodes nearest the viewport centre, and says so', () => {
-    const { nodeIds, capped } = visibleWindow(
-      input({
-        nodes: [node('centre', 50, 50), node('near', 60, 50), node('far', 90, 90)],
-        cap: 2,
-      }),
-    );
-    expect(nodeIds).toEqual(new Set(['centre', 'near']));
+  it('overview mode spreads the cap across the WHOLE window, corners included', () => {
+    // A uniform 20×20 grid filling the window — 400 nodes against a cap of 100.
+    const nodes: CullNode[] = [];
+    for (let i = 0; i < 20; i++) {
+      for (let j = 0; j < 20; j++) nodes.push(node(`n${i}-${j}`, i * 5 + 2.5, j * 5 + 2.5));
+    }
+    const { nodeIds, capped, farCut } = visibleWindow(input({ nodes, cap: 100 }));
     expect(capped).toBe(true);
+    expect(nodeIds.size).toBeLessThanOrEqual(100);
+    expect(nodeIds.size).toBeGreaterThanOrEqual(80); // the budget is actually spent
+    // Every corner zone holds something — no blob in the middle of the frame.
+    const kept = nodes.filter((n) => nodeIds.has(n.id));
+    for (const [right, bottom] of [
+      [false, false],
+      [true, false],
+      [false, true],
+      [true, true],
+    ]) {
+      expect(kept.some((n) => (right ? n.x > 75 : n.x < 25) && (bottom ? n.y > 75 : n.y < 25))).toBe(true);
+    }
+    // Overview counts no ⇢N — the statline already says the view is trimmed.
+    expect(farCut.size).toBe(0);
   });
 
   it('does not trim — nor report capped — when the window holds exactly cap nodes', () => {
@@ -106,9 +119,10 @@ describe('visibleWindow', () => {
       }),
     );
     // `far` lost to the cap while INSIDE the window — bringing it back through
-    // the far-endpoint door would undo the cap one edge at a time.
+    // the far-endpoint door would undo the cap one edge at a time. And in
+    // overview mode nothing counts ⇢N: the whole frame is declared trimmed.
     expect(nodeIds).toEqual(new Set(['centre']));
     expect(edgeIds.size).toBe(0);
-    expect(farCut.get('centre')).toBe(1);
+    expect(farCut.size).toBe(0);
   });
 });

@@ -200,6 +200,14 @@ vốn từ vựng của loại đó.
      từ `cy` chỉ thấy phần ĐANG mount — vd xuất PNG kiểu demo
      (`cy.png({full:true})`) sẽ thiếu khối ngoài cửa sổ; phải tính trên model
      hoặc mount tạm toàn bộ rồi trả lại.
+     - **Liên kết rời khung (hơn demo):** cạnh có một đầu ngoài cửa sổ vẫn vẽ
+       được — `visibleWindow` mount kèm ĐẦU XA đó (trần riêng
+       `WINDOW_EXTRA_CAP`, gần tâm ưu tiên), vì thiếu nó khối trong khung trông
+       như mồ côi trong khi liên kết có thật, chỉ bị khung cắt. Đầu xa nằm
+       ngoài viewport nên không tốn vẽ. Phần vẫn không vẽ nổi (đối tác bị cap
+       tỉa, hoặc tràn trần) đếm vào `farCut` → nhãn khối nối thêm **⇢N** ("N
+       liên kết ngoài khung") qua `data('fl')` — cùng cách ⊕N, là DATA gắn mỗi
+       lần refresh cửa sổ, không phải def.
 6. ✅ **Dữ liệu mẫu** (`sample.ts`): `generateSample(loại, bộLuậtĐãTick)` dựng sẵn
    khối + liên kết **thoả mọi luật** để test. Tổng quát như engine — chỉ đọc vốn từ
    vựng + luật của chính loại đó, nên **loại do user tự tạo cũng chạy**, không phải
@@ -275,11 +283,17 @@ tương ứng trong `demo-sdqh/index.html` để tra khi làm. Thứ tự trong 
 - ✅ **minZoom 0.02 / maxZoom 4** (theo demo): đo thực tế fit 5 000 khối cần zoom
   0.020 — floor 0.2 cũ không thể nhìn toàn cảnh.
 - ✅ **Dữ liệu lớn / stress** (`domain/diagram/stress.ts#generateStress`, có test):
-  cây 2–4 con qua quan hệ **primary**, loại khối xoay theo tầng, ~5% liên kết
-  ngang ngẫu nhiên (25 cạnh đầu chạy nét) — **cố ý KHÔNG theo luật**, panel Vi
-  phạm sáng là đúng ý (demo cũng vậy). PRNG seed cứng nên tái lập được. UI: mục
-  xổ xuống của nút "Dữ liệu mẫu" (1 000 / 5 000 / 20 000 khối). Đo thật:
-  5 000 khối dựng + validate + render trong ~210ms.
+  **theo đúng bộ luật đang áp** — bản đầu "cố ý không theo luật, như demo" và bị
+  user bác ngay: dữ liệu sinh ra thì phải hợp lệ, công cụ đo cũng không ngoại lệ.
+  Cách đạt được ở cỡ lớn (probe từng cạnh kiểu `generateSample` là O(n²), với
+  `forbid` còn tệ hơn): (1) **DỰNG trong luật** — tầng theo `tierPath`, cặp cho
+  phép theo `pairsFor`, số cha mỗi con theo `requireMin`/`limitMax` (đúng các
+  reader của `generateSample`, export từ `sample.ts`), sổ đếm degree tự giữ mọi
+  `limit`; (2) **QUÉT phần cấu trúc không thấy được** — `forbid` xét cả đồ thị,
+  nên `validate` một lượt cuối (giờ rẻ) và **bỏ cạnh** nào còn bị nêu tên, lặp
+  đúng 2 vòng. Deterministic tuyệt đối (không RNG). Test chốt: 0 vi phạm ở mọi
+  cỡ 50/500/3000. UI: mục xổ xuống nút "Dữ liệu mẫu" (1 000 / 5 000 / 20 000
+  khối). Đo thật: 5 000 khối dựng + validate + render ~1s.
   - Kéo theo một tối ưu engine: `validate` từng gọi `degree()` quét cả mảng edges
     cho TỪNG node (O(nodes×edges) — 5 000 khối là đứng hình); giờ require/limit
     đọc từ chỉ mục degree dựng một lượt (map lồng quan hệ → khối, không ghép

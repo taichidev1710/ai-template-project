@@ -4,13 +4,14 @@ import { visibleWindow, type CullEdge, type CullInput, type CullNode } from './c
 const node = (id: string, x: number, y: number): CullNode => ({ id, x, y });
 const edge = (id: string, source: string, target: string): CullEdge => ({ id, source, target });
 
-/** A 100×100 window at the origin, no padding, roomy cap — override per test. */
+/** A 100×100 window at the origin, no padding, roomy caps — override per test. */
 const input = (over: Partial<CullInput>): CullInput => ({
   nodes: [],
   edges: [],
   extent: { x1: 0, y1: 0, x2: 100, y2: 100 },
   margin: 0,
   cap: 100,
+  extraCap: 100,
   ...over,
 });
 
@@ -57,25 +58,57 @@ describe('visibleWindow', () => {
     expect(pick()).toEqual(pick());
   });
 
-  it('keeps an edge only when BOTH endpoints are kept', () => {
-    const { edgeIds } = visibleWindow(
+  it('mounts the FAR endpoint of an edge leaving the window, so the link draws', () => {
+    const { nodeIds, edgeIds, farCut } = visibleWindow(
+      input({
+        nodes: [node('a', 50, 50), node('faraway', 900, 900)],
+        edges: [edge('e', 'a', 'faraway')],
+      }),
+    );
+    expect(nodeIds).toEqual(new Set(['a', 'faraway']));
+    expect(edgeIds).toEqual(new Set(['e']));
+    expect(farCut.size).toBe(0);
+  });
+
+  it('bounds far endpoints by extraCap and counts what stayed undrawn (⇢N)', () => {
+    const { nodeIds, edgeIds, farCut } = visibleWindow(
+      input({
+        nodes: [node('hub', 50, 50), node('p1', 500, 50), node('p2', 900, 50), node('p3', 1300, 50)],
+        edges: [edge('e1', 'hub', 'p1'), edge('e2', 'hub', 'p2'), edge('e3', 'hub', 'p3')],
+        extraCap: 2,
+      }),
+    );
+    // The two NEAREST partners come in; the third link stays cut and is counted.
+    expect(nodeIds).toEqual(new Set(['hub', 'p1', 'p2']));
+    expect(edgeIds).toEqual(new Set(['e1', 'e2']));
+    expect(farCut.get('hub')).toBe(1);
+  });
+
+  it('with extraCap 0 behaves like the demo: edge needs both ends in the window', () => {
+    const { nodeIds, edgeIds, farCut } = visibleWindow(
       input({
         nodes: [node('a', 10, 10), node('b', 90, 90), node('c', 200, 200)],
         edges: [edge('e-in', 'a', 'b'), edge('e-cut', 'a', 'c')],
+        extraCap: 0,
       }),
     );
+    expect(nodeIds).toEqual(new Set(['a', 'b']));
     expect(edgeIds).toEqual(new Set(['e-in']));
+    expect(farCut.get('a')).toBe(1);
   });
 
-  it('drops edges whose endpoint the cap trimmed away', () => {
-    const { nodeIds, edgeIds } = visibleWindow(
+  it('does NOT resurrect a cap-trimmed partner as a far endpoint', () => {
+    const { nodeIds, edgeIds, farCut } = visibleWindow(
       input({
         nodes: [node('centre', 50, 50), node('far', 95, 95)],
         edges: [edge('e', 'centre', 'far')],
         cap: 1,
       }),
     );
+    // `far` lost to the cap while INSIDE the window — bringing it back through
+    // the far-endpoint door would undo the cap one edge at a time.
     expect(nodeIds).toEqual(new Set(['centre']));
     expect(edgeIds.size).toBe(0);
+    expect(farCut.get('centre')).toBe(1);
   });
 });

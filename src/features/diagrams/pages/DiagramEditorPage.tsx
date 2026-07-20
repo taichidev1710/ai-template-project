@@ -374,23 +374,23 @@ export function DiagramEditorPage() {
   };
 
   /**
-   * Fill the canvas with BIG generated data to measure rendering — the demo's
-   * stress tool. Unlike `handleFillSample` it does NOT obey the rules (random
-   * lateral links), so the violations panel lighting up afterwards is expected.
+   * Fill the canvas with BIG generated data to measure rendering. Same contract
+   * as `handleFillSample` — the output obeys the ticked rule sets — just built
+   * by rule-reading construction instead of per-edge probes, so it scales.
    */
   const handleFillStress = (count: number) => {
-    if (!draft || !type) return;
+    if (!draft || !type || !diagram) return;
     modal.confirm({
       title: `Tạo ${count.toLocaleString('vi-VN')} khối để thử hiệu năng?`,
       content:
-        `Dữ liệu đo hiệu năng KHÔNG theo luật — panel Vi phạm có thể sáng. ` +
+        `Dữ liệu dựng theo đúng các bộ luật đang áp. ` +
         (draft.nodes.length > 0 ? `${draft.nodes.length} khối đang có sẽ bị thay hết. ` : '') +
         `Chưa bấm Lưu thì bản đã lưu vẫn còn nguyên.`,
       okText: 'Tạo',
       okButtonProps: { danger: draft.nodes.length > 0 },
       cancelText: 'Huỷ',
       onOk: () => {
-        const { nodes, edges } = generateStress(type, count);
+        const { nodes, edges } = generateStress(type, diagram.ruleSetIds, count);
         patch({ nodes, edges, visibility: { ...draft.visibility, collapsed: [] } });
         setSelectedId(null);
         closeLinking();

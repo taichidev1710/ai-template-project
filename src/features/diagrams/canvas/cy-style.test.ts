@@ -41,6 +41,12 @@ describe('node label', () => {
     expect(nodeLabelOf(sheet, { label: 'Quản lý 2' })).toBe('Quản lý 2');
     expect(nodeLabelOf(sheet, { label: 'Quản lý 2', hc: 0 })).toBe('Quản lý 2');
   });
+
+  it('appends ⇢N while the window leaves some of its links undrawn', () => {
+    const sheet = buildStylesheet(theme, false, true);
+    expect(nodeLabelOf(sheet, { label: 'Quản lý 2', fl: 2 })).toBe('Quản lý 2 ⇢2');
+    expect(nodeLabelOf(sheet, { label: 'Quản lý 2', hc: 3, fl: 2 })).toBe('Quản lý 2 ⊕3 ⇢2');
+  });
 });
 
 describe('edge label', () => {

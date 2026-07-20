@@ -34,7 +34,7 @@ interface CanvasToolbarProps {
   onSave: () => void;
   /** Replace the canvas with generated data that satisfies the applied rules. */
   onFillSample: () => void;
-  /** Replace the canvas with BIG data for a performance run — rules not obeyed. */
+  /** Replace the canvas with BIG rule-abiding data for a performance run. */
   onFillStress: (count: number) => void;
 }
 
@@ -102,7 +102,7 @@ export function CanvasToolbar({
           Xoá
         </Button>
 
-        <Tooltip title="Dựng khối và liên kết mẫu thoả mọi luật đang áp. Mục xổ xuống tạo dữ liệu LỚN để thử hiệu năng — không theo luật.">
+        <Tooltip title="Dựng khối và liên kết mẫu thoả mọi luật đang áp. Mục xổ xuống tạo dữ liệu LỚN — cũng theo luật — để thử hiệu năng.">
           <Dropdown.Button
             onClick={onFillSample}
             menu={{

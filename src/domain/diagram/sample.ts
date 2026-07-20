@@ -46,7 +46,7 @@ const COL_GAP = 170;
 const ROW_GAP = 150;
 
 /** An ordered (source, target) block-type pair a relation is allowed to join. */
-type Pair = readonly [string, string];
+export type Pair = readonly [string, string];
 
 export interface SampleContent {
   nodes: DiagramNode[];
@@ -54,7 +54,7 @@ export interface SampleContent {
 }
 
 /** Rules of the applied sets — all of the template's sets when none are named. */
-function selectedRules(template: DiagramTemplate, ruleSetIds?: string[]): Rule[] {
+export function selectedRules(template: DiagramTemplate, ruleSetIds?: string[]): Rule[] {
   const sets = ruleSetIds
     ? template.ruleSets.filter((rs) => ruleSetIds.includes(rs.id))
     : template.ruleSets;
@@ -66,7 +66,7 @@ function selectedRules(template: DiagramTemplate, ruleSetIds?: string[]): Rule[]
  * are an OR allow-list, so the pairs are their union; a relation with no
  * allow-list rule is unconstrained and may join anything.
  */
-function pairsFor(relationId: string, blockTypes: BlockType[], rules: Rule[]): Pair[] {
+export function pairsFor(relationId: string, blockTypes: BlockType[], rules: Rule[]): Pair[] {
   const ids = blockTypes.map((b) => b.id);
   const allow = rules.filter(
     (r) => (r.type === 'ends' || r.type === 'chain' || r.type === 'same') && r.relation === relationId,
@@ -94,7 +94,7 @@ function pairsFor(relationId: string, blockTypes: BlockType[], rules: Rule[]): P
 }
 
 /** Strongest `require` on this block type — how many links it may not go without. */
-function requireMin(bt: string, relation: string, dir: Direction, rules: Rule[]): number {
+export function requireMin(bt: string, relation: string, dir: Direction, rules: Rule[]): number {
   let min = 0;
   for (const r of rules) {
     if (r.type !== 'require' || r.relation !== relation || r.dir !== dir) continue;
@@ -105,7 +105,7 @@ function requireMin(bt: string, relation: string, dir: Direction, rules: Rule[])
 }
 
 /** Tightest `limit` on this block type. `Infinity` when no rule caps it. */
-function limitMax(bt: string, relation: string, dir: Direction, rules: Rule[]): number {
+export function limitMax(bt: string, relation: string, dir: Direction, rules: Rule[]): number {
   let max = Infinity;
   for (const r of rules) {
     if (r.type !== 'limit' || r.relation !== relation || r.dir !== dir) continue;
@@ -123,7 +123,7 @@ function limitMax(bt: string, relation: string, dir: Direction, rules: Rule[]): 
  * new is reachable it repeats the current type if that type may link to itself,
  * which is how a single-block-type domain still gets generations.
  */
-function tierPath(blockTypes: BlockType[], primaryId: string, rules: Rule[]): string[] {
+export function tierPath(blockTypes: BlockType[], primaryId: string, rules: Rule[]): string[] {
   const order = blockTypes.map((b) => b.id);
   const pairs = pairsFor(primaryId, blockTypes, rules);
   const targetsOf = (s: string) => pairs.filter(([from]) => from === s).map(([, to]) => to);

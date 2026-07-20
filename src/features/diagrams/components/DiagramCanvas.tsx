@@ -23,6 +23,12 @@ import { derivedEdgeDef, edgeDef, nodeDef, type CyElementDef } from '../canvas/c
  */
 const WINDOW_MARGIN = 0.35;
 const WINDOW_CAP = 300;
+/**
+ * Far endpoints mounted on top of the window so edges leaving it still draw —
+ * without them a block whose partner sits a screen away reads as an orphan.
+ * Bounded separately from the cap; overflow shows as the ⇢N mark instead.
+ */
+const WINDOW_EXTRA_CAP = 150;
 /** How long a pan/zoom must settle before the window is re-evaluated. */
 const WINDOW_DEBOUNCE_MS = 150;
 
@@ -227,12 +233,13 @@ export function DiagramCanvas({
     const cy = cyRef.current;
     if (!cy) return;
     const { nodeDefs, edgeDefs, cullNodes, cullEdges } = windowModelRef.current;
-    const { nodeIds, edgeIds, capped } = visibleWindow({
+    const { nodeIds, edgeIds, capped, farCut } = visibleWindow({
       nodes: cullNodes,
       edges: cullEdges,
       extent: cy.extent(),
       margin: WINDOW_MARGIN,
       cap: WINDOW_CAP,
+      extraCap: WINDOW_EXTRA_CAP,
     });
 
     let removed = 0;
@@ -257,6 +264,15 @@ export function DiagramCanvas({
         if (def && cy.getElementById(id).empty()) frag.push(def);
       }
       if (frag.length > 0) cy.add(frag as cytoscape.ElementDefinition[]);
+      // ⇢N — links this node has that the window could not draw. Data, not a
+      // def: it changes with every pan, and the label mapper reads it live.
+      cy.nodes().forEach((el) => {
+        const fl = farCut.get(el.id()) ?? 0;
+        if ((Number(el.data('fl')) || 0) !== fl) {
+          if (fl > 0) el.data('fl', fl);
+          else el.removeData('fl');
+        }
+      });
     });
     if (removed > 0 || frag.length > 0) setWindowVersion((v) => v + 1);
 

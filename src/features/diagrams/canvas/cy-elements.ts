@@ -116,7 +116,10 @@ const ORPHAN_EDGE_STYLE: RelationStyle = {
  * anything the edge does not pin keeps following its relation.
  */
 export function edgeDef(edge: DiagramEdge, relation: Relation | undefined): CyElementDef {
-  const style: RelationStyle = { ...(relation?.style ?? ORPHAN_EDGE_STYLE), ...edge.style };
+  // Drop empty overrides before merging: an `{ curve: undefined }` stored by an
+  // older draft would otherwise SHADOW the relation's value with nothing.
+  const overrides = Object.fromEntries(Object.entries(edge.style ?? {}).filter(([, v]) => v !== undefined));
+  const style: RelationStyle = { ...(relation?.style ?? ORPHAN_EDGE_STYLE), ...overrides };
   return {
     group: 'edges',
     data: {

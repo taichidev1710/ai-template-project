@@ -264,11 +264,14 @@ export function DiagramEditorPage() {
         else next.animated = values.animated === 'on';
         // Style overrides: only what is PINNED is stored; an empty override set
         // removes the key entirely so the edge is back to pure inheritance.
+        // Truthy checks, not just !== 'inherit': a field the form somehow never
+        // held comes back `undefined`, and storing that would OVERRIDE the
+        // relation's value with nothing when the def spreads it.
         const style: NonNullable<DiagramEdge['style']> = {};
-        if (values.curve !== 'inherit') style.curve = values.curve;
-        if (values.line !== 'inherit') style.line = values.line;
-        if (values.arrow !== 'inherit') style.arrow = values.arrow;
-        if (values.width !== 'inherit') style.width = values.width;
+        if (values.curve && values.curve !== 'inherit') style.curve = values.curve;
+        if (values.line && values.line !== 'inherit') style.line = values.line;
+        if (values.arrow && values.arrow !== 'inherit') style.arrow = values.arrow;
+        if (typeof values.width === 'number') style.width = values.width;
         if (values.color) style.color = values.color;
         if (Object.keys(style).length > 0) next.style = style;
         else delete next.style;

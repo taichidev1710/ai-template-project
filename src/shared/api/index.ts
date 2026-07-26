@@ -1,2 +1,2 @@
 export { apiClient, type NormalizedError } from './client';
-export type { ApiErrorBody, Paginated, ListParams } from './types';
+export type { ApiErrorBody, ApiEnvelope, Paginated, ListParams } from './types';

@@ -30,10 +30,12 @@ const config: ViteConfigWithTest = {
   },
   server: {
     port: 5173,
-    // Proxy /api to your backend during development. Adjust target as needed.
+    // Proxy /api to the be-template backend during development. The backend runs
+    // on :3000 (its `PORT`) and serves under /api/v1. Point at the live Render
+    // instance instead by exporting VITE_API_PROXY_TARGET before `npm run dev`.
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:3000',
         changeOrigin: true,
       },
     },

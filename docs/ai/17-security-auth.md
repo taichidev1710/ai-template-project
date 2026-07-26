@@ -1,17 +1,26 @@
 # 17 · Security & Auth (bảo mật & xác thực)
 
 ## Luồng auth
-- Đăng nhập trả về một token + user; lưu qua `useAuthStore.setAuth({ token, user })`.
-- Request interceptor của `apiClient` gắn `Authorization: Bearer <token>`.
-- Khi gặp `401`, response interceptor gọi `clearAuth()`; `ProtectedRoute` chuyển
-  hướng về `/login`.
-- `LoginPage` trong template là bản giả (stub) — hãy thay `onFinish` bằng một
-  mutation `POST /auth/login` thật.
+Đã nối với backend `be-template` thật (`/api/v1`). Feature `src/features/auth`:
+- `POST /auth/login` trả `{ user, tokens: { accessToken, refreshToken } }`; hook
+  `useLogin` gọi tiếp `GET /users/me` để lấy vai trò + quyền, rồi lưu qua
+  `useAuthStore.setAuth({ token, refreshToken, user })`.
+- Request interceptor của `apiClient` gắn `Authorization: Bearer <accessToken>`.
+- **Silent refresh:** khi một request (không phải endpoint `/auth/*`) gặp `401`,
+  response interceptor tự gọi `POST /auth/refresh` bằng refresh token, cập nhật cặp
+  token rồi phát lại request cũ. Refresh thất bại → `clearAuth()` và `ProtectedRoute`
+  chuyển về `/login`. Nhờ vậy phiên sống theo refresh token (7 ngày) chứ không chết
+  sau mỗi 15 phút.
+- `useLogout` gọi `POST /auth/logout` để thu hồi refresh token phía server rồi mới xoá
+  state cục bộ.
+- Backend bọc mọi response trong `{ success, data }` và lỗi trong
+  `{ success:false, error:{ code, message } }`; `apiClient` bóc envelope lỗi, tầng
+  `api/*` của feature bóc `data.data`.
 
 ## Lưu trữ token
-- Template persist token qua `persist` của Zustand (localStorage) cho đơn giản. Để
-  bảo mật cao hơn, ưu tiên cookie httpOnly do backend đặt và bỏ việc persist token ở
-  phía client. Hãy ghi tài liệu lựa chọn của bạn theo từng dự án.
+- Template persist accessToken + refreshToken qua `persist` của Zustand (localStorage)
+  cho đơn giản. Để bảo mật cao hơn, ưu tiên cookie httpOnly do backend đặt và bỏ việc
+  persist token ở phía client. Hãy ghi tài liệu lựa chọn của bạn theo từng dự án.
 
 ## Authorization (phân quyền theo vai trò)
 - `AuthUser.roles` mang các vai trò. Chặn (gate) UI theo role ở nơi cần thiết;

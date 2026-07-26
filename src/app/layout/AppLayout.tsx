@@ -16,6 +16,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useUiStore } from '@/shared/stores/ui-store';
 import { useAuthStore } from '@/shared/stores/auth-store';
+import { useLogout } from '@/features/auth';
 import { useThemeStore } from '@/shared/theme';
 import { paths } from '@/app/router/paths';
 
@@ -30,8 +31,8 @@ export function AppLayout() {
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const toggleMode = useThemeStore((s) => s.toggleMode);
   const mode = useThemeStore((s) => s.mode);
-  const clearAuth = useAuthStore((s) => s.clearAuth);
   const user = useAuthStore((s) => s.user);
+  const logout = useLogout();
 
   // < lg (992px): phone + small tablet → nav là Drawer overlay, không chiếm chỗ.
   // >= lg: desktop/large screen → Sider inline thu gọn được.
@@ -116,10 +117,7 @@ export function AppLayout() {
                     key: 'logout',
                     icon: <LogoutOutlined />,
                     label: t('action.logout'),
-                    onClick: () => {
-                      clearAuth();
-                      navigate(paths.login);
-                    },
+                    onClick: () => logout.mutate(),
                   },
                 ],
               }}

@@ -29,6 +29,13 @@ jobs:
       - run: npm run build
         env:
           GITHUB_PAGES: 'true'
+          # TẠM THỜI: GitHub Pages là static, không có proxy → build phải nhúng URL
+          # backend đầy đủ. Đặt thẳng ở đây thay vì .env.production. Khi chuyển sang
+          # nền tảng deploy có phần cấu hình env (Vercel/Netlify/Cloudflare...),
+          # xoá dòng này và đặt VITE_API_BASE_URL trong settings của nền tảng đó.
+          # Lưu ý: backend trên Render phải có CORS_ORIGINS chứa origin GitHub Pages.
+          VITE_API_BASE_URL: 'https://be-template-vk71.onrender.com/api/v1'
+          VITE_ENABLE_DEVTOOLS: 'false'
       # SPA fallback: GitHub Pages has no server-side routing, so unmatched
       # paths (deep links, refreshes) must still serve the app shell.
       - run: cp dist/index.html dist/404.html

@@ -12,6 +12,7 @@
   "action": {
     "create": "Create",
     "edit": "Edit",
+    "view": "View",
     "delete": "Delete",
     "save": "Save",
     "cancel": "Cancel",

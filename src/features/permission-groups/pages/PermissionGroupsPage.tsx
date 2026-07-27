@@ -1,142 +1,144 @@
 import { useState } from 'react';
-import { Button, Card, Input, Popconfirm, Space, Table, Tag, Typography } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { App, Button, Input, Segmented } from 'antd';
+import { AppstoreOutlined, PlusOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { useCan } from '@/shared/lib/can';
+import { PageContainer } from '@/shared/ui';
 import { QueryError } from '@/shared/ui/QueryError';
+import { useCan } from '@/shared/lib/can';
+import { useDebounce } from '@/shared/hooks/use-debounce';
 import { useAuthStore } from '@/shared/stores/auth-store';
 import { usePermissionGroups, usePermissionGroupMutations } from '../hooks/use-permission-groups';
+import { GroupsTable } from '../components/GroupsTable';
+import { GroupsGrid } from '../components/GroupsGrid';
+import { GroupDetailModal } from '../components/GroupDetailModal';
 import { GroupFormModal } from '../components/GroupFormModal';
 import type { PermissionGroup, PermissionGroupInput } from '../types';
 
+type ViewMode = 'table' | 'grid';
+
 export function PermissionGroupsPage() {
   const { t } = useTranslation();
+  const { modal } = App.useApp();
   const can = useCan();
   const currentUserId = useAuthStore((s) => s.user?.id);
-  const [search, setSearch] = useState('');
+
+  const [view, setView] = useState<ViewMode>('table');
+  const [searchInput, setSearchInput] = useState('');
+  const search = useDebounce(searchInput, 300);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const [editing, setEditing] = useState<PermissionGroup | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [detail, setDetail] = useState<PermissionGroup | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const { data, isLoading, isError, error, refetch } = usePermissionGroups({
     page,
-    limit: 10,
+    limit: pageSize,
     search: search || undefined,
   });
   const { create, update, remove } = usePermissionGroupMutations();
 
-  const canEdit = (g: PermissionGroup) =>
+  const canManage = (g: PermissionGroup) =>
     !g.isSystem && (can('group:update') || g.ownerId === currentUserId);
 
   const openCreate = () => {
     setEditing(null);
-    setModalOpen(true);
+    setFormOpen(true);
   };
   const openEdit = (g: PermissionGroup) => {
+    setDetailOpen(false);
     setEditing(g);
-    setModalOpen(true);
+    setFormOpen(true);
+  };
+  const openDetail = (g: PermissionGroup) => {
+    setDetail(g);
+    setDetailOpen(true);
+  };
+  const confirmDelete = (g: PermissionGroup) => {
+    modal.confirm({
+      title: t('group.deleteConfirm'),
+      okText: t('action.delete'),
+      okButtonProps: { danger: true },
+      cancelText: t('action.cancel'),
+      onOk: () => remove.mutateAsync(g.id),
+    });
   };
 
   const onSubmit = (values: PermissionGroupInput) => {
-    const done = () => setModalOpen(false);
+    const done = () => setFormOpen(false);
     if (editing) update.mutate({ id: editing.id, input: values }, { onSuccess: done });
     else create.mutate(values, { onSuccess: done });
   };
 
-  const columns = [
-    { title: t('group.name'), dataIndex: 'name', key: 'name' },
-    {
-      title: t('group.key'),
-      dataIndex: 'key',
-      key: 'key',
-      render: (v: string) => <Typography.Text code>{v}</Typography.Text>,
+  const viewProps = {
+    data: data?.items ?? [],
+    total: data?.total ?? 0,
+    page,
+    pageSize,
+    loading: isLoading,
+    currentUserId,
+    canManage,
+    onPageChange: (p: number, ps: number) => {
+      setPage(p);
+      setPageSize(ps);
     },
-    {
-      title: t('group.grants'),
-      dataIndex: 'grants',
-      key: 'grants',
-      render: (grants: string[]) => <Tag>{grants.length}</Tag>,
-    },
-    {
-      title: t('group.owner'),
-      key: 'owner',
-      render: (_: unknown, g: PermissionGroup) =>
-        g.ownerId === null ? (
-          <Tag color="gold">{t('group.global')}</Tag>
-        ) : g.ownerId === currentUserId ? (
-          <Tag color="green">{t('group.mine')}</Tag>
-        ) : (
-          <Tag>—</Tag>
-        ),
-    },
-    {
-      title: t('common.actions'),
-      key: 'actions',
-      width: 160,
-      render: (_: unknown, g: PermissionGroup) => (
-        <Space>
-          {canEdit(g) && (
-            <Button size="small" onClick={() => openEdit(g)}>
-              {t('action.edit')}
-            </Button>
-          )}
-          {canEdit(g) && (
-            <Popconfirm
-              title={t('group.deleteConfirm')}
-              onConfirm={() => remove.mutate(g.id)}
-              okText={t('action.delete')}
-              cancelText={t('action.cancel')}
-            >
-              <Button size="small" danger>
-                {t('action.delete')}
-              </Button>
-            </Popconfirm>
-          )}
-        </Space>
-      ),
-    },
-  ];
+    onView: openDetail,
+    onEdit: openEdit,
+    onDelete: confirmDelete,
+  };
 
   return (
-    <div className="p-4">
-      <div className="mb-4 flex items-center justify-between">
-        <Typography.Title level={4} className="!mb-0">
-          {t('group.title')}
-        </Typography.Title>
-        {can('group:create') && (
+    <PageContainer
+      title={t('group.title')}
+      extra={
+        can('group:create') && (
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
             {t('action.create')}
           </Button>
-        )}
-      </div>
-      <Card>
-        {isError && <QueryError error={error} onRetry={() => refetch()} />}
-        <Input.Search
+        )
+      }
+    >
+      {isError && <QueryError error={error} onRetry={() => refetch()} />}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <Input
           allowClear
           placeholder={t('action.search')}
-          className="mb-4 max-w-xs"
-          onSearch={(v) => {
-            setSearch(v);
+          className="max-w-xs"
+          value={searchInput}
+          onChange={(e) => {
+            setSearchInput(e.target.value);
             setPage(1);
           }}
         />
-        <Table<PermissionGroup>
-          rowKey="id"
-          scroll={{ x: 'max-content' }}
-          loading={isLoading}
-          columns={columns}
-          dataSource={data?.items ?? []}
-          locale={{ emptyText: t('empty') }}
-          pagination={{ current: page, pageSize: 10, total: data?.total ?? 0, onChange: setPage }}
+        <Segmented<ViewMode>
+          value={view}
+          onChange={setView}
+          options={[
+            { value: 'table', icon: <UnorderedListOutlined />, title: t('view.table') },
+            { value: 'grid', icon: <AppstoreOutlined />, title: t('view.grid') },
+          ]}
         />
-      </Card>
+      </div>
+
+      {view === 'table' ? <GroupsTable {...viewProps} /> : <GroupsGrid {...viewProps} />}
+
+      <GroupDetailModal
+        open={detailOpen}
+        group={detail}
+        currentUserId={currentUserId}
+        canManage={canManage}
+        onEdit={openEdit}
+        onClose={() => setDetailOpen(false)}
+      />
       <GroupFormModal
-        open={modalOpen}
+        open={formOpen}
         initialValue={editing}
         confirmLoading={create.isPending || update.isPending}
         onSubmit={onSubmit}
-        onCancel={() => setModalOpen(false)}
+        onCancel={() => setFormOpen(false)}
       />
-    </div>
+    </PageContainer>
   );
 }

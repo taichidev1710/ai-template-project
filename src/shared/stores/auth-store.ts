@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type UserStatus = 'pending' | 'active' | 'rejected' | 'disabled';
+export const USER_STATUSES = ['pending', 'active', 'rejected', 'disabled'] as const;
+export type UserStatus = (typeof USER_STATUSES)[number];
 
 export interface FeatureAction {
   key: string;

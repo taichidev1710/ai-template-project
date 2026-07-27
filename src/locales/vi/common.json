@@ -12,6 +12,7 @@
   "action": {
     "create": "Thêm mới",
     "edit": "Sửa",
+    "view": "Xem",
     "delete": "Xoá",
     "save": "Lưu",
     "cancel": "Huỷ",

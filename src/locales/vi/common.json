@@ -36,7 +36,10 @@
     "editTitle": "Sửa người dùng",
     "detailTitle": "Chi tiết người dùng",
     "filterRole": "Lọc theo vai trò",
-    "deleteConfirm": "Bạn có chắc muốn xoá người dùng này?"
+    "deleteConfirm": "Bạn có chắc muốn xoá người dùng này?",
+    "manager": "Quản lý cấp trên",
+    "managerNone": "Không có (cấp cao nhất)",
+    "managerHint": "Chọn quản lý trực tiếp. Quản lý phải có cấp bậc cao hơn nhân sự này."
   },
   "view": {
     "table": "Bảng",

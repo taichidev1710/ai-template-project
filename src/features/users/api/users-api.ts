@@ -40,4 +40,7 @@ export const usersApi = {
   setStatus: async (id: string, status: Extract<UserStatus, 'active' | 'disabled'>): Promise<void> => {
     await apiClient.patch(`/users/${id}/status`, { status });
   },
+  reassignManager: async (id: string, managerId: string | null): Promise<void> => {
+    await apiClient.put(`/users/${id}/manager`, { managerId });
+  },
 };

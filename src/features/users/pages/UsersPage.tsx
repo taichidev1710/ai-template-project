@@ -55,6 +55,12 @@ export function UsersPage() {
     return map;
   }, [roles]);
 
+  const userName = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const u of data?.items ?? []) map.set(u.id, u.name);
+    return map;
+  }, [data]);
+
   const openDetail = (user: User) => {
     setDetail(user);
     setDetailOpen(true);
@@ -149,6 +155,7 @@ export function UsersPage() {
         open={detailOpen}
         user={detail}
         roleName={roleName}
+        userName={userName}
         canAssign={canAssign}
         onAssign={openAssign}
         onClose={() => setDetailOpen(false)}

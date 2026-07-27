@@ -72,5 +72,20 @@ export function useUserMutations() {
     onError,
   });
 
-  return { create, remove, assignRoles, assignGroups, setExtraPermissions, setStatus };
+  const reassignManager = useMutation({
+    mutationFn: ({ id, managerId }: { id: string; managerId: string | null }) =>
+      usersApi.reassignManager(id, managerId),
+    onSuccess: saved,
+    onError,
+  });
+
+  return {
+    create,
+    remove,
+    assignRoles,
+    assignGroups,
+    setExtraPermissions,
+    setStatus,
+    reassignManager,
+  };
 }

@@ -9,12 +9,21 @@ interface Props {
   open: boolean;
   user: User | null;
   roleName: Map<string, string>;
+  userName: Map<string, string>;
   canAssign: boolean;
   onAssign: (user: User) => void;
   onClose: () => void;
 }
 
-export function UserDetailModal({ open, user, roleName, canAssign, onAssign, onClose }: Props) {
+export function UserDetailModal({
+  open,
+  user,
+  roleName,
+  userName,
+  canAssign,
+  onAssign,
+  onClose,
+}: Props) {
   const { t } = useTranslation();
 
   return (
@@ -53,6 +62,11 @@ export function UserDetailModal({ open, user, roleName, canAssign, onAssign, onC
                 ? '—'
                 : user.roleIds.map((id) => <Tag key={id}>{roleName.get(id) ?? id.slice(-4)}</Tag>)}
             </Space>
+          </Descriptions.Item>
+          <Descriptions.Item label={t('user.manager')}>
+            {user.managerId
+              ? (userName.get(user.managerId) ?? user.managerId.slice(-6))
+              : t('user.managerNone')}
           </Descriptions.Item>
           <Descriptions.Item label={t('group.title')}>
             {user.permissionGroupIds.length}

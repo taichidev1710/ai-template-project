@@ -1,6 +1,14 @@
 {
   "app": { "name": "Bảng điều khiển" },
-  "nav": { "dashboard": "Tổng quan", "users": "Người dùng", "profile": "Hồ sơ" },
+  "nav": {
+    "dashboard": "Tổng quan",
+    "users": "Người dùng",
+    "profile": "Hồ sơ",
+    "accounts": "Duyệt tài khoản",
+    "roles": "Vai trò",
+    "groups": "Nhóm quyền",
+    "features": "Nhóm quyền chức năng"
+  },
   "action": {
     "create": "Thêm mới",
     "edit": "Sửa",
@@ -8,7 +16,14 @@
     "save": "Lưu",
     "cancel": "Huỷ",
     "search": "Tìm kiếm",
-    "logout": "Đăng xuất"
+    "logout": "Đăng xuất",
+    "approve": "Duyệt",
+    "reject": "Từ chối",
+    "assign": "Gán",
+    "disable": "Vô hiệu hoá",
+    "enable": "Bật lại",
+    "history": "Lịch sử",
+    "close": "Đóng"
   },
   "user": {
     "name": "Họ tên",
@@ -90,7 +105,86 @@
       "exclusiveEvents": "Sự kiện độc quyền"
     }
   },
-  "login": { "title": "Đăng nhập", "email": "Email", "password": "Mật khẩu", "submit": "Đăng nhập" },
+  "login": {
+    "title": "Đăng nhập",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "submit": "Đăng nhập",
+    "toRegister": "Chưa có tài khoản? Đăng ký"
+  },
+  "register": {
+    "title": "Đăng ký tài khoản",
+    "name": "Họ tên",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "submit": "Đăng ký",
+    "toLogin": "Đã có tài khoản? Đăng nhập",
+    "pendingTitle": "Đăng ký thành công",
+    "pendingMessage": "Tài khoản của bạn đang chờ quản trị viên duyệt. Bạn sẽ đăng nhập được sau khi được duyệt."
+  },
+  "status": {
+    "pending": "Chờ duyệt",
+    "active": "Đang hoạt động",
+    "rejected": "Bị từ chối",
+    "disabled": "Đã vô hiệu hoá"
+  },
+  "account": {
+    "queueTitle": "Tài khoản chờ duyệt",
+    "rejectTitle": "Từ chối tài khoản",
+    "rejectReason": "Lý do từ chối",
+    "historyTitle": "Lịch sử duyệt",
+    "approvedBy": "Người thực hiện",
+    "decidedAt": "Thời điểm",
+    "action": "Hành động",
+    "reason": "Lý do",
+    "noHistory": "Chưa có lịch sử duyệt",
+    "approveConfirm": "Duyệt tài khoản này?",
+    "manager": "Quản lý"
+  },
+  "role": {
+    "title": "Vai trò",
+    "key": "Mã (key)",
+    "name": "Tên vai trò",
+    "description": "Mô tả",
+    "level": "Cấp bậc",
+    "permissions": "Quyền",
+    "system": "Hệ thống",
+    "createTitle": "Thêm vai trò",
+    "editTitle": "Sửa vai trò",
+    "deleteConfirm": "Xoá vai trò này?"
+  },
+  "group": {
+    "title": "Nhóm quyền",
+    "key": "Mã (key)",
+    "name": "Tên nhóm",
+    "description": "Mô tả",
+    "grants": "Quyền trong nhóm",
+    "owner": "Chủ sở hữu",
+    "global": "Toàn cục",
+    "mine": "Của tôi",
+    "assigners": "Người được ủy quyền gán",
+    "createTitle": "Thêm nhóm quyền",
+    "editTitle": "Sửa nhóm quyền",
+    "deleteConfirm": "Xoá nhóm quyền này?",
+    "assignTitle": "Gán nhóm quyền cho người dùng"
+  },
+  "feature": {
+    "title": "Nhóm quyền chức năng",
+    "key": "Mã (key)",
+    "name": "Tên chức năng",
+    "description": "Mô tả",
+    "actions": "Các hành động",
+    "enabled": "Đang bật",
+    "system": "Hệ thống",
+    "order": "Thứ tự",
+    "createTitle": "Thêm chức năng",
+    "editTitle": "Sửa chức năng",
+    "deleteConfirm": "Xoá chức năng này?",
+    "actionKey": "Mã hành động",
+    "actionLabel": "Nhãn hành động",
+    "addAction": "Thêm hành động"
+  },
+  "common": { "actions": "Thao tác", "yes": "Có", "no": "Không", "total": "Tổng" },
   "empty": "Không có dữ liệu",
   "error": { "generic": "Đã có lỗi xảy ra. Vui lòng thử lại." }
 }

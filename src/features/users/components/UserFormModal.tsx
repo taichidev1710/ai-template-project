@@ -1,34 +1,30 @@
 import { Form, Input, Modal, Select } from 'antd';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { User, UserInput } from '../types';
+import { useRoles } from '@/features/roles';
+import type { UserInput } from '../types';
 
-interface UserFormModalProps {
+interface Props {
   open: boolean;
-  initialValue?: User | null;
   confirmLoading?: boolean;
   onSubmit: (values: UserInput) => void;
   onCancel: () => void;
 }
 
-/** Create/edit modal. Controlled by the page; no data fetching inside. */
-export function UserFormModal({ open, initialValue, confirmLoading, onSubmit, onCancel }: UserFormModalProps) {
+/** Create a user directly (admin path → account is active, manager = creator). */
+export function UserFormModal({ open, confirmLoading, onSubmit, onCancel }: Props) {
   const { t } = useTranslation();
   const [form] = Form.useForm<UserInput>();
-  const isEdit = Boolean(initialValue);
+  const { data: roles } = useRoles({ limit: 100 });
 
   useEffect(() => {
-    if (open) {
-      form.setFieldsValue(
-        initialValue ?? { name: '', email: '', role: 'viewer' },
-      );
-    }
-  }, [open, initialValue, form]);
+    if (open) form.setFieldsValue({ email: '', name: '', password: '', roleIds: [] });
+  }, [open, form]);
 
   return (
     <Modal
       open={open}
-      title={isEdit ? t('user.editTitle') : t('user.createTitle')}
+      title={t('user.createTitle')}
       okText={t('action.save')}
       cancelText={t('action.cancel')}
       confirmLoading={confirmLoading}
@@ -43,13 +39,15 @@ export function UserFormModal({ open, initialValue, confirmLoading, onSubmit, on
         <Form.Item name="email" label={t('user.email')} rules={[{ required: true, type: 'email' }]}>
           <Input />
         </Form.Item>
-        <Form.Item name="role" label={t('user.role')} rules={[{ required: true }]}>
+        <Form.Item name="password" label={t('register.password')} rules={[{ required: true, min: 8 }]}>
+          <Input.Password autoComplete="new-password" />
+        </Form.Item>
+        <Form.Item name="roleIds" label={t('user.role')}>
           <Select
-            options={[
-              { value: 'admin', label: 'Admin' },
-              { value: 'editor', label: 'Editor' },
-              { value: 'viewer', label: 'Viewer' },
-            ]}
+            mode="multiple"
+            allowClear
+            optionFilterProp="label"
+            options={(roles?.items ?? []).map((r) => ({ value: r.id, label: r.name }))}
           />
         </Form.Item>
       </Form>

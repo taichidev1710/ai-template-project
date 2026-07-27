@@ -1,5 +1,5 @@
 import { Button, Card, Form, Input, Typography } from 'antd';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLogin, type LoginInput } from '@/features/auth';
 import { useAuthStore } from '@/shared/stores/auth-store';
@@ -34,6 +34,9 @@ export function LoginPage() {
           <Button type="primary" htmlType="submit" block loading={login.isPending}>
             {t('login.submit')}
           </Button>
+          <div className="mt-4 text-center">
+            <Link to={paths.register}>{t('login.toRegister')}</Link>
+          </div>
         </Form>
       </Card>
     </div>

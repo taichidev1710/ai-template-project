@@ -1,6 +1,14 @@
 {
   "app": { "name": "Admin Dashboard" },
-  "nav": { "dashboard": "Dashboard", "users": "Users", "profile": "Profile" },
+  "nav": {
+    "dashboard": "Dashboard",
+    "users": "Users",
+    "profile": "Profile",
+    "accounts": "Account approvals",
+    "roles": "Roles",
+    "groups": "Permission groups",
+    "features": "Feature registry"
+  },
   "action": {
     "create": "Create",
     "edit": "Edit",
@@ -8,7 +16,14 @@
     "save": "Save",
     "cancel": "Cancel",
     "search": "Search",
-    "logout": "Log out"
+    "logout": "Log out",
+    "approve": "Approve",
+    "reject": "Reject",
+    "assign": "Assign",
+    "disable": "Disable",
+    "enable": "Enable",
+    "history": "History",
+    "close": "Close"
   },
   "user": {
     "name": "Name",
@@ -90,7 +105,86 @@
       "exclusiveEvents": "Exclusive events"
     }
   },
-  "login": { "title": "Sign in", "email": "Email", "password": "Password", "submit": "Sign in" },
+  "login": {
+    "title": "Sign in",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "toRegister": "No account? Sign up"
+  },
+  "register": {
+    "title": "Create account",
+    "name": "Full name",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign up",
+    "toLogin": "Already have an account? Sign in",
+    "pendingTitle": "Registration successful",
+    "pendingMessage": "Your account is awaiting admin approval. You can sign in once approved."
+  },
+  "status": {
+    "pending": "Pending",
+    "active": "Active",
+    "rejected": "Rejected",
+    "disabled": "Disabled"
+  },
+  "account": {
+    "queueTitle": "Accounts awaiting approval",
+    "rejectTitle": "Reject account",
+    "rejectReason": "Rejection reason",
+    "historyTitle": "Approval history",
+    "approvedBy": "Actor",
+    "decidedAt": "When",
+    "action": "Action",
+    "reason": "Reason",
+    "noHistory": "No approval history yet",
+    "approveConfirm": "Approve this account?",
+    "manager": "Manager"
+  },
+  "role": {
+    "title": "Roles",
+    "key": "Key",
+    "name": "Role name",
+    "description": "Description",
+    "level": "Level",
+    "permissions": "Permissions",
+    "system": "System",
+    "createTitle": "Create role",
+    "editTitle": "Edit role",
+    "deleteConfirm": "Delete this role?"
+  },
+  "group": {
+    "title": "Permission groups",
+    "key": "Key",
+    "name": "Group name",
+    "description": "Description",
+    "grants": "Grants",
+    "owner": "Owner",
+    "global": "Global",
+    "mine": "Mine",
+    "assigners": "Delegated assigners",
+    "createTitle": "Create group",
+    "editTitle": "Edit group",
+    "deleteConfirm": "Delete this group?",
+    "assignTitle": "Assign groups to user"
+  },
+  "feature": {
+    "title": "Feature registry",
+    "key": "Key",
+    "name": "Feature name",
+    "description": "Description",
+    "actions": "Actions",
+    "enabled": "Enabled",
+    "system": "System",
+    "order": "Order",
+    "createTitle": "Create feature",
+    "editTitle": "Edit feature",
+    "deleteConfirm": "Delete this feature?",
+    "actionKey": "Action key",
+    "actionLabel": "Action label",
+    "addAction": "Add action"
+  },
+  "common": { "actions": "Actions", "yes": "Yes", "no": "No", "total": "Total" },
   "empty": "No data",
   "error": { "generic": "Something went wrong. Please try again." }
 }

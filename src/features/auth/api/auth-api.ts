@@ -1,6 +1,6 @@
 import { apiClient } from '@/shared/api';
 import type { ApiEnvelope } from '@/shared/api';
-import type { AuthProfile, LoginInput, LoginResult } from '../types';
+import type { AuthProfile, LoginInput, LoginResult, RegisterInput, RegisterResult } from '../types';
 
 /**
  * Feature API layer: the ONLY place that knows the auth endpoint URLs.
@@ -10,6 +10,12 @@ import type { AuthProfile, LoginInput, LoginResult } from '../types';
 export const authApi = {
   login: async (input: LoginInput): Promise<LoginResult> => {
     const { data } = await apiClient.post<ApiEnvelope<LoginResult>>('/auth/login', input);
+    return data.data;
+  },
+
+  /** Public sign-up — creates a pending account (no tokens until approved). */
+  register: async (input: RegisterInput): Promise<RegisterResult> => {
+    const { data } = await apiClient.post<ApiEnvelope<RegisterResult>>('/auth/register', input);
     return data.data;
   },
 

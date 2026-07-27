@@ -6,7 +6,7 @@ import { paths } from '@/app/router/paths';
 import type { NormalizedError } from '@/shared/api';
 import { useAuthStore, type AuthUser } from '@/shared/stores/auth-store';
 import { authApi } from '../api/auth-api';
-import type { AuthProfile, LoginInput } from '../types';
+import type { AuthProfile, LoginInput, RegisterInput } from '../types';
 
 /** Flatten the backend profile into the client's auth-user shape. */
 function toAuthUser(profile: AuthProfile): AuthUser {
@@ -14,6 +14,7 @@ function toAuthUser(profile: AuthProfile): AuthUser {
     id: profile.id,
     name: profile.name,
     email: profile.email,
+    status: profile.status,
     roles: profile.roles.map((r) => r.key),
     permissions: profile.permissions,
   };
@@ -45,9 +46,26 @@ export function useLogin() {
         token: tokens.accessToken,
         refreshToken: tokens.refreshToken,
         user: toAuthUser(profile),
+        enabledFeatures: profile.enabledFeatures,
       });
       navigate(from ?? paths.dashboard, { replace: true });
     },
+    onError: (e: NormalizedError) => {
+      message.error(e.message || t('error.generic'));
+    },
+  });
+}
+
+/**
+ * Public sign-up. On success the account is PENDING (no auto-login) — the page
+ * shows a "waiting for approval" state instead of navigating into the app.
+ */
+export function useRegister() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+
+  return useMutation({
+    mutationFn: (input: RegisterInput) => authApi.register(input),
     onError: (e: NormalizedError) => {
       message.error(e.message || t('error.generic'));
     },

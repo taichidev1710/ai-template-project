@@ -2,6 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { App } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { NormalizedError } from '@/shared/api';
+import type { UserStatus } from '@/shared/stores/auth-store';
 import { usersApi } from '../api/users-api';
 import { usersKeys } from '../api/users-keys';
 import type { UserInput, UsersListParams } from '../types';
@@ -15,38 +16,22 @@ export function useUsers(params: UsersListParams) {
   });
 }
 
-export function useUser(id: string, enabled = true) {
-  return useQuery({
-    queryKey: usersKeys.detail(id),
-    queryFn: () => usersApi.get(id),
-    enabled: enabled && Boolean(id),
-  });
-}
-
-/** Create + update + delete, with toasts and cache invalidation. */
+/** All user mutations, with toasts + cache invalidation. */
 export function useUserMutations() {
   const qc = useQueryClient();
   const { message } = App.useApp();
   const { t } = useTranslation();
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: usersKeys.lists() });
+  const invalidate = () => qc.invalidateQueries({ queryKey: usersKeys.all });
   const onError = (e: NormalizedError) => message.error(e.message || t('error.generic'));
+  const saved = () => {
+    void invalidate();
+    message.success(t('action.save'));
+  };
 
   const create = useMutation({
     mutationFn: (input: UserInput) => usersApi.create(input),
-    onSuccess: () => {
-      void invalidate();
-      message.success(t('action.save'));
-    },
-    onError,
-  });
-
-  const update = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: UserInput }) => usersApi.update(id, input),
-    onSuccess: () => {
-      void invalidate();
-      message.success(t('action.save'));
-    },
+    onSuccess: saved,
     onError,
   });
 
@@ -59,5 +44,33 @@ export function useUserMutations() {
     onError,
   });
 
-  return { create, update, remove };
+  const assignRoles = useMutation({
+    mutationFn: ({ id, roleIds }: { id: string; roleIds: string[] }) =>
+      usersApi.assignRoles(id, roleIds),
+    onSuccess: saved,
+    onError,
+  });
+
+  const assignGroups = useMutation({
+    mutationFn: ({ id, groupIds }: { id: string; groupIds: string[] }) =>
+      usersApi.assignGroups(id, groupIds),
+    onSuccess: saved,
+    onError,
+  });
+
+  const setExtraPermissions = useMutation({
+    mutationFn: ({ id, grants }: { id: string; grants: string[] }) =>
+      usersApi.setExtraPermissions(id, grants),
+    onSuccess: saved,
+    onError,
+  });
+
+  const setStatus = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: Extract<UserStatus, 'active' | 'disabled'> }) =>
+      usersApi.setStatus(id, status),
+    onSuccess: saved,
+    onError,
+  });
+
+  return { create, remove, assignRoles, assignGroups, setExtraPermissions, setStatus };
 }

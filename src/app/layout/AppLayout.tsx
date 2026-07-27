@@ -6,6 +6,10 @@ import {
   IdcardOutlined,
   ApartmentOutlined,
   PartitionOutlined,
+  AuditOutlined,
+  SafetyCertificateOutlined,
+  KeyOutlined,
+  AppstoreOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   BulbOutlined,
@@ -17,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { useUiStore } from '@/shared/stores/ui-store';
 import { useAuthStore } from '@/shared/stores/auth-store';
 import { useLogout } from '@/features/auth';
+import { useCan } from '@/shared/lib/can';
 import { useThemeStore } from '@/shared/theme';
 import { paths } from '@/app/router/paths';
 
@@ -33,6 +38,7 @@ export function AppLayout() {
   const mode = useThemeStore((s) => s.mode);
   const user = useAuthStore((s) => s.user);
   const logout = useLogout();
+  const can = useCan();
 
   // < lg (992px): phone + small tablet → nav là Drawer overlay, không chiếm chỗ.
   // >= lg: desktop/large screen → Sider inline thu gọn được.
@@ -40,13 +46,22 @@ export function AppLayout() {
   const isMobile = !screens.lg;
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  const menuItems = [
+  // `perm` gates a menu item by permission (UX only — the backend re-enforces).
+  // Items without `perm` are always shown. Demo (diagram) items stay ungated.
+  const allMenuItems = [
     { key: paths.dashboard, icon: <DashboardOutlined />, label: t('nav.dashboard') },
-    { key: paths.users, icon: <TeamOutlined />, label: t('nav.users') },
+    { key: paths.users, icon: <TeamOutlined />, label: t('nav.users'), perm: 'user:read' },
+    { key: paths.accounts, icon: <AuditOutlined />, label: t('nav.accounts'), perm: 'account:read' },
+    { key: paths.roles, icon: <SafetyCertificateOutlined />, label: t('nav.roles'), perm: 'role:read' },
+    { key: paths.permissionGroups, icon: <KeyOutlined />, label: t('nav.groups'), perm: 'group:read' },
+    { key: paths.features, icon: <AppstoreOutlined />, label: t('nav.features'), perm: 'feature:read' },
     { key: paths.profile, icon: <IdcardOutlined />, label: t('nav.profile') },
     { key: paths.diagrams, icon: <PartitionOutlined />, label: 'Sơ đồ' },
     { key: paths.diagramTypes, icon: <ApartmentOutlined />, label: 'Loại sơ đồ' },
   ];
+  const menuItems = allMenuItems
+    .filter((item) => !item.perm || can(item.perm))
+    .map(({ perm: _perm, ...rest }) => rest);
 
   const toggleLang = () => void i18n.changeLanguage(i18n.language === 'vi' ? 'en' : 'vi');
 

@@ -69,3 +69,32 @@ body,
   height: 100%;
   margin: 0;
 }
+
+/*
+ * Scrollbar mảnh, bo tròn, theo token (tự đổi theo light/dark qua --app-*).
+ * Firefox dùng scrollbar-width/color; Chromium/WebKit dùng ::-webkit-scrollbar.
+ * Thumb trong suốt lúc nghỉ, hiện rõ hơn khi hover → gọn, không chiếm chỗ.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--app-color-border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--app-color-border);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--app-color-text-tertiary);
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}

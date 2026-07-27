@@ -3,16 +3,12 @@ import { App } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { NormalizedError } from '@/shared/api';
 import { featureRegistryApi } from '../api/feature-registry-api';
+import { featuresKeys } from '../api/feature-registry-keys';
 import type { FeatureInput, FeatureListParams } from '../types';
-
-const keys = {
-  all: ['features'] as const,
-  list: (params: FeatureListParams) => [...keys.all, 'list', params] as const,
-};
 
 export function useFeatures(params: FeatureListParams) {
   return useQuery({
-    queryKey: keys.list(params),
+    queryKey: featuresKeys.list(params),
     queryFn: () => featureRegistryApi.list(params),
     placeholderData: keepPreviousData,
   });
@@ -23,7 +19,7 @@ export function useFeatureMutations() {
   const { message } = App.useApp();
   const { t } = useTranslation();
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: keys.all });
+  const invalidate = () => qc.invalidateQueries({ queryKey: featuresKeys.all });
   const onError = (e: NormalizedError) => message.error(e.message || t('error.generic'));
 
   const create = useMutation({

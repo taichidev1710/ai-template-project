@@ -3,16 +3,12 @@ import { App } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { NormalizedError } from '@/shared/api';
 import { rolesApi } from '../api/roles-api';
+import { rolesKeys } from '../api/roles-keys';
 import type { RoleInput, RolesListParams } from '../types';
-
-const keys = {
-  all: ['roles'] as const,
-  list: (params: RolesListParams) => [...keys.all, 'list', params] as const,
-};
 
 export function useRoles(params: RolesListParams) {
   return useQuery({
-    queryKey: keys.list(params),
+    queryKey: rolesKeys.list(params),
     queryFn: () => rolesApi.list(params),
     placeholderData: keepPreviousData,
   });
@@ -23,7 +19,7 @@ export function useRoleMutations() {
   const { message } = App.useApp();
   const { t } = useTranslation();
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: keys.all });
+  const invalidate = () => qc.invalidateQueries({ queryKey: rolesKeys.all });
   const onError = (e: NormalizedError) => message.error(e.message || t('error.generic'));
 
   const create = useMutation({

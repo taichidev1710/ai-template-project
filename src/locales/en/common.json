@@ -23,7 +23,8 @@
     "disable": "Disable",
     "enable": "Enable",
     "history": "History",
-    "close": "Close"
+    "close": "Close",
+    "retry": "Retry"
   },
   "user": {
     "name": "Name",

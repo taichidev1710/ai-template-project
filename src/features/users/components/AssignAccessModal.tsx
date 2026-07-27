@@ -42,7 +42,14 @@ export function AssignAccessModal({ user, open, onClose }: Props) {
     setExtraPermissions.mutate({ id: user.id, grants }, { onSuccess: onClose });
 
   return (
-    <Modal open={open} onCancel={onClose} footer={null} title={`${t('action.assign')} — ${user.name}`} width={640}>
+    <Modal
+      open={open}
+      onCancel={onClose}
+      footer={null}
+      title={`${t('action.assign')} — ${user.name}`}
+      width={640}
+      style={{ maxWidth: 'calc(100vw - 32px)' }}
+    >
       <Tabs
         items={[
           {

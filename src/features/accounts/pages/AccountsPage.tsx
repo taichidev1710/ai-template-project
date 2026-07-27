@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { App, Button, Card, Form, Input, Popconfirm, Space, Table, Tag, Typography } from 'antd';
 import { HistoryOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { QueryError } from '@/shared/ui/QueryError';
 import { usePendingAccounts, useAccountDecisions } from '../hooks/use-accounts';
 import { ApprovalHistoryModal } from '../components/ApprovalHistoryModal';
 import type { AccountUser } from '../types';
@@ -14,7 +15,7 @@ export function AccountsPage() {
   const [historyFor, setHistoryFor] = useState<string | null>(null);
 
   const params = { page, limit: 10, search: search || undefined };
-  const { data, isLoading } = usePendingAccounts(params);
+  const { data, isLoading, isError, error, refetch } = usePendingAccounts(params);
   const { approve, reject } = useAccountDecisions();
 
   const openReject = (user: AccountUser) => {
@@ -82,6 +83,7 @@ export function AccountsPage() {
         {t('account.queueTitle')} <Tag color="orange">{data?.total ?? 0}</Tag>
       </Typography.Title>
       <Card>
+        {isError && <QueryError error={error} onRetry={() => refetch()} />}
         <Input.Search
           allowClear
           placeholder={t('action.search')}
@@ -93,6 +95,7 @@ export function AccountsPage() {
         />
         <Table<AccountUser>
           rowKey="id"
+          scroll={{ x: 'max-content' }}
           loading={isLoading}
           columns={columns}
           dataSource={data?.items ?? []}

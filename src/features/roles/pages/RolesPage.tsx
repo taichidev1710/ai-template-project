@@ -3,6 +3,7 @@ import { Button, Card, Input, Popconfirm, Space, Table, Tag, Typography } from '
 import { PlusOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useCan } from '@/shared/lib/can';
+import { QueryError } from '@/shared/ui/QueryError';
 import { useRoles, useRoleMutations } from '../hooks/use-roles';
 import { RoleFormModal } from '../components/RoleFormModal';
 import type { Role, RoleInput } from '../types';
@@ -15,7 +16,11 @@ export function RolesPage() {
   const [editing, setEditing] = useState<Role | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const { data, isLoading } = useRoles({ page, limit: 10, search: search || undefined });
+  const { data, isLoading, isError, error, refetch } = useRoles({
+    page,
+    limit: 10,
+    search: search || undefined,
+  });
   const { create, update, remove } = useRoleMutations();
 
   const openCreate = () => {
@@ -103,6 +108,7 @@ export function RolesPage() {
         )}
       </div>
       <Card>
+        {isError && <QueryError error={error} onRetry={() => refetch()} />}
         <Input.Search
           allowClear
           placeholder={t('action.search')}
@@ -114,6 +120,7 @@ export function RolesPage() {
         />
         <Table<Role>
           rowKey="id"
+          scroll={{ x: 'max-content' }}
           loading={isLoading}
           columns={columns}
           dataSource={data?.items ?? []}

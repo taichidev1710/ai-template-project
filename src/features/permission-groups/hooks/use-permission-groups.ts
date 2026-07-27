@@ -3,16 +3,12 @@ import { App } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { NormalizedError } from '@/shared/api';
 import { permissionGroupsApi } from '../api/permission-groups-api';
+import { permissionGroupsKeys } from '../api/permission-groups-keys';
 import type { GroupListParams, PermissionGroupInput } from '../types';
-
-const keys = {
-  all: ['permission-groups'] as const,
-  list: (params: GroupListParams) => [...keys.all, 'list', params] as const,
-};
 
 export function usePermissionGroups(params: GroupListParams) {
   return useQuery({
-    queryKey: keys.list(params),
+    queryKey: permissionGroupsKeys.list(params),
     queryFn: () => permissionGroupsApi.list(params),
     placeholderData: keepPreviousData,
   });
@@ -23,7 +19,7 @@ export function usePermissionGroupMutations() {
   const { message } = App.useApp();
   const { t } = useTranslation();
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: keys.all });
+  const invalidate = () => qc.invalidateQueries({ queryKey: permissionGroupsKeys.all });
   const onError = (e: NormalizedError) => message.error(e.message || t('error.generic'));
 
   const create = useMutation({

@@ -47,6 +47,7 @@ export function RoleFormModal({ open, initialValue, confirmLoading, onSubmit, on
       onOk={() => form.submit()}
       onCancel={onCancel}
       width={640}
+      style={{ maxWidth: 'calc(100vw - 32px)' }}
       destroyOnHidden
     >
       <Form<RoleInput> form={form} layout="vertical" onFinish={onSubmit} requiredMark={false}>

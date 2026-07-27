@@ -55,6 +55,7 @@ export function FeatureFormModal({ open, initialValue, confirmLoading, onSubmit,
       onOk={() => form.submit()}
       onCancel={onCancel}
       width={640}
+      style={{ maxWidth: 'calc(100vw - 32px)' }}
       destroyOnHidden
     >
       <Form<FeatureInput> form={form} layout="vertical" onFinish={onSubmit} requiredMark={false}>

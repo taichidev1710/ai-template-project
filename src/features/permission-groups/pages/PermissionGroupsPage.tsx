@@ -3,6 +3,7 @@ import { Button, Card, Input, Popconfirm, Space, Table, Tag, Typography } from '
 import { PlusOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useCan } from '@/shared/lib/can';
+import { QueryError } from '@/shared/ui/QueryError';
 import { useAuthStore } from '@/shared/stores/auth-store';
 import { usePermissionGroups, usePermissionGroupMutations } from '../hooks/use-permission-groups';
 import { GroupFormModal } from '../components/GroupFormModal';
@@ -17,7 +18,11 @@ export function PermissionGroupsPage() {
   const [editing, setEditing] = useState<PermissionGroup | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const { data, isLoading } = usePermissionGroups({ page, limit: 10, search: search || undefined });
+  const { data, isLoading, isError, error, refetch } = usePermissionGroups({
+    page,
+    limit: 10,
+    search: search || undefined,
+  });
   const { create, update, remove } = usePermissionGroupMutations();
 
   const canEdit = (g: PermissionGroup) =>
@@ -105,6 +110,7 @@ export function PermissionGroupsPage() {
         )}
       </div>
       <Card>
+        {isError && <QueryError error={error} onRetry={() => refetch()} />}
         <Input.Search
           allowClear
           placeholder={t('action.search')}
@@ -116,6 +122,7 @@ export function PermissionGroupsPage() {
         />
         <Table<PermissionGroup>
           rowKey="id"
+          scroll={{ x: 'max-content' }}
           loading={isLoading}
           columns={columns}
           dataSource={data?.items ?? []}

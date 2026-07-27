@@ -3,17 +3,12 @@ import { App } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { NormalizedError } from '@/shared/api';
 import { accountsApi } from '../api/accounts-api';
+import { accountsKeys } from '../api/accounts-keys';
 import type { PendingListParams } from '../types';
-
-const keys = {
-  all: ['accounts'] as const,
-  pending: (params: PendingListParams) => [...keys.all, 'pending', params] as const,
-  history: (id: string) => [...keys.all, 'history', id] as const,
-};
 
 export function usePendingAccounts(params: PendingListParams) {
   return useQuery({
-    queryKey: keys.pending(params),
+    queryKey: accountsKeys.pending(params),
     queryFn: () => accountsApi.listPending(params),
     placeholderData: keepPreviousData,
   });
@@ -21,7 +16,7 @@ export function usePendingAccounts(params: PendingListParams) {
 
 export function useApprovalHistory(id: string, enabled = true) {
   return useQuery({
-    queryKey: keys.history(id),
+    queryKey: accountsKeys.history(id),
     queryFn: () => accountsApi.history(id),
     enabled: enabled && Boolean(id),
   });
@@ -32,7 +27,7 @@ export function useAccountDecisions() {
   const { message } = App.useApp();
   const { t } = useTranslation();
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: keys.all });
+  const invalidate = () => qc.invalidateQueries({ queryKey: accountsKeys.all });
   const onError = (e: NormalizedError) => message.error(e.message || t('error.generic'));
 
   const approve = useMutation({

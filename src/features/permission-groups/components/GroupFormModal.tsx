@@ -44,6 +44,7 @@ export function GroupFormModal({ open, initialValue, confirmLoading, onSubmit, o
       onOk={() => form.submit()}
       onCancel={onCancel}
       width={640}
+      style={{ maxWidth: 'calc(100vw - 32px)' }}
       destroyOnHidden
     >
       <Form<PermissionGroupInput> form={form} layout="vertical" onFinish={onSubmit} requiredMark={false}>

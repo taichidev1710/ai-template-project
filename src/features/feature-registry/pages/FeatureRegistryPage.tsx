@@ -3,6 +3,7 @@ import { Button, Card, Input, Popconfirm, Space, Switch, Table, Tag, Typography 
 import { PlusOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useCan } from '@/shared/lib/can';
+import { QueryError } from '@/shared/ui/QueryError';
 import { useFeatures, useFeatureMutations } from '../hooks/use-features';
 import { FeatureFormModal } from '../components/FeatureFormModal';
 import type { FeatureItem, FeatureInput } from '../types';
@@ -15,7 +16,11 @@ export function FeatureRegistryPage() {
   const [editing, setEditing] = useState<FeatureItem | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const { data, isLoading } = useFeatures({ page, limit: 10, search: search || undefined });
+  const { data, isLoading, isError, error, refetch } = useFeatures({
+    page,
+    limit: 10,
+    search: search || undefined,
+  });
   const { create, update, remove } = useFeatureMutations();
 
   const openCreate = () => {
@@ -114,6 +119,7 @@ export function FeatureRegistryPage() {
         )}
       </div>
       <Card>
+        {isError && <QueryError error={error} onRetry={() => refetch()} />}
         <Input.Search
           allowClear
           placeholder={t('action.search')}
@@ -125,6 +131,7 @@ export function FeatureRegistryPage() {
         />
         <Table<FeatureItem>
           rowKey="id"
+          scroll={{ x: 'max-content' }}
           loading={isLoading}
           columns={columns}
           dataSource={data?.items ?? []}

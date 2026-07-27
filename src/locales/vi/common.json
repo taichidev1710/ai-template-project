@@ -23,7 +23,8 @@
     "disable": "Vô hiệu hoá",
     "enable": "Bật lại",
     "history": "Lịch sử",
-    "close": "Đóng"
+    "close": "Đóng",
+    "retry": "Thử lại"
   },
   "user": {
     "name": "Họ tên",

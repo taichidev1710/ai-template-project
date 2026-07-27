@@ -1,4 +1,5 @@
 import { Checkbox, Collapse, Empty, Typography } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/shared/stores/auth-store';
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
  * the Roles and Permission Groups editors so both stay in sync with the registry.
  */
 export function PermissionPicker({ value = [], onChange, disabled }: Props) {
+  const { t } = useTranslation();
   const features = useAuthStore((s) => s.enabledFeatures);
 
   const toggle = (grant: string, checked: boolean) => {
@@ -22,7 +24,7 @@ export function PermissionPicker({ value = [], onChange, disabled }: Props) {
   };
 
   if (features.length === 0) {
-    return <Empty description="No features" />;
+    return <Empty description={t('empty')} />;
   }
 
   const items = [...features]

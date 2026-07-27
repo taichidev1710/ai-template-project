@@ -3,6 +3,7 @@ import { Button, Card, Input, Popconfirm, Space, Table, Tag, Typography } from '
 import { PlusOutlined, SafetyOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useCan } from '@/shared/lib/can';
+import { QueryError } from '@/shared/ui/QueryError';
 import { useRoles } from '@/features/roles';
 import type { UserStatus } from '@/shared/stores/auth-store';
 import { useUsers, useUserMutations } from '../hooks/use-users';
@@ -25,7 +26,11 @@ export function UsersPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [assignFor, setAssignFor] = useState<User | null>(null);
 
-  const { data, isLoading } = useUsers({ page, limit: 10, search: search || undefined });
+  const { data, isLoading, isError, error, refetch } = useUsers({
+    page,
+    limit: 10,
+    search: search || undefined,
+  });
   const { data: roles } = useRoles({ limit: 100 });
   const { create, remove, setStatus } = useUserMutations();
 
@@ -113,6 +118,7 @@ export function UsersPage() {
         )}
       </div>
       <Card>
+        {isError && <QueryError error={error} onRetry={() => refetch()} />}
         <Input.Search
           allowClear
           placeholder={t('action.search')}
@@ -124,6 +130,7 @@ export function UsersPage() {
         />
         <Table<User>
           rowKey="id"
+          scroll={{ x: 'max-content' }}
           loading={isLoading}
           columns={columns}
           dataSource={data?.items ?? []}

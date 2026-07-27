@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { PageContainer } from '@/shared/ui';
 import { QueryError } from '@/shared/ui/QueryError';
 import { useCan } from '@/shared/lib/can';
+import { PERM } from '@/shared/authz/permissions';
 import { useDebounce } from '@/shared/hooks/use-debounce';
 import { useRoles, useRoleMutations } from '../hooks/use-roles';
 import { RolesTable } from '../components/RolesTable';
@@ -31,9 +32,9 @@ export function RolesPage() {
   const [detail, setDetail] = useState<Role | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
-  const canCreate = can('role:create');
-  const canEdit = can('role:update');
-  const canDelete = can('role:delete');
+  const canCreate = can(PERM.role.create);
+  const canEdit = can(PERM.role.update);
+  const canDelete = can(PERM.role.delete);
 
   const { data, isLoading, isError, error, refetch } = useRoles({
     page,

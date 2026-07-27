@@ -22,6 +22,7 @@ import { useUiStore } from '@/shared/stores/ui-store';
 import { useAuthStore } from '@/shared/stores/auth-store';
 import { useLogout } from '@/features/auth';
 import { useCan } from '@/shared/lib/can';
+import { PERM } from '@/shared/authz/permissions';
 import { useThemeStore } from '@/shared/theme';
 import { paths } from '@/app/router/paths';
 
@@ -50,11 +51,11 @@ export function AppLayout() {
   // Items without `perm` are always shown. Demo (diagram) items stay ungated.
   const allMenuItems = [
     { key: paths.dashboard, icon: <DashboardOutlined />, label: t('nav.dashboard') },
-    { key: paths.users, icon: <TeamOutlined />, label: t('nav.users'), perm: 'user:read' },
-    { key: paths.accounts, icon: <AuditOutlined />, label: t('nav.accounts'), perm: 'account:read' },
-    { key: paths.roles, icon: <SafetyCertificateOutlined />, label: t('nav.roles'), perm: 'role:read' },
-    { key: paths.permissionGroups, icon: <KeyOutlined />, label: t('nav.groups'), perm: 'group:read' },
-    { key: paths.features, icon: <AppstoreOutlined />, label: t('nav.features'), perm: 'feature:read' },
+    { key: paths.users, icon: <TeamOutlined />, label: t('nav.users'), perm: PERM.user.read },
+    { key: paths.accounts, icon: <AuditOutlined />, label: t('nav.accounts'), perm: PERM.account.read },
+    { key: paths.roles, icon: <SafetyCertificateOutlined />, label: t('nav.roles'), perm: PERM.role.read },
+    { key: paths.permissionGroups, icon: <KeyOutlined />, label: t('nav.groups'), perm: PERM.group.read },
+    { key: paths.features, icon: <AppstoreOutlined />, label: t('nav.features'), perm: PERM.feature.read },
     { key: paths.profile, icon: <IdcardOutlined />, label: t('nav.profile') },
     { key: paths.diagrams, icon: <PartitionOutlined />, label: 'Sơ đồ' },
     { key: paths.diagramTypes, icon: <ApartmentOutlined />, label: 'Loại sơ đồ' },

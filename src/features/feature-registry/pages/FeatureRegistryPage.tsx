@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { PageContainer } from '@/shared/ui';
 import { QueryError } from '@/shared/ui/QueryError';
 import { useCan } from '@/shared/lib/can';
+import { PERM } from '@/shared/authz/permissions';
 import { useDebounce } from '@/shared/hooks/use-debounce';
 import { useFeatures, useFeatureMutations } from '../hooks/use-features';
 import { FeaturesTable } from '../components/FeaturesTable';
@@ -31,8 +32,8 @@ export function FeatureRegistryPage() {
   const [detail, setDetail] = useState<FeatureItem | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
-  const canUpdate = can('feature:update');
-  const canDelete = can('feature:delete');
+  const canUpdate = can(PERM.feature.update);
+  const canDelete = can(PERM.feature.delete);
 
   const { data, isLoading, isError, error, refetch } = useFeatures({
     page,
@@ -94,7 +95,7 @@ export function FeatureRegistryPage() {
     <PageContainer
       title={t('feature.title')}
       extra={
-        can('feature:create') && (
+        can(PERM.feature.create) && (
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
             {t('action.create')}
           </Button>

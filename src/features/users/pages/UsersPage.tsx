@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { PageContainer } from '@/shared/ui';
 import { QueryError } from '@/shared/ui/QueryError';
 import { useCan } from '@/shared/lib/can';
+import { PERM } from '@/shared/authz/permissions';
 import { useDebounce } from '@/shared/hooks/use-debounce';
 import { USER_STATUSES, type UserStatus } from '@/shared/stores/auth-store';
 import { useRoles } from '@/features/roles';
@@ -35,9 +36,9 @@ export function UsersPage() {
   const [detail, setDetail] = useState<User | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
-  const canAssign = can('user:assign_role') || can('group:assign');
-  const canManageStatus = can('account:approve');
-  const canDelete = can('user:delete');
+  const canAssign = can(PERM.user.assignRole) || can(PERM.group.assign);
+  const canManageStatus = can(PERM.account.approve);
+  const canDelete = can(PERM.user.delete);
 
   const { data, isLoading, isError, error, refetch } = useUsers({
     page,
@@ -100,7 +101,7 @@ export function UsersPage() {
     <PageContainer
       title={t('nav.users')}
       extra={
-        can('user:create') && (
+        can(PERM.user.create) && (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
             {t('action.create')}
           </Button>

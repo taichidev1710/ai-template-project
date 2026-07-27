@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { PageContainer } from '@/shared/ui';
 import { QueryError } from '@/shared/ui/QueryError';
 import { useCan } from '@/shared/lib/can';
+import { PERM } from '@/shared/authz/permissions';
 import { useDebounce } from '@/shared/hooks/use-debounce';
 import { useAuthStore } from '@/shared/stores/auth-store';
 import { usePermissionGroups, usePermissionGroupMutations } from '../hooks/use-permission-groups';
@@ -41,7 +42,7 @@ export function PermissionGroupsPage() {
   const { create, update, remove } = usePermissionGroupMutations();
 
   const canManage = (g: PermissionGroup) =>
-    !g.isSystem && (can('group:update') || g.ownerId === currentUserId);
+    !g.isSystem && (can(PERM.group.update) || g.ownerId === currentUserId);
 
   const openCreate = () => {
     setEditing(null);
@@ -93,7 +94,7 @@ export function PermissionGroupsPage() {
     <PageContainer
       title={t('group.title')}
       extra={
-        can('group:create') && (
+        can(PERM.group.create) && (
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
             {t('action.create')}
           </Button>

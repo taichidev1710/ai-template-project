@@ -257,5 +257,18 @@
     "disable": "Vô hiệu hoá",
     "enable": "Kích hoạt",
     "manage": "Quản lý quyền"
+  },
+  "memberArea": {
+    "brand": "Khu thành viên",
+    "home": "Trang chủ",
+    "profile": "Hồ sơ",
+    "perks": "Quyền lợi",
+    "welcome": "Xin chào, {{name}}",
+    "yourTier": "Cấp bậc của bạn",
+    "noTier": "Chưa có cấp bậc",
+    "yourFeatures": "Chức năng của bạn",
+    "noFeatures": "Chưa có chức năng nào được mở khoá cho cấp bậc của bạn.",
+    "perksTitle": "Quyền lợi theo cấp bậc",
+    "noPerks": "Cấp bậc hiện tại chưa có quyền lợi nào."
   }
 }

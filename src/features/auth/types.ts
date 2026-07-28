@@ -1,4 +1,9 @@
-import type { EnabledFeature, UserStatus } from '@/shared/stores/auth-store';
+import type {
+  EnabledFeature,
+  MemberTier,
+  UserStatus,
+  UserType,
+} from '@/shared/stores/auth-store';
 
 /** Request/response types for the auth feature — mirror the backend contract. */
 
@@ -24,6 +29,7 @@ export interface AuthUserDto {
   email: string;
   name: string;
   status: UserStatus;
+  userType: UserType;
   roleIds: string[];
   isActive: boolean;
   emailVerified: boolean;
@@ -48,4 +54,10 @@ export interface AuthProfile extends AuthUserDto {
   permissions: string[];
   /** Features enabled in the registry — FE dynamic routing/menu source. */
   enabledFeatures: EnabledFeature[];
+  /** (member) Cấp bậc đã resolve; staff = null. */
+  tier: MemberTier | null;
+  /** (member) Quyền member hiệu lực; staff = []. */
+  memberPermissions: string[];
+  /** (member) Chức năng member đang bật. */
+  enabledMemberFeatures: EnabledFeature[];
 }

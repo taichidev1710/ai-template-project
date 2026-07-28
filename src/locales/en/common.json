@@ -257,5 +257,18 @@
     "disable": "Disable",
     "enable": "Enable",
     "manage": "Manage access"
+  },
+  "memberArea": {
+    "brand": "Member area",
+    "home": "Home",
+    "profile": "Profile",
+    "perks": "Perks",
+    "welcome": "Welcome, {{name}}",
+    "yourTier": "Your tier",
+    "noTier": "No tier",
+    "yourFeatures": "Your features",
+    "noFeatures": "No features unlocked for your tier yet.",
+    "perksTitle": "Tier perks",
+    "noPerks": "Your current tier has no perks yet."
   }
 }

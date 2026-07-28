@@ -1,6 +1,7 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppLayout } from '@/app/layout/AppLayout';
-import { ProtectedRoute } from './ProtectedRoute';
+import { RequireStaff } from './RequireStaff';
+import { RequireMember } from './RequireMember';
 import { paths } from './paths';
 import { LandingPage } from '@/pages/landing';
 import { DashboardPage } from '@/pages/DashboardPage';
@@ -19,44 +20,72 @@ import { MemberGroupsPage } from '@/features/member-groups';
 import { MemberFeaturesPage } from '@/features/member-features';
 import { DiagramTypesPage, DiagramTypeEditorPage } from '@/features/diagram-types';
 import { DiagramsPage, DiagramEditorPage } from '@/features/diagrams';
+import {
+  MemberLayout,
+  MemberHomePage,
+  MemberProfilePage,
+  MemberPerksPage,
+} from '@/features/member-area';
 
 /**
  * Route table (React Router v7, data mode).
- * Feature pages are imported from their feature folder's public API.
- * For large apps, wrap page elements with React.lazy + <Suspense>.
+ * Hai khu tách theo userType: STAFF dưới /admin/* (RequireStaff + AppLayout),
+ * MEMBER dưới /app/* (RequireMember + MemberLayout). Điều hướng sau login ở use-auth.
  */
-export const router = createBrowserRouter([
-  // Public marketing landing page at "/".
-  { path: paths.root, element: <LandingPage /> },
-  { path: paths.login, element: <LoginPage /> },
-  { path: paths.register, element: <RegisterPage /> },
+export const router = createBrowserRouter(
+  [
+    // Công khai
+    { path: paths.root, element: <LandingPage /> },
+    { path: paths.login, element: <LoginPage /> },
+    { path: paths.register, element: <RegisterPage /> },
+
+    // Khu STAFF — back-office
+    {
+      element: <RequireStaff />,
+      children: [
+        {
+          element: <AppLayout />,
+          children: [
+            { path: '/admin', element: <Navigate to={paths.dashboard} replace /> },
+            { path: paths.dashboard, element: <DashboardPage /> },
+            { path: paths.users, element: <UsersPage /> },
+            { path: paths.accounts, element: <AccountsPage /> },
+            { path: paths.roles, element: <RolesPage /> },
+            { path: paths.permissionGroups, element: <PermissionGroupsPage /> },
+            { path: paths.features, element: <FeatureRegistryPage /> },
+            { path: paths.members, element: <MembersPage /> },
+            { path: paths.tiers, element: <TiersPage /> },
+            { path: paths.memberGroups, element: <MemberGroupsPage /> },
+            { path: paths.memberFeatures, element: <MemberFeaturesPage /> },
+            { path: paths.profile, element: <ProfilePage /> },
+            { path: paths.diagrams, element: <DiagramsPage /> },
+            { path: `${paths.diagrams}/:id`, element: <DiagramEditorPage /> },
+            { path: paths.diagramTypes, element: <DiagramTypesPage /> },
+            { path: `${paths.diagramTypes}/:id`, element: <DiagramTypeEditorPage /> },
+          ],
+        },
+      ],
+    },
+
+    // Khu MEMBER — front-office
+    {
+      element: <RequireMember />,
+      children: [
+        {
+          element: <MemberLayout />,
+          children: [
+            { path: paths.app.home, element: <MemberHomePage /> },
+            { path: paths.app.profile, element: <MemberProfilePage /> },
+            { path: paths.app.perks, element: <MemberPerksPage /> },
+          ],
+        },
+      ],
+    },
+
+    { path: '*', element: <NotFoundPage /> },
+  ],
   {
-    element: <ProtectedRoute />,
-    children: [
-      {
-        element: <AppLayout />,
-        children: [
-          { path: paths.dashboard, element: <DashboardPage /> },
-          { path: paths.users, element: <UsersPage /> },
-          { path: paths.accounts, element: <AccountsPage /> },
-          { path: paths.roles, element: <RolesPage /> },
-          { path: paths.permissionGroups, element: <PermissionGroupsPage /> },
-          { path: paths.features, element: <FeatureRegistryPage /> },
-          { path: paths.members, element: <MembersPage /> },
-          { path: paths.tiers, element: <TiersPage /> },
-          { path: paths.memberGroups, element: <MemberGroupsPage /> },
-          { path: paths.memberFeatures, element: <MemberFeaturesPage /> },
-          { path: paths.profile, element: <ProfilePage /> },
-          { path: paths.diagrams, element: <DiagramsPage /> },
-          { path: `${paths.diagrams}/:id`, element: <DiagramEditorPage /> },
-          { path: paths.diagramTypes, element: <DiagramTypesPage /> },
-          { path: `${paths.diagramTypes}/:id`, element: <DiagramTypeEditorPage /> },
-        ],
-      },
-    ],
+    // Matches vite.config.ts's `base` when built for GitHub Pages.
+    basename: import.meta.env.BASE_URL,
   },
-  { path: '*', element: <NotFoundPage /> },
-], {
-  // Matches vite.config.ts's `base` when built for GitHub Pages.
-  basename: import.meta.env.BASE_URL,
-});
+);

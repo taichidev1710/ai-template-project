@@ -15,9 +15,17 @@ function toAuthUser(profile: AuthProfile): AuthUser {
     name: profile.name,
     email: profile.email,
     status: profile.status,
+    userType: profile.userType,
     roles: profile.roles.map((r) => r.key),
     permissions: profile.permissions,
+    tier: profile.tier,
+    memberPermissions: profile.memberPermissions,
   };
+}
+
+/** Khu vực mặc định sau đăng nhập theo "thế giới" của tài khoản. */
+function homeFor(userType: AuthProfile['userType']): string {
+  return userType === 'member' ? paths.app.home : paths.dashboard;
 }
 
 /**
@@ -47,8 +55,9 @@ export function useLogin() {
         refreshToken: tokens.refreshToken,
         user: toAuthUser(profile),
         enabledFeatures: profile.enabledFeatures,
+        enabledMemberFeatures: profile.enabledMemberFeatures,
       });
-      navigate(from ?? paths.dashboard, { replace: true });
+      navigate(from ?? homeFor(profile.userType), { replace: true });
     },
     onError: (e: NormalizedError) => {
       message.error(e.message || t('error.generic'));

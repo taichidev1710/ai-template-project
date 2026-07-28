@@ -18,7 +18,8 @@
     "members": "Thành viên",
     "tiers": "Cấp bậc",
     "memberGroups": "Nhóm quyền thành viên",
-    "memberFeatures": "Chức năng thành viên"
+    "memberFeatures": "Chức năng thành viên",
+    "videoStudio": "Xưởng video"
   },
   "action": {
     "create": "Thêm mới",

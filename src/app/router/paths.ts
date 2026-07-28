@@ -20,6 +20,7 @@ export const paths = {
   profile: '/admin/profile',
   diagrams: '/admin/diagrams',
   diagramTypes: '/admin/diagram-types',
+  videoStudio: '/admin/video-studio',
 
   // Khu MEMBER (front-office) — dưới /app/*, gate bằng RequireMember
   app: {

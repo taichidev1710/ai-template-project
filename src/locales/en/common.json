@@ -18,7 +18,8 @@
     "members": "Members",
     "tiers": "Tiers",
     "memberGroups": "Member permission groups",
-    "memberFeatures": "Member features"
+    "memberFeatures": "Member features",
+    "videoStudio": "Video Studio"
   },
   "action": {
     "create": "Create",

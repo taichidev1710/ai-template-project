@@ -20,6 +20,7 @@ import { MemberGroupsPage } from '@/features/member-groups';
 import { MemberFeaturesPage } from '@/features/member-features';
 import { DiagramTypesPage, DiagramTypeEditorPage } from '@/features/diagram-types';
 import { DiagramsPage, DiagramEditorPage } from '@/features/diagrams';
+import { VideoStudioPage } from '@/features/video-studio';
 import {
   MemberLayout,
   MemberHomePage,
@@ -62,6 +63,7 @@ export const router = createBrowserRouter(
             { path: `${paths.diagrams}/:id`, element: <DiagramEditorPage /> },
             { path: paths.diagramTypes, element: <DiagramTypesPage /> },
             { path: `${paths.diagramTypes}/:id`, element: <DiagramTypeEditorPage /> },
+            { path: paths.videoStudio, element: <VideoStudioPage /> },
           ],
         },
       ],

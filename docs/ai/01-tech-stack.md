@@ -18,6 +18,7 @@ bộ tài liệu này, bởi các API được mô tả ở đây giả định 
 | i18next / react-i18next | 25 / 15 | Đa ngôn ngữ (i18n) |
 | Recharts | 2 | Biểu đồ (tùy chọn) |
 | Cytoscape (`cytoscape`) | 3 | Canvas đồ thị cho module Sơ đồ (chỉ dùng trong `features/diagrams`) |
+| `@dnd-kit` (`core`/`sortable`/`utilities`) | 6 / 10 / 3 | Kéo-thả (a11y bàn phím sẵn) — dùng cho reorder trong `features/video-studio` |
 | dayjs | 1 | Ngày tháng (peer của AntD) |
 | Vitest + Testing Library | 3 / 16 | Testing |
 

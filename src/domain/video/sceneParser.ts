@@ -92,7 +92,6 @@ export interface MergeableScene {
   text: string;
   aspectOverride?: unknown;
   countOverride?: unknown;
-  [key: string]: unknown;
 }
 
 export interface ReparseResult<T extends MergeableScene> {

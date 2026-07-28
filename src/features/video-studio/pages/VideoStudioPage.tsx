@@ -1,0 +1,285 @@
+import { useMemo, useState } from 'react';
+import { App, Alert, Button, Space, Typography } from 'antd';
+import { ThunderboltOutlined, StopOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
+import { arrayMove } from '@dnd-kit/sortable';
+import {
+  PROVIDERS,
+  buildRunPlan,
+  characterKeysInText,
+  checkCharacters,
+  defaultRunConfig,
+  estimateRunCost,
+  getCapabilities,
+  reparseScenes,
+  type Character,
+  type PlatformPreset,
+  type RunConfig,
+  type RunPlanWarningCode,
+  type Scene,
+} from '@/domain/video';
+import { ConfigPanel } from '../components/ConfigPanel';
+import { PromptEditor } from '../components/PromptEditor';
+import { SceneList } from '../components/SceneList';
+import { CharacterPanel } from '../components/CharacterPanel';
+import { VideoGrid } from '../components/VideoGrid';
+import { useVideoRun } from '../hooks/use-video-run';
+import { formatUsd } from '../lib';
+import { initialConfig, makeCharacter, makeScene, newId } from '../types';
+
+const WARNING_KEY: Record<RunPlanWarningCode, string> = {
+  'delay-below-rpm': 'warning.delayBelowRpm',
+  'exceeds-max-jobs': 'warning.exceedsMaxJobs',
+  'aspect-unsupported': 'warning.aspectUnsupported',
+  'aspect-needs-crop': 'warning.aspectNeedsCrop',
+  'no-scenes': 'warning.noScenes',
+  'no-jobs': 'warning.noJobs',
+};
+
+/** Re-number scenes 1..n after any insert/remove/reorder. */
+const reindex = (scenes: Scene[]): Scene[] => scenes.map((s, i) => ({ ...s, order: i + 1 }));
+
+/**
+ * Video Studio — the P1 container (spec §13). It OWNS the working draft (prompt,
+ * scenes, characters, config) as local state; the domain does the thinking
+ * (parse, plan, cost, tag) and `useVideoRun` drives fake jobs. Server state
+ * (Project ↔ MongoDB) is P2. This is a "special" feature, so it deviates from the
+ * CRUD list/table shape on purpose (spec §13.5).
+ */
+export function VideoStudioPage() {
+  const { t } = useTranslation('video-studio');
+  const { modal, message } = App.useApp();
+
+  const [config, setConfig] = useState<RunConfig>(initialConfig);
+  const [sourcePrompt, setSourcePrompt] = useState('');
+  const [useMarkers, setUseMarkers] = useState(false);
+  const [scenes, setScenes] = useState<Scene[]>([]);
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [preset, setPreset] = useState<PlatformPreset | null>(null);
+
+  const caps = getCapabilities(config.providerId);
+  const characterKeys = characters.map((c) => c.key).filter(Boolean);
+  const keySignature = characterKeys.join('|');
+
+  // Scenes enriched with the character keys detected in their text (derived, not
+  // stored — recomputed whenever a scene's text or the roster changes).
+  const viewScenes = useMemo(
+    () => scenes.map((s) => ({ ...s, characterKeys: characterKeysInText(s.text, characterKeys) })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [scenes, keySignature],
+  );
+
+  const usage = useMemo(() => {
+    const u: Record<string, number> = {};
+    for (const s of viewScenes) for (const k of s.characterKeys) u[k] = (u[k] ?? 0) + 1;
+    return u;
+  }, [viewScenes]);
+
+  const issues = useMemo(
+    () => checkCharacters(characters, viewScenes.map((s) => s.text)),
+    [characters, viewScenes],
+  );
+
+  const cost = useMemo(() => estimateRunCost(viewScenes, config), [viewScenes, config]);
+  const plan = useMemo(() => buildRunPlan(viewScenes, config), [viewScenes, config]);
+
+  const run = useVideoRun(viewScenes, config);
+
+  /* ---- config ---- */
+  const patchConfig = (patch: Partial<RunConfig>) => setConfig((c) => ({ ...c, ...patch }));
+  const handleProviderChange = (providerId: string) => {
+    setConfig(defaultRunConfig(providerId));
+    setPreset(null);
+  };
+
+  /* ---- prompt / scenes ---- */
+  const handleParse = () => {
+    const { scenes: merged, droppedOverrides } = reparseScenes(scenes, sourcePrompt, { markers: useMarkers });
+    const next = reindex(
+      merged.map((s, i) =>
+        'id' in s ? (s as Scene) : makeScene(i + 1, (s as { text: string }).text),
+      ),
+    );
+    setScenes(next);
+    if (droppedOverrides > 0) message.warning(t('scene.overridesDropped', { n: droppedOverrides }));
+  };
+
+  const patchScene = (id: string, patch: Partial<Scene>) =>
+    setScenes((list) => list.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+
+  const addScene = () => setScenes((list) => reindex([...list, makeScene(list.length + 1)]));
+
+  const duplicateScene = (id: string) =>
+    setScenes((list) => {
+      const idx = list.findIndex((s) => s.id === id);
+      if (idx < 0) return list;
+      const copy: Scene = { ...list[idx]!, id: newId('sc'), jobs: [] };
+      return reindex([...list.slice(0, idx + 1), copy, ...list.slice(idx + 1)]);
+    });
+
+  const removeScene = (id: string) => setScenes((list) => reindex(list.filter((s) => s.id !== id)));
+
+  const reorderScenes = (activeId: string, overId: string) =>
+    setScenes((list) => {
+      const from = list.findIndex((s) => s.id === activeId);
+      const to = list.findIndex((s) => s.id === overId);
+      if (from < 0 || to < 0) return list;
+      return reindex(arrayMove(list, from, to));
+    });
+
+  /* ---- characters ---- */
+  const addCharacter = () => setCharacters((list) => [...list, makeCharacter(list.length)]);
+  const patchCharacter = (id: string, patch: Partial<(typeof characters)[number]>) =>
+    setCharacters((list) => list.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  const removeCharacter = (id: string) => setCharacters((list) => list.filter((c) => c.id !== id));
+
+  /* ---- run ---- */
+  const copyPath = (path: string) => {
+    void navigator.clipboard?.writeText(path);
+    message.success(t('grid.pathCopied'));
+  };
+
+  const confirmRun = () => {
+    if (plan.totalJobs === 0) return;
+    modal.confirm({
+      title: t('run.confirmTitle'),
+      content: cost.exceedsCap
+        ? t('run.confirmOverCap', { cap: formatUsd(cost.cap ?? 0) })
+        : t('run.confirmCost', { n: plan.totalJobs, cost: cost.priced ? formatUsd(cost.total) : t('cost.unpriced') }),
+      okText: t('grid.generate'),
+      onOk: run.startAll,
+    });
+  };
+
+  const generateLabel = `${t('run.generateN', { n: plan.totalJobs })}${
+    cost.priced ? ` · ${t('run.estimateSuffix', { cost: formatUsd(cost.total) })}` : ''
+  }`;
+
+  const done = Object.values(run.jobs).filter((j) => j.status === 'success').length;
+  const running = Object.values(run.jobs).filter((j) => j.status === 'processing').length;
+
+  const aspectOptions = caps?.aspects ?? [];
+
+  return (
+    <div className="flex flex-col p-4 sm:p-6">
+      {/* Header */}
+      <div className="mb-4">
+        <Typography.Title level={3} className="!mb-1">
+          {t('title')}
+        </Typography.Title>
+        <Typography.Text type="secondary">{t('subtitle')}</Typography.Text>
+      </div>
+
+      {config.providerId === 'mock' && (
+        <Alert type="info" showIcon className="mb-4" title={t('mockBanner')} />
+      )}
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <Button
+          type="primary"
+          size="large"
+          icon={<ThunderboltOutlined />}
+          disabled={plan.totalJobs === 0}
+          onClick={confirmRun}
+        >
+          {generateLabel}
+        </Button>
+        {run.isActive && (
+          <>
+            <Button icon={<StopOutlined />} danger onClick={run.cancelAll}>
+              {t('run.cancelAll')}
+            </Button>
+            <Typography.Text type="secondary">
+              {t('run.summary', { done, total: plan.totalJobs, running })}
+            </Typography.Text>
+          </>
+        )}
+      </div>
+
+      {plan.warnings.length > 0 && (
+        <Alert
+          type="warning"
+          showIcon
+          className="mb-4"
+          title={
+            <Space orientation="vertical" size={0}>
+              {plan.warnings.map((w, i) => (
+                <Typography.Text key={`${w.code}-${i}`} className="text-xs">
+                  {t(WARNING_KEY[w.code], w.meta)}
+                </Typography.Text>
+              ))}
+            </Space>
+          }
+        />
+      )}
+
+      {/* Three columns */}
+      <div className="flex flex-col gap-4 xl:min-h-0 xl:flex-row">
+        <aside className="rounded-app bg-surface p-4 xl:w-72 xl:shrink-0">
+          <ConfigPanel
+            config={config}
+            caps={caps}
+            providers={PROVIDERS}
+            preset={preset}
+            onChange={patchConfig}
+            onProviderChange={handleProviderChange}
+            onPresetChange={setPreset}
+          />
+        </aside>
+
+        <section className="flex flex-col gap-4 rounded-app bg-surface p-4 xl:flex-1 xl:min-w-0">
+          <Typography.Title level={5} className="!mb-0">
+            {t('prompt.title')}
+          </Typography.Title>
+          <PromptEditor
+            value={sourcePrompt}
+            useMarkers={useMarkers}
+            sceneCount={viewScenes.length}
+            onChange={setSourcePrompt}
+            onMarkersChange={setUseMarkers}
+            onParse={handleParse}
+          />
+          <div className="flex items-center justify-between">
+            <Typography.Text strong>{t('scene.title')}</Typography.Text>
+            <Button size="small" onClick={addScene}>
+              {t('scene.add')}
+            </Button>
+          </div>
+          <SceneList
+            scenes={viewScenes}
+            characters={characters}
+            aspectOptions={aspectOptions}
+            onReorder={reorderScenes}
+            onSceneChange={patchScene}
+            onDuplicate={duplicateScene}
+            onRemove={removeScene}
+            onGenerate={run.runScene}
+          />
+          <CharacterPanel
+            characters={characters}
+            usage={usage}
+            issues={issues}
+            onAdd={addCharacter}
+            onChange={patchCharacter}
+            onRemove={removeCharacter}
+          />
+        </section>
+
+        <section className="rounded-app bg-surface p-4 xl:flex-1 xl:min-w-0">
+          <Typography.Title level={5} className="!mb-3">
+            {t('grid.title')}
+          </Typography.Title>
+          <VideoGrid
+            scenes={viewScenes}
+            jobs={run.jobs}
+            config={config}
+            onGenerate={run.runScene}
+            onRetry={run.retry}
+            onCancel={run.cancel}
+            onCopyPath={copyPath}
+          />
+        </section>
+      </div>
+    </div>
+  );
+}

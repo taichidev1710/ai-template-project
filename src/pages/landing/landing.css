@@ -30,18 +30,34 @@
   --nl-accent: #818cf8;
 
   position: relative;
-  /* Own scroll container: a definite height (not %) so overflow actually
-     scrolls internally, which keeps the sticky header pinned to this box. */
-  height: 100vh;
-  height: 100dvh;
+  /* Scroll with the DOCUMENT, not an inner container. The admin shell locks
+     html/body/#root to height:100%, so this page used to scroll inside its own
+     100dvh box — which on phones meant the URL bar never collapsed and 100dvh
+     became a hard clip, leaving the footer unreachable / the layout looking
+     broken. `min-height` makes 100dvh a floor instead of a clip; the document
+     (html) does the scrolling, so the sticky header pins to the real viewport.
+     `overflow-x: clip` trims decorative horizontal spill WITHOUT forcing
+     overflow-y to `auto` (which `hidden` would) — that keeps document flow. */
+  min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--nl-bg);
   color: var(--nl-text);
   font-family:
     'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow-x: clip;
+}
+
+/*
+ * When the landing is mounted it toggles this class on <html> (see LandingPage).
+ * The page scrolls the document, so smooth-scroll for the in-page anchor nav and
+ * the sticky-header offset must live on the real scroll host. Scoped by the class
+ * so the token-driven admin app is untouched.
+ */
+html.nl-scroll-host {
   scroll-behavior: smooth;
+  /* clear the sticky header when jumping to #tinh-nang / #bang-gia / … */
+  scroll-padding-top: 5rem;
 }
 
 /* ── Ambient page background: subtle grid + top radial glow ───────────── */
@@ -208,6 +224,21 @@
   top: 0;
   z-index: 50;
   padding-block: 0.75rem;
+}
+/*
+ * The navbar is a floating pill with a transparent gap above it. Without this,
+ * content scrolling underneath shows SHARPLY in that gap (looked like a broken
+ * double-header on mobile). This fade — page bg up top, transparent below —
+ * sits behind the pill (its own stacking context via z-index above) and masks
+ * that strip; at the very top it's invisible (same colour as the page bg).
+ */
+.nl-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg, var(--nl-bg) 62%, transparent);
 }
 .nl-header-inner {
   display: flex;

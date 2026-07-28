@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Layout, Menu, Button, Space, Dropdown, Avatar, Drawer, Grid } from 'antd';
 import {
   DashboardOutlined,
@@ -10,6 +10,8 @@ import {
   SafetyCertificateOutlined,
   KeyOutlined,
   AppstoreOutlined,
+  CrownOutlined,
+  UsergroupAddOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   BulbOutlined,
@@ -47,30 +49,72 @@ export function AppLayout() {
   const isMobile = !screens.lg;
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  // `perm` gates a menu item by permission (UX only — the backend re-enforces).
-  // Items without `perm` are always shown. Demo (diagram) items stay ungated.
-  const allMenuItems = [
-    { key: paths.dashboard, icon: <DashboardOutlined />, label: t('nav.dashboard') },
-    { key: paths.users, icon: <TeamOutlined />, label: t('nav.users'), perm: PERM.user.read },
-    { key: paths.accounts, icon: <AuditOutlined />, label: t('nav.accounts'), perm: PERM.account.read },
-    { key: paths.roles, icon: <SafetyCertificateOutlined />, label: t('nav.roles'), perm: PERM.role.read },
-    { key: paths.permissionGroups, icon: <KeyOutlined />, label: t('nav.groups'), perm: PERM.group.read },
-    { key: paths.features, icon: <AppstoreOutlined />, label: t('nav.features'), perm: PERM.feature.read },
-    { key: paths.profile, icon: <IdcardOutlined />, label: t('nav.profile') },
-    { key: paths.diagrams, icon: <PartitionOutlined />, label: 'Sơ đồ' },
-    { key: paths.diagramTypes, icon: <ApartmentOutlined />, label: 'Loại sơ đồ' },
+  // Menu gom theo "thế giới" (spec §6): mỗi cụm là 1 group, cụm rỗng (không quyền nào)
+  // tự ẩn. `perm` gate từng mục (chỉ UX — BE vẫn là hàng rào thật). Mục không perm luôn hiện.
+  const menuGroups: Array<{
+    key: string;
+    label?: string;
+    items: Array<{ key: string; icon: ReactNode; label: string; perm?: string }>;
+  }> = [
+    {
+      key: 'grp-overview',
+      items: [
+        { key: paths.dashboard, icon: <DashboardOutlined />, label: t('nav.dashboard') },
+        { key: paths.profile, icon: <IdcardOutlined />, label: t('nav.profile') },
+      ],
+    },
+    {
+      key: 'grp-staff',
+      label: t('nav.group.staff'),
+      items: [
+        { key: paths.users, icon: <TeamOutlined />, label: t('nav.users'), perm: PERM.user.read },
+        { key: paths.accounts, icon: <AuditOutlined />, label: t('nav.accounts'), perm: PERM.account.read },
+        { key: paths.roles, icon: <SafetyCertificateOutlined />, label: t('nav.roles'), perm: PERM.role.read },
+        { key: paths.permissionGroups, icon: <KeyOutlined />, label: t('nav.groups'), perm: PERM.group.read },
+        { key: paths.features, icon: <AppstoreOutlined />, label: t('nav.features'), perm: PERM.feature.read },
+      ],
+    },
+    {
+      key: 'grp-member',
+      label: t('nav.group.member'),
+      items: [
+        { key: paths.members, icon: <UsergroupAddOutlined />, label: t('nav.members'), perm: PERM.member.read },
+        { key: paths.tiers, icon: <CrownOutlined />, label: t('nav.tiers'), perm: PERM.tier.read },
+        { key: paths.memberGroups, icon: <KeyOutlined />, label: t('nav.memberGroups'), perm: PERM.memberGroup.read },
+        { key: paths.memberFeatures, icon: <AppstoreOutlined />, label: t('nav.memberFeatures'), perm: PERM.memberFeature.read },
+      ],
+    },
+    {
+      key: 'grp-demo',
+      label: t('nav.group.demo'),
+      items: [
+        { key: paths.diagrams, icon: <PartitionOutlined />, label: 'Sơ đồ' },
+        { key: paths.diagramTypes, icon: <ApartmentOutlined />, label: 'Loại sơ đồ' },
+      ],
+    },
   ];
-  const menuItems = allMenuItems
-    .filter((item) => !item.perm || can(item.perm))
-    .map(({ perm: _perm, ...rest }) => rest);
+
+  // Lọc mục theo quyền, bỏ cụm rỗng, dựng items cho AntD Menu (type:'group').
+  const visibleGroups = menuGroups
+    .map((g) => ({ ...g, items: g.items.filter((item) => !item.perm || can(item.perm)) }))
+    .filter((g) => g.items.length > 0);
+
+  const menuItems = visibleGroups.map((g) => ({
+    key: g.key,
+    label: g.label,
+    type: 'group' as const,
+    children: g.items.map(({ perm: _perm, ...rest }) => rest),
+  }));
+
+  // Danh sách phẳng các key lá — cho tính selectedKey.
+  const leafKeys = visibleGroups.flatMap((g) => g.items.map((i) => i.key));
 
   const toggleLang = () => void i18n.changeLanguage(i18n.language === 'vi' ? 'en' : 'vi');
 
   // Highlight the nav item whose route prefixes the current path (so nested
   // pages like /diagram-types/:id still light up their parent).
   const selectedKey =
-    menuItems
-      .map((m) => m.key)
+    leafKeys
       .filter((k) => location.pathname === k || location.pathname.startsWith(`${k}/`))
       .sort((a, b) => b.length - a.length)[0] ?? location.pathname;
 

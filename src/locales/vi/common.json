@@ -1,5 +1,7 @@
 {
-  "app": { "name": "Bảng điều khiển" },
+  "app": {
+    "name": "Bảng điều khiển"
+  },
   "nav": {
     "dashboard": "Tổng quan",
     "users": "Người dùng",
@@ -7,7 +9,16 @@
     "accounts": "Duyệt tài khoản",
     "roles": "Vai trò",
     "groups": "Nhóm quyền",
-    "features": "Nhóm quyền chức năng"
+    "features": "Nhóm quyền chức năng",
+    "group": {
+      "staff": "Nhân sự & phân quyền",
+      "member": "Thành viên",
+      "demo": "Demo"
+    },
+    "members": "Thành viên",
+    "tiers": "Cấp bậc",
+    "memberGroups": "Nhóm quyền thành viên",
+    "memberFeatures": "Chức năng thành viên"
   },
   "action": {
     "create": "Thêm mới",
@@ -189,7 +200,62 @@
     "actionLabel": "Nhãn hành động",
     "addAction": "Thêm hành động"
   },
-  "common": { "actions": "Thao tác", "yes": "Có", "no": "Không", "total": "Tổng" },
+  "common": {
+    "actions": "Thao tác",
+    "yes": "Có",
+    "no": "Không",
+    "total": "Tổng"
+  },
   "empty": "Không có dữ liệu",
-  "error": { "generic": "Đã có lỗi xảy ra. Vui lòng thử lại." }
+  "error": {
+    "generic": "Đã có lỗi xảy ra. Vui lòng thử lại."
+  },
+  "memberFeature": {
+    "title": "Chức năng thành viên",
+    "createTitle": "Tạo chức năng thành viên",
+    "editTitle": "Sửa chức năng thành viên",
+    "deleteConfirm": "Xoá chức năng thành viên này?"
+  },
+  "memberGroup": {
+    "title": "Nhóm quyền thành viên",
+    "createTitle": "Tạo nhóm quyền thành viên",
+    "editTitle": "Sửa nhóm quyền thành viên",
+    "deleteConfirm": "Xoá nhóm quyền thành viên này?",
+    "noFeatures": "Chưa có chức năng thành viên nào đang bật. Tạo ở \"Chức năng thành viên\" trước."
+  },
+  "tier": {
+    "title": "Cấp bậc",
+    "name": "Tên cấp bậc",
+    "key": "Mã",
+    "rank": "Thứ hạng",
+    "description": "Mô tả",
+    "groups": "Nhóm quyền",
+    "groupsPlaceholder": "Chọn nhóm quyền thành viên",
+    "perks": "Đặc quyền",
+    "perksPlaceholder": "Nhập đặc quyền rồi Enter",
+    "color": "Màu",
+    "default": "Mặc định",
+    "active": "Đang bật",
+    "inactive": "Đã tắt",
+    "flags": "Trạng thái",
+    "createTitle": "Tạo cấp bậc",
+    "editTitle": "Sửa cấp bậc",
+    "deleteConfirm": "Xoá cấp bậc này?"
+  },
+  "member": {
+    "title": "Thành viên",
+    "name": "Tên",
+    "email": "Email",
+    "status": "Trạng thái",
+    "tier": "Cấp bậc",
+    "noTier": "Chưa có cấp bậc",
+    "adhocGroups": "Nhóm quyền lẻ",
+    "approve": "Duyệt",
+    "reject": "Từ chối",
+    "rejectReason": "Lý do từ chối",
+    "approveConfirm": "Duyệt thành viên này?",
+    "disable": "Vô hiệu hoá",
+    "enable": "Kích hoạt",
+    "manage": "Quản lý quyền"
+  }
 }

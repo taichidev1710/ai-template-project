@@ -13,6 +13,10 @@ import { AccountsPage } from '@/features/accounts';
 import { RolesPage } from '@/features/roles';
 import { PermissionGroupsPage } from '@/features/permission-groups';
 import { FeatureRegistryPage } from '@/features/feature-registry';
+import { MembersPage } from '@/features/members';
+import { TiersPage } from '@/features/tiers';
+import { MemberGroupsPage } from '@/features/member-groups';
+import { MemberFeaturesPage } from '@/features/member-features';
 import { DiagramTypesPage, DiagramTypeEditorPage } from '@/features/diagram-types';
 import { DiagramsPage, DiagramEditorPage } from '@/features/diagrams';
 
@@ -38,6 +42,10 @@ export const router = createBrowserRouter([
           { path: paths.roles, element: <RolesPage /> },
           { path: paths.permissionGroups, element: <PermissionGroupsPage /> },
           { path: paths.features, element: <FeatureRegistryPage /> },
+          { path: paths.members, element: <MembersPage /> },
+          { path: paths.tiers, element: <TiersPage /> },
+          { path: paths.memberGroups, element: <MemberGroupsPage /> },
+          { path: paths.memberFeatures, element: <MemberFeaturesPage /> },
           { path: paths.profile, element: <ProfilePage /> },
           { path: paths.diagrams, element: <DiagramsPage /> },
           { path: `${paths.diagrams}/:id`, element: <DiagramEditorPage /> },

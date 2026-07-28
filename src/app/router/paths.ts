@@ -9,6 +9,11 @@ export const paths = {
   roles: '/roles',
   permissionGroups: '/permission-groups',
   features: '/features',
+  // Thế giới thành viên (back-office)
+  members: '/members',
+  tiers: '/tiers',
+  memberGroups: '/member-groups',
+  memberFeatures: '/member-features',
   profile: '/profile',
   diagrams: '/diagrams',
   diagramTypes: '/diagram-types',

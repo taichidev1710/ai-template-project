@@ -1,5 +1,7 @@
 {
-  "app": { "name": "Admin Dashboard" },
+  "app": {
+    "name": "Admin Dashboard"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "users": "Users",
@@ -7,7 +9,16 @@
     "accounts": "Account approvals",
     "roles": "Roles",
     "groups": "Permission groups",
-    "features": "Feature registry"
+    "features": "Feature registry",
+    "group": {
+      "staff": "Staff & access",
+      "member": "Members",
+      "demo": "Demo"
+    },
+    "members": "Members",
+    "tiers": "Tiers",
+    "memberGroups": "Member permission groups",
+    "memberFeatures": "Member features"
   },
   "action": {
     "create": "Create",
@@ -189,7 +200,62 @@
     "actionLabel": "Action label",
     "addAction": "Add action"
   },
-  "common": { "actions": "Actions", "yes": "Yes", "no": "No", "total": "Total" },
+  "common": {
+    "actions": "Actions",
+    "yes": "Yes",
+    "no": "No",
+    "total": "Total"
+  },
   "empty": "No data",
-  "error": { "generic": "Something went wrong. Please try again." }
+  "error": {
+    "generic": "Something went wrong. Please try again."
+  },
+  "memberFeature": {
+    "title": "Member features",
+    "createTitle": "Create member feature",
+    "editTitle": "Edit member feature",
+    "deleteConfirm": "Delete this member feature?"
+  },
+  "memberGroup": {
+    "title": "Member permission groups",
+    "createTitle": "Create member group",
+    "editTitle": "Edit member group",
+    "deleteConfirm": "Delete this member group?",
+    "noFeatures": "No enabled member features yet. Create one under \"Member features\" first."
+  },
+  "tier": {
+    "title": "Tiers",
+    "name": "Tier name",
+    "key": "Key",
+    "rank": "Rank",
+    "description": "Description",
+    "groups": "Permission groups",
+    "groupsPlaceholder": "Select member permission groups",
+    "perks": "Perks",
+    "perksPlaceholder": "Type a perk and press Enter",
+    "color": "Color",
+    "default": "Default",
+    "active": "Active",
+    "inactive": "Inactive",
+    "flags": "Flags",
+    "createTitle": "Create tier",
+    "editTitle": "Edit tier",
+    "deleteConfirm": "Delete this tier?"
+  },
+  "member": {
+    "title": "Members",
+    "name": "Name",
+    "email": "Email",
+    "status": "Status",
+    "tier": "Tier",
+    "noTier": "No tier",
+    "adhocGroups": "Ad-hoc groups",
+    "approve": "Approve",
+    "reject": "Reject",
+    "rejectReason": "Rejection reason",
+    "approveConfirm": "Approve this member?",
+    "disable": "Disable",
+    "enable": "Enable",
+    "manage": "Manage access"
+  }
 }

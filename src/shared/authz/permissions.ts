@@ -15,6 +15,11 @@ export const FEATURE = {
   ACCOUNT: 'account',
   FEATURE: 'feature',
   GROUP: 'group',
+  // ----- Thế giới THÀNH VIÊN (namespace riêng, tách khỏi RBAC staff) -----
+  MEMBER: 'member',
+  TIER: 'tier',
+  MEMBER_GROUP: 'member_group',
+  MEMBER_FEATURE: 'member_feature',
 } as const;
 
 /** Quyền hệ thống dạng `feature:action` — dùng cho can()/menu. Suy từ FEATURE để 1 nguồn. */
@@ -48,5 +53,30 @@ export const PERM = {
     update: `${FEATURE.GROUP}:update`,
     delete: `${FEATURE.GROUP}:delete`,
     assign: `${FEATURE.GROUP}:assign`,
+  },
+  // ----- Thế giới THÀNH VIÊN -----
+  member: {
+    read: `${FEATURE.MEMBER}:read`,
+    approve: `${FEATURE.MEMBER}:approve`,
+    update: `${FEATURE.MEMBER}:update`,
+  },
+  tier: {
+    read: `${FEATURE.TIER}:read`,
+    create: `${FEATURE.TIER}:create`,
+    update: `${FEATURE.TIER}:update`,
+    delete: `${FEATURE.TIER}:delete`,
+  },
+  memberGroup: {
+    read: `${FEATURE.MEMBER_GROUP}:read`,
+    create: `${FEATURE.MEMBER_GROUP}:create`,
+    update: `${FEATURE.MEMBER_GROUP}:update`,
+    delete: `${FEATURE.MEMBER_GROUP}:delete`,
+    assign: `${FEATURE.MEMBER_GROUP}:assign`,
+  },
+  memberFeature: {
+    read: `${FEATURE.MEMBER_FEATURE}:read`,
+    create: `${FEATURE.MEMBER_FEATURE}:create`,
+    update: `${FEATURE.MEMBER_FEATURE}:update`,
+    delete: `${FEATURE.MEMBER_FEATURE}:delete`,
   },
 } as const;

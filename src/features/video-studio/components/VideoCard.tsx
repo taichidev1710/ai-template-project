@@ -150,9 +150,9 @@ export function VideoCard({
               {status === 'error' && (
                 <>
                   {job?.error && (
-                    <Tooltip title={t(`error.${job.error.code}`)}>
+                    <Tooltip title={job.error.message || t(`error.${job.error.code}`)}>
                       <Typography.Text type="danger" className="min-w-0 flex-1 truncate text-xs">
-                        {t(`error.${job.error.code}`)}
+                        {job.error.message || t(`error.${job.error.code}`)}
                       </Typography.Text>
                     </Tooltip>
                   )}

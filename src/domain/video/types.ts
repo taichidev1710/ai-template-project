@@ -209,6 +209,9 @@ export interface JobError {
   code: JobErrorCode;
   /** Whether the queue should auto-retry (network/429/5xx) vs. wait for the user. */
   retriable: boolean;
+  /** Optional raw provider detail (e.g. "API key not valid") — shown alongside the
+   * translated category. Runtime-only; not required to persist. */
+  message?: string;
 }
 
 /** One concrete "make a single video" unit — a scene with count N yields N jobs. */

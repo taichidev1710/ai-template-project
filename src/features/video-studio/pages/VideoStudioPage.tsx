@@ -8,6 +8,7 @@ import {
   buildRunPlan,
   characterKeysInText,
   checkAssets,
+  composeScenePrompt,
   sceneAssets,
   defaultRunConfig,
   estimateRunCost,
@@ -30,6 +31,7 @@ import { VideoGrid } from '../components/VideoGrid';
 import { ProjectBar } from '../components/ProjectBar';
 import { useVideoRun, type HydrateEntry } from '../hooks/use-video-run';
 import { useVideoProjects, useVideoProjectMutations } from '../hooks/use-video-projects';
+import { useProviderKeys } from '../hooks/use-provider-keys';
 import type { VideoProjectDto, VideoProjectInput } from '../api/video-projects-api';
 import { formatUsd } from '../lib';
 import { initialConfig, makeAsset, makeScene, newId } from '../types';
@@ -132,6 +134,7 @@ export function VideoStudioPage() {
   );
   const projectsQuery = useVideoProjects({ limit: 100, sort: '-updatedAt' });
   const projectMutations = useVideoProjectMutations();
+  const providerKeysQuery = useProviderKeys();
 
   const caps = getCapabilities(config.providerId);
   const assetKeys = assets.map((a) => a.key).filter(Boolean);
@@ -165,7 +168,38 @@ export function VideoStudioPage() {
   const cost = useMemo(() => estimateRunCost(viewScenes, config), [viewScenes, config]);
   const plan = useMemo(() => buildRunPlan(viewScenes, config), [viewScenes, config]);
 
-  const run = useVideoRun(viewScenes, config);
+  // Real generation targets a paid provider on the official API; else stays mock.
+  const realMode = config.providerId !== 'mock' && config.source === 'api';
+  const hasProviderKey = !!providerKeysQuery.data?.some((k) => k.provider === 'google');
+
+  const run = useVideoRun(viewScenes, config, {
+    projectId: currentProjectId,
+    promptFor: (sceneId) => {
+      const s = viewScenes.find((x) => x.id === sceneId);
+      return s ? composeScenePrompt(s, assets) : '';
+    },
+  });
+
+  /**
+   * In real mode, generation needs a saved project (for the owner-scoped endpoint)
+   * and a configured API key. Warn instead of firing a call that would 400.
+   */
+  const guardRealRun = (): boolean => {
+    if (!realMode) return true;
+    if (!currentProjectId) {
+      message.warning(t('run.needSave'));
+      return false;
+    }
+    if (!hasProviderKey) {
+      message.warning(t('run.needKey'));
+      return false;
+    }
+    return true;
+  };
+
+  const handleGenerateScene = (sceneId: string) => {
+    if (guardRealRun()) run.runScene(sceneId);
+  };
 
   /* ---- project persistence ---- */
   const currentInput = useMemo(
@@ -365,6 +399,7 @@ export function VideoStudioPage() {
 
   const confirmRun = () => {
     if (plan.totalJobs === 0) return;
+    if (!guardRealRun()) return;
     modal.confirm({
       title: t('run.confirmTitle'),
       content: cost.exceedsCap
@@ -488,7 +523,7 @@ export function VideoStudioPage() {
             onSceneChange={patchScene}
             onDuplicate={duplicateScene}
             onRemove={removeScene}
-            onGenerate={run.runScene}
+            onGenerate={handleGenerateScene}
           />
         </section>
 
@@ -502,7 +537,7 @@ export function VideoStudioPage() {
             config={config}
             assets={assets}
             aspectOptions={aspectOptions}
-            onGenerate={run.runScene}
+            onGenerate={handleGenerateScene}
             onRetry={run.retry}
             onCancel={run.cancel}
             onCopyPath={copyPath}

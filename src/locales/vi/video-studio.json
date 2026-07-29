@@ -176,6 +176,8 @@
     "startSequential": "Chạy lần lượt",
     "pauseAll": "Tạm dừng hàng đợi",
     "cancelAll": "Huỷ tất cả",
+    "needSave": "Lưu project trước khi tạo bằng API thật.",
+    "needKey": "Chưa có API key. Vào Cấu hình → Khóa API để thêm.",
     "summary": "{{done}}/{{total}} xong · {{running}} đang chạy",
     "confirmTitle": "Xác nhận chạy mẻ này?",
     "confirmCost": "Ước tính {{n}} video, chi phí ≈ {{cost}}.",

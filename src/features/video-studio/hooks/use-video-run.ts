@@ -6,14 +6,27 @@
  * backend queue; the components above it stay the same.
  */
 import { useCallback, useEffect, useReducer, useRef } from 'react';
-import { buildRunPlan, type AspectRatio, type Job, type PlannedJob, type RunConfig } from '@/domain/video';
+import { buildRunPlan, type AspectRatio, type Job, type JobErrorCode, type PlannedJob, type RunConfig } from '@/domain/video';
 import type { PlannableScene } from '@/domain/video';
 import { fakeOutputPath, rollLifecycle, type FakeResult } from '../fake/fakeProvider';
+import { generationApi } from '../api/generation-api';
 
 /** Stable key for a job = scene + variant index. */
 export const jobKey = (sceneId: string, index: number): string => `${sceneId}#${index}`;
 
 const TICK_MS = 250;
+/** Poll interval for a REAL Veo job (generation is slow — minutes, spec §2.1). */
+const POLL_MS = 6000;
+
+/**
+ * Extra context the REAL (Veo) path needs but the mock path ignores. `projectId`
+ * scopes the backend generate/poll endpoints; `promptFor` yields a scene's composed
+ * outgoing prompt (scene text + asset descriptions).
+ */
+export interface RunRuntime {
+  projectId: string | null;
+  promptFor: (sceneId: string) => string;
+}
 
 type JobMap = Record<string, Job>;
 
@@ -95,13 +108,125 @@ export interface HydrateEntry {
  * it advances progress, finalises finished jobs, auto-retries retriable failures,
  * and starts queued jobs whose `readyAt` has passed while respecting concurrency.
  */
-export function useVideoRun(scenes: readonly PlannableScene[], config: RunConfig): UseVideoRun {
+export function useVideoRun(
+  scenes: readonly PlannableScene[],
+  config: RunConfig,
+  runtime: RunRuntime,
+): UseVideoRun {
   const [jobs, dispatch] = useReducer(reducer, {});
 
   const jobsRef = useRef(jobs);
   jobsRef.current = jobs;
   const metaRef = useRef<Record<string, Meta>>({});
   const concurrencyRef = useRef(1);
+  /** Active poll timers for REAL jobs, keyed by jobKey — so cancel/reset can stop them. */
+  const pollTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  // Real generation = a paid provider on the official API; anything else stays mock.
+  const realMode = config.providerId !== 'mock' && config.source === 'api';
+
+  // Keep the latest runtime in a ref so poll callbacks read current projectId/prompt.
+  const runtimeRef = useRef(runtime);
+  runtimeRef.current = runtime;
+
+  const clearPoll = useCallback((key: string) => {
+    const t = pollTimersRef.current[key];
+    if (t) {
+      clearTimeout(t);
+      delete pollTimersRef.current[key];
+    }
+  }, []);
+
+  const clearAllPolls = useCallback(() => {
+    for (const key of Object.keys(pollTimersRef.current)) clearPoll(key);
+  }, [clearPoll]);
+
+  const setError = useCallback(
+    (key: string, code: JobErrorCode, retriable: boolean, message?: string) => {
+      dispatch({
+        type: 'merge',
+        patches: {
+          [key]: {
+            status: 'error',
+            progress: undefined,
+            attempts: 1,
+            error: { code, retriable, ...(message ? { message } : {}) },
+          },
+        },
+      });
+    },
+    [],
+  );
+
+  /** Poll one REAL operation until it finishes, then merge success/error. */
+  const schedulePoll = useCallback(
+    (key: string, op: string) => {
+      const tick = (): void => {
+        const projectId = runtimeRef.current.projectId;
+        if (!projectId) return;
+        void generationApi
+          .poll(projectId, op)
+          .then((r) => {
+            const cur = jobsRef.current[key];
+            if (!cur || cur.status === 'canceled') return; // user cancelled mid-flight
+            if (r.status === 'processing') {
+              pollTimersRef.current[key] = setTimeout(tick, POLL_MS);
+              return;
+            }
+            delete pollTimersRef.current[key];
+            if (r.status === 'success') {
+              dispatch({
+                type: 'merge',
+                patches: { [key]: { status: 'success', progress: 100, outputPath: r.videoUri } },
+              });
+            } else {
+              setError(key, r.error?.code ?? 'unknown', r.error?.retriable ?? false, r.error?.message);
+            }
+          })
+          .catch(() => {
+            // Transient poll failure — keep trying (the operation is still running).
+            pollTimersRef.current[key] = setTimeout(tick, POLL_MS);
+          });
+      };
+      pollTimersRef.current[key] = setTimeout(tick, POLL_MS);
+    },
+    [setError],
+  );
+
+  /** Submit ONE real job (scene+variant) to Veo, then start polling it. */
+  const runOneReal = useCallback(
+    (sceneId: string, index: number) => {
+      const projectId = runtimeRef.current.projectId;
+      const scene = scenes.find((s) => s.id === sceneId);
+      if (!projectId || !scene) return;
+      const key = jobKey(sceneId, index);
+      const aspect = scene.aspectOverride ?? config.aspect;
+      clearPoll(key);
+      dispatch({
+        type: 'enqueue',
+        jobs: [{ id: key, sceneId, index, status: 'processing', attempts: 0, progress: undefined }],
+      });
+      void generationApi
+        .submit(projectId, {
+          sceneId,
+          prompt: runtimeRef.current.promptFor(sceneId),
+          model: config.modelId,
+          aspectRatio: aspect,
+          durationSeconds: config.durationSeconds,
+        })
+        .then((res) => {
+          if (res.error) {
+            setError(key, res.error.code, res.error.retriable, res.error.message);
+          } else if (res.operationName) {
+            schedulePoll(key, res.operationName);
+          } else {
+            setError(key, 'unknown', false);
+          }
+        })
+        .catch(() => setError(key, 'unknown', false));
+    },
+    [scenes, config.aspect, config.modelId, config.durationSeconds, clearPoll, schedulePoll, setError],
+  );
 
   const enqueuePlanned = useCallback((planned: PlannedJob[], baseTime: number) => {
     const jobsToAdd: Job[] = [];
@@ -120,39 +245,67 @@ export function useVideoRun(scenes: readonly PlannableScene[], config: RunConfig
   }, []);
 
   const startAll = useCallback(() => {
+    metaRef.current = {};
+    clearAllPolls();
+    dispatch({ type: 'reset' });
+    if (realMode) {
+      if (!runtimeRef.current.projectId) return;
+      for (const s of scenes) {
+        const count = Math.max(0, Math.floor(s.countOverride ?? config.count));
+        for (let i = 0; i < count; i++) runOneReal(s.id, i);
+      }
+      return;
+    }
     const plan = buildRunPlan(scenes, config);
     concurrencyRef.current = Math.max(1, plan.concurrency);
-    metaRef.current = {};
-    dispatch({ type: 'reset' });
     enqueuePlanned(plan.jobs, Date.now());
-  }, [scenes, config, enqueuePlanned]);
+  }, [scenes, config, realMode, runOneReal, clearAllPolls, enqueuePlanned]);
 
   const runScene = useCallback(
     (sceneId: string) => {
       const scene = scenes.find((s) => s.id === sceneId);
       if (!scene) return;
+      if (realMode) {
+        const count = Math.max(0, Math.floor(scene.countOverride ?? config.count));
+        for (let i = 0; i < count; i++) runOneReal(sceneId, i);
+        return;
+      }
       // A single-scene run ignores batch delay: submit its variants immediately.
       const plan = buildRunPlan([scene], { ...config, runMode: 'single', delaySeconds: 0 });
       concurrencyRef.current = Math.max(concurrencyRef.current, plan.concurrency);
       enqueuePlanned(plan.jobs, Date.now());
     },
-    [scenes, config, enqueuePlanned],
+    [scenes, config, realMode, runOneReal, enqueuePlanned],
   );
 
-  const retry = useCallback((key: string) => {
-    const meta = metaRef.current[key];
-    if (!meta) return;
-    meta.readyAt = Date.now();
-    meta.startedAt = undefined;
-    meta.durationMs = undefined;
-    meta.result = undefined;
-    dispatch({ type: 'merge', patches: { [key]: { status: 'queued', progress: 0, error: undefined } } });
-  }, []);
+  const retry = useCallback(
+    (key: string) => {
+      if (realMode) {
+        const hash = key.lastIndexOf('#');
+        const sceneId = key.slice(0, hash);
+        const index = Number(key.slice(hash + 1));
+        runOneReal(sceneId, index);
+        return;
+      }
+      const meta = metaRef.current[key];
+      if (!meta) return;
+      meta.readyAt = Date.now();
+      meta.startedAt = undefined;
+      meta.durationMs = undefined;
+      meta.result = undefined;
+      dispatch({ type: 'merge', patches: { [key]: { status: 'queued', progress: 0, error: undefined } } });
+    },
+    [realMode, runOneReal],
+  );
 
-  const cancel = useCallback((key: string) => {
-    dispatch({ type: 'merge', patches: { [key]: { status: 'canceled', progress: undefined } } });
-    delete metaRef.current[key];
-  }, []);
+  const cancel = useCallback(
+    (key: string) => {
+      clearPoll(key);
+      dispatch({ type: 'merge', patches: { [key]: { status: 'canceled', progress: undefined } } });
+      delete metaRef.current[key];
+    },
+    [clearPoll],
+  );
 
   const cancelAll = useCallback(() => {
     const patches: Record<string, Partial<Job>> = {};
@@ -160,15 +313,17 @@ export function useVideoRun(scenes: readonly PlannableScene[], config: RunConfig
       if (j.status === 'queued' || j.status === 'processing') {
         patches[key] = { status: 'canceled', progress: undefined };
         delete metaRef.current[key];
+        clearPoll(key);
       }
     }
     if (Object.keys(patches).length) dispatch({ type: 'merge', patches });
-  }, []);
+  }, [clearPoll]);
 
   const reset = useCallback(() => {
     metaRef.current = {};
+    clearAllPolls();
     dispatch({ type: 'reset' });
-  }, []);
+  }, [clearAllPolls]);
 
   const hydrate = useCallback((entries: readonly HydrateEntry[]) => {
     metaRef.current = {};
@@ -238,7 +393,11 @@ export function useVideoRun(scenes: readonly PlannableScene[], config: RunConfig
 
       if (Object.keys(patches).length) dispatch({ type: 'merge', patches });
     }, TICK_MS);
-    return () => clearInterval(timer);
+    const timers = pollTimersRef.current;
+    return () => {
+      clearInterval(timer);
+      for (const t of Object.values(timers)) clearTimeout(t);
+    };
   }, []);
 
   const isActive = Object.values(jobs).some((j) => j.status === 'queued' || j.status === 'processing');

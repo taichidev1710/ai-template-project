@@ -176,6 +176,8 @@
     "startSequential": "Run sequential",
     "pauseAll": "Pause queue",
     "cancelAll": "Cancel all",
+    "needSave": "Save the project before generating with the real API.",
+    "needKey": "No API key yet. Open Configuration → API key to add one.",
     "summary": "{{done}}/{{total}} done · {{running}} running",
     "confirmTitle": "Confirm this run?",
     "confirmCost": "About {{n}} videos, cost ≈ {{cost}}.",

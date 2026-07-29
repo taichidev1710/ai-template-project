@@ -22,6 +22,7 @@ import {
   type Scene,
 } from '@/domain/video';
 import { ConfigPanel } from '../components/ConfigPanel';
+import { ApiKeyManager } from '../components/ApiKeyManager';
 import { PromptEditor } from '../components/PromptEditor';
 import { SceneList } from '../components/SceneList';
 import { AssetPanel } from '../components/AssetPanel';
@@ -527,6 +528,11 @@ export function VideoStudioPage() {
           onProviderChange={handleProviderChange}
           onPresetChange={setPreset}
         />
+        {config.source === 'api' && (
+          <div className="mt-4">
+            <ApiKeyManager />
+          </div>
+        )}
       </Modal>
 
       <Modal

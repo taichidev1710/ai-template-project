@@ -45,6 +45,20 @@
     "maxCost": "Cost cap / run (USD)",
     "maxJobs": "Job cap / run"
   },
+  "apiKey": {
+    "title": "Google API key (Gemini/Veo)",
+    "placeholder": "Paste your API key…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "change": "Change",
+    "remove": "Remove",
+    "removeConfirm": "Remove the saved API key?",
+    "saved": "API key saved",
+    "removed": "API key removed",
+    "savedAt": "Updated {{date}}",
+    "note": "Stored encrypted on the server, used only to generate videos and never shown again. Create your own key in Google AI Studio (Veo needs billing enabled).",
+    "getKey": "Get a key at Google AI Studio"
+  },
   "free": {
     "warnTitle": "Session (free) mode risks",
     "intro": "Session mode automates a consumer account — real risks, stated plainly:",

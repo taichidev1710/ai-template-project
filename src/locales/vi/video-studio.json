@@ -45,6 +45,20 @@
     "maxCost": "Trần chi phí / mẻ (USD)",
     "maxJobs": "Trần số job / mẻ"
   },
+  "apiKey": {
+    "title": "Khóa API Google (Gemini/Veo)",
+    "placeholder": "Dán API key của bạn…",
+    "save": "Lưu",
+    "cancel": "Huỷ",
+    "change": "Đổi khóa",
+    "remove": "Xoá",
+    "removeConfirm": "Xoá khóa API đã lưu?",
+    "saved": "Đã lưu khóa API",
+    "removed": "Đã xoá khóa API",
+    "savedAt": "Cập nhật {{date}}",
+    "note": "Khóa được mã hoá lưu ở máy chủ, chỉ dùng để tạo video và không hiển thị lại. Bạn tự tạo key ở Google AI Studio (Veo cần bật billing).",
+    "getKey": "Lấy key ở Google AI Studio"
+  },
   "free": {
     "warnTitle": "Rủi ro chế độ phiên (free)",
     "intro": "Chế độ phiên tự động hoá tài khoản consumer — rủi ro thật, nói thẳng:",

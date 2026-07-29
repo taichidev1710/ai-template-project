@@ -1,6 +1,15 @@
 import { apiClient } from '@/shared/api';
 import type { ApiEnvelope } from '@/shared/api';
-import type { AspectRatio, AssetKind, RunConfig } from '@/domain/video';
+import type { AspectRatio, AssetKind, JobError, JobStatus, RunConfig } from '@/domain/video';
+
+/** A terminal job persisted with its scene (spec §12.1: job status + file ref). */
+export interface PersistedJob {
+  index: number;
+  status: JobStatus;
+  attempts: number;
+  outputPath?: string;
+  error?: JobError;
+}
 
 /**
  * API layer for Video Studio projects — the ONLY place that knows these URLs
@@ -18,6 +27,8 @@ export interface PersistedScene {
   countOverride?: number;
   /** Assets assigned to this scene (settings/styles applied to a group). */
   assetIds?: string[];
+  /** Terminal job results (success/error) so generated videos survive reopen. */
+  jobs?: PersistedJob[];
 }
 
 /** An asset as persisted (no image bytes — object storage is a later step). Field

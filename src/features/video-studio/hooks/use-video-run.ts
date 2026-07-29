@@ -74,6 +74,20 @@ export interface UseVideoRun {
   cancel: (key: string) => void;
   cancelAll: () => void;
   reset: () => void;
+  /** Seed the job map from persisted (terminal) jobs when opening a Project (§12.1). */
+  hydrate: (entries: readonly HydrateEntry[]) => void;
+}
+
+/** One persisted terminal job restored into the grid when a Project is opened. */
+export interface HydrateEntry {
+  sceneId: string;
+  index: number;
+  sceneOrder: number;
+  aspect: AspectRatio;
+  status: Job['status'];
+  attempts: number;
+  outputPath?: string;
+  error?: Job['error'];
 }
 
 /**
@@ -156,6 +170,29 @@ export function useVideoRun(scenes: readonly PlannableScene[], config: RunConfig
     dispatch({ type: 'reset' });
   }, []);
 
+  const hydrate = useCallback((entries: readonly HydrateEntry[]) => {
+    metaRef.current = {};
+    const jobsToAdd: Job[] = [];
+    let order = 0;
+    for (const e of entries) {
+      const key = jobKey(e.sceneId, e.index);
+      // Seed meta so a manual retry on a restored job still works.
+      metaRef.current[key] = { order: order++, sceneOrder: e.sceneOrder, aspect: e.aspect, readyAt: Date.now() };
+      jobsToAdd.push({
+        id: key,
+        sceneId: e.sceneId,
+        index: e.index,
+        status: e.status,
+        attempts: e.attempts,
+        progress: e.status === 'success' ? 100 : undefined,
+        ...(e.outputPath ? { outputPath: e.outputPath } : {}),
+        ...(e.error ? { error: e.error } : {}),
+      });
+    }
+    dispatch({ type: 'reset' });
+    dispatch({ type: 'enqueue', jobs: jobsToAdd });
+  }, []);
+
   // The pump — one interval for the lifetime of the hook.
   useEffect(() => {
     const timer = setInterval(() => {
@@ -206,7 +243,7 @@ export function useVideoRun(scenes: readonly PlannableScene[], config: RunConfig
 
   const isActive = Object.values(jobs).some((j) => j.status === 'queued' || j.status === 'processing');
 
-  return { jobs, isActive, startAll, runScene, retry, cancel, cancelAll, reset };
+  return { jobs, isActive, startAll, runScene, retry, cancel, cancelAll, reset, hydrate };
 }
 
 /** Resolve a finished processing job into success, an auto-retry, or a final error. */

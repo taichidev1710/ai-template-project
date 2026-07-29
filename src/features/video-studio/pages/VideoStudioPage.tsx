@@ -15,6 +15,7 @@ import {
   reparseScenes,
   type Asset,
   type AssetKind,
+  type Job,
   type PlatformPreset,
   type RunConfig,
   type RunPlanWarningCode,
@@ -26,7 +27,7 @@ import { SceneList } from '../components/SceneList';
 import { AssetPanel } from '../components/AssetPanel';
 import { VideoGrid } from '../components/VideoGrid';
 import { ProjectBar } from '../components/ProjectBar';
-import { useVideoRun } from '../hooks/use-video-run';
+import { useVideoRun, type HydrateEntry } from '../hooks/use-video-run';
 import { useVideoProjects, useVideoProjectMutations } from '../hooks/use-video-projects';
 import type { VideoProjectDto, VideoProjectInput } from '../api/video-projects-api';
 import { formatUsd } from '../lib';
@@ -55,19 +56,41 @@ function toInput(
   config: RunConfig,
   scenes: Scene[],
   assets: Asset[],
+  jobsMap: Record<string, Job>,
 ): VideoProjectInput {
+  // Terminal jobs per scene, so generated results survive save→reopen (§12.1).
+  const terminalByScene = new Map<string, Job[]>();
+  for (const j of Object.values(jobsMap)) {
+    if (j.status !== 'success' && j.status !== 'error') continue;
+    const list = terminalByScene.get(j.sceneId) ?? [];
+    list.push(j);
+    terminalByScene.set(j.sceneId, list);
+  }
   return {
     name: name.trim(),
     sourcePrompt,
     runConfig: config,
-    scenes: scenes.map((s) => ({
-      id: s.id,
-      order: s.order,
-      text: s.text,
-      ...(s.aspectOverride ? { aspectOverride: s.aspectOverride } : {}),
-      ...(s.countOverride !== undefined ? { countOverride: s.countOverride } : {}),
-      ...(s.assetIds && s.assetIds.length ? { assetIds: s.assetIds } : {}),
-    })),
+    scenes: scenes.map((s) => {
+      const jobs = (terminalByScene.get(s.id) ?? [])
+        .slice()
+        .sort((a, b) => a.index - b.index)
+        .map((j) => ({
+          index: j.index,
+          status: j.status,
+          attempts: j.attempts,
+          ...(j.outputPath ? { outputPath: j.outputPath } : {}),
+          ...(j.error ? { error: j.error } : {}),
+        }));
+      return {
+        id: s.id,
+        order: s.order,
+        text: s.text,
+        ...(s.aspectOverride ? { aspectOverride: s.aspectOverride } : {}),
+        ...(s.countOverride !== undefined ? { countOverride: s.countOverride } : {}),
+        ...(s.assetIds && s.assetIds.length ? { assetIds: s.assetIds } : {}),
+        ...(jobs.length ? { jobs } : {}),
+      };
+    }),
     // Persisted field name stays `characters`; items are assets of any kind.
     characters: assets.map((a) => ({
       id: a.id,
@@ -103,7 +126,7 @@ export function VideoStudioPage() {
   const [projectName, setProjectName] = useState('');
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [savedSnapshot, setSavedSnapshot] = useState<string>(() =>
-    JSON.stringify(toInput('', '', initialConfig(), [], [])),
+    JSON.stringify(toInput('', '', initialConfig(), [], [], {})),
   );
   const projectsQuery = useVideoProjects({ limit: 100, sort: '-updatedAt' });
   const projectMutations = useVideoProjectMutations();
@@ -143,8 +166,8 @@ export function VideoStudioPage() {
 
   /* ---- project persistence ---- */
   const currentInput = useMemo(
-    () => toInput(projectName, sourcePrompt, config, scenes, assets),
-    [projectName, sourcePrompt, config, scenes, assets],
+    () => toInput(projectName, sourcePrompt, config, scenes, assets, run.jobs),
+    [projectName, sourcePrompt, config, scenes, assets, run.jobs],
   );
   const currentSnapshot = JSON.stringify(currentInput);
   const dirty = currentSnapshot !== savedSnapshot;
@@ -170,6 +193,34 @@ export function VideoStudioPage() {
       color: c.color,
       images: [],
     }));
+    // Restore persisted terminal jobs so generated videos reappear on open (§12.1).
+    const entries: HydrateEntry[] = [];
+    const jobsMap: Record<string, Job> = {};
+    for (const s of dto.scenes) {
+      const aspect = s.aspectOverride ?? dto.runConfig.aspect;
+      for (const j of s.jobs ?? []) {
+        const key = `${s.id}#${j.index}`;
+        entries.push({
+          sceneId: s.id,
+          index: j.index,
+          sceneOrder: s.order,
+          aspect,
+          status: j.status,
+          attempts: j.attempts,
+          outputPath: j.outputPath,
+          error: j.error,
+        });
+        jobsMap[key] = {
+          id: key,
+          sceneId: s.id,
+          index: j.index,
+          status: j.status,
+          attempts: j.attempts,
+          outputPath: j.outputPath,
+          error: j.error,
+        };
+      }
+    }
     setProjectName(dto.name);
     setSourcePrompt(dto.sourcePrompt);
     setConfig(dto.runConfig);
@@ -177,8 +228,10 @@ export function VideoStudioPage() {
     setAssets(loadedAssets);
     setCurrentProjectId(dto.id);
     setPreset(null);
-    run.reset();
-    setSavedSnapshot(JSON.stringify(toInput(dto.name, dto.sourcePrompt, dto.runConfig, loadedScenes, loadedAssets)));
+    run.hydrate(entries);
+    setSavedSnapshot(
+      JSON.stringify(toInput(dto.name, dto.sourcePrompt, dto.runConfig, loadedScenes, loadedAssets, jobsMap)),
+    );
   };
 
   const openProject = (id: string) => {
@@ -218,7 +271,7 @@ export function VideoStudioPage() {
       setCurrentProjectId(null);
       setPreset(null);
       run.reset();
-      setSavedSnapshot(JSON.stringify(toInput('', '', cfg, [], [])));
+      setSavedSnapshot(JSON.stringify(toInput('', '', cfg, [], [], {})));
     };
     if (dirty) {
       modal.confirm({

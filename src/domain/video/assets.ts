@@ -38,6 +38,30 @@ export function sceneAssets(scene: AssetScene, assets: readonly Asset[]): Asset[
   return out;
 }
 
+/** True when an asset carries usable content — a reference image OR text. */
+function hasContent(asset: Asset): boolean {
+  return asset.images.length > 0 || (asset.description?.trim().length ?? 0) > 0;
+}
+
+/**
+ * The outgoing text prompt for a scene: its own text, followed by the text
+ * `description` of every referenced asset (in `sceneAssets` order), each as its
+ * own paragraph. This is how a `style` described in words, a character/setting
+ * text description, or a shared `prompt`-kind block reaches the provider when
+ * there is no image (spec §9.3, level-3 text sync). `@key` markers stay untouched
+ * here — `buildScenePrompt` strips them when the final request is assembled.
+ */
+export function composeScenePrompt(scene: AssetScene, assets: readonly Asset[]): string {
+  const parts: string[] = [];
+  const base = scene.text.trim();
+  if (base) parts.push(base);
+  for (const a of sceneAssets(scene, assets)) {
+    const d = a.description?.trim();
+    if (d) parts.push(d);
+  }
+  return parts.join('\n\n');
+}
+
 /** A code the UI maps to a `t('...')` warning — never localised prose here (§13.5). */
 export type AssetIssueCode =
   /** An asset is referenced (mentioned or assigned) but has no reference image. */
@@ -85,9 +109,11 @@ export function checkAssets(
   const issues: AssetIssue[] = [];
   for (const a of assets) {
     const used = mentioned.has(a.key.toLowerCase()) || assigned.has(a.id);
-    const hasImage = a.images.length > 0;
-    if (used && !hasImage) issues.push({ code: 'missing-image', assetId: a.id, key: a.key });
-    else if (!used && hasImage) issues.push({ code: 'unused-asset', assetId: a.id, key: a.key });
+    // "Content" is a reference image OR a text description (level-3 text sync),
+    // so a text-only style/prompt asset is not flagged as image-less.
+    const filled = hasContent(a);
+    if (used && !filled) issues.push({ code: 'missing-image', assetId: a.id, key: a.key });
+    else if (!used && filled) issues.push({ code: 'unused-asset', assetId: a.id, key: a.key });
   }
   for (const key of unknownOrder) issues.push({ code: 'unknown-key', key });
   return issues;

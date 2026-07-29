@@ -98,6 +98,7 @@ function toInput(
       key: a.key,
       displayName: a.displayName,
       color: a.color,
+      ...(a.description && a.description.trim() ? { description: a.description } : {}),
     })),
   };
 }
@@ -193,6 +194,7 @@ export function VideoStudioPage() {
       displayName: c.displayName,
       color: c.color,
       images: [],
+      description: c.description ?? '',
     }));
     // Restore persisted terminal jobs so generated videos reappear on open (§12.1).
     const entries: HydrateEntry[] = [];

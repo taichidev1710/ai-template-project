@@ -40,6 +40,8 @@ export interface PersistedCharacter {
   key: string;
   displayName: string;
   color: string;
+  /** Text description / reusable prompt block (style-by-text, level-3 sync). */
+  description?: string;
 }
 
 export interface VideoProjectDto {

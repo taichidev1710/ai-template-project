@@ -10,6 +10,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { sceneAssets, type AspectRatio, type Asset, type Job, type JobStatus, type RunConfig, type Scene } from '@/domain/video';
 import { jobKey } from '../hooks/use-video-run';
+import { assetTagLabel } from '../lib';
 import { SceneOverrides } from './SceneOverrides';
 import { SceneInfoModal } from './SceneInfoModal';
 
@@ -88,7 +89,7 @@ export function VideoCard({
         <div className="mb-2 flex flex-wrap gap-1">
           {usedAssets.map((a) => (
             <Tag key={a.id} color={a.color} variant="filled">
-              {a.kind === 'character' ? `@${a.key}` : a.displayName || a.key || '—'}
+              {assetTagLabel(a, t)}
             </Tag>
           ))}
         </div>

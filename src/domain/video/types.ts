@@ -156,24 +156,35 @@ export type CharacterSyncLevel = 1 | 2 | 3;
  * What an asset represents (spec §2.3: Veo "ingredients" take reference images in
  * several ROLES). `character` = a person/subject, usually attached by an inline
  * `@key`; `setting` = a location/background, usually ASSIGNED to a group of scenes;
- * `style` = a look/tone. All three feed the same `reference_images` list.
+ * `style` = a look/tone (image OR a text `description`); `prompt` = a reusable
+ * block of extra prompt text applied to a group of scenes (no image, no @key).
+ * Image-bearing kinds feed the same `reference_images` list; text `description`
+ * of any kind is appended to the outgoing prompt (`composeScenePrompt`).
  */
-export type AssetKind = 'character' | 'setting' | 'style';
+export type AssetKind = 'character' | 'setting' | 'style' | 'prompt';
 
 /**
- * An uploaded reference asset used to keep something consistent across clips
- * (spec §9, §2.3) — a character, a setting/location, or a style. Attached to a
- * scene either by an inline `@key` (see characterTagger) or by scene assignment
- * (`Scene.assetIds`); both resolve to the same per-scene reference-image list.
+ * An asset used to keep something consistent across clips (spec §9, §2.3) — a
+ * character, a setting/location, a style, or a reusable prompt block. Attached to
+ * a scene either by an inline `@key` (see characterTagger) or by scene assignment
+ * (`Scene.assetIds`). Its CONTENT can be reference `images` (feed the provider's
+ * reference list) and/or a text `description` (a level-3 text sync hint / shared
+ * prompt appended to the scene text — spec §9.3, level 3).
  */
 export interface Asset {
   id: string;
   kind: AssetKind;
-  /** Match key referenced in prompts as `@key` (spec §9.1, default convention). */
+  /** Match key referenced in prompts as `@key` (spec §9.1). Empty for `prompt` kind. */
   key: string;
   displayName: string;
-  /** 1..N reference images (as data-URLs in the app; opaque here). */
+  /** 0..N reference images (as data-URLs in the app; opaque here). */
   images: string[];
+  /**
+   * Optional text content: a `style` described in words when there's no image, a
+   * `prompt`-kind's reusable text, or a character/setting text description
+   * (level-3 fallback). Appended to the scene prompt by `composeScenePrompt`.
+   */
+  description?: string;
   /** Highlight colour for this asset's mentions — pure data (spec §13.5). */
   color: string;
 }

@@ -1,6 +1,7 @@
 import { Modal, Descriptions, Tag, Typography, Space } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
+  composeScenePrompt,
   getCapabilities,
   sceneAssets,
   type AspectRatio,
@@ -9,6 +10,7 @@ import {
   type Scene,
   type SpeedTier,
 } from '@/domain/video';
+import { assetTagLabel } from '../lib';
 
 interface SceneInfoModalProps {
   open: boolean;
@@ -25,6 +27,7 @@ export function SceneInfoModal({ open, scene, config, assets, aspect, count, onC
   const { t } = useTranslation('video-studio');
   const caps = getCapabilities(config.providerId);
   const used = sceneAssets(scene, assets);
+  const composedPrompt = composeScenePrompt(scene, assets);
 
   const speedLabel: Record<SpeedTier, string> = {
     fast: t('config.speedFast'),
@@ -46,7 +49,13 @@ export function SceneInfoModal({ open, scene, config, assets, aspect, count, onC
         size="small"
         bordered
         items={[
-          { key: 'prompt', label: t('info.rawPrompt'), children: scene.text || '—' },
+          {
+            key: 'prompt',
+            label: t('info.rawPrompt'),
+            children: (
+              <Typography.Text style={{ whiteSpace: 'pre-wrap' }}>{composedPrompt || '—'}</Typography.Text>
+            ),
+          },
           { key: 'provider', label: t('info.provider'), children: caps?.label ?? config.providerId },
           {
             key: 'model',
@@ -71,7 +80,7 @@ export function SceneInfoModal({ open, scene, config, assets, aspect, count, onC
                 <Space wrap size={4}>
                   {used.map((a) => (
                     <Tag key={a.id} color={a.color} variant="filled" className="!m-0">
-                      {a.kind === 'character' ? `@${a.key}` : a.displayName || a.key || '—'}
+                      {assetTagLabel(a, t)}
                       {a.images.length > 0 ? ` · ${t('info.refImages', { n: a.images.length })}` : ''}
                     </Tag>
                   ))}

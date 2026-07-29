@@ -39,6 +39,7 @@ export function makeAsset(kind: AssetKind, index: number): Asset {
     key: '',
     displayName: '',
     images: [],
+    description: '',
     color: CHARACTER_COLORS[index % CHARACTER_COLORS.length]!,
   };
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sceneAssets, checkAssets } from './assets';
+import { sceneAssets, checkAssets, composeScenePrompt } from './assets';
 import type { Asset } from './types';
 
 const asset = (id: string, kind: Asset['kind'], key: string, images: string[] = ['img']): Asset => ({
@@ -8,6 +8,17 @@ const asset = (id: string, kind: Asset['kind'], key: string, images: string[] = 
   key,
   displayName: key,
   images,
+  color: '#000',
+});
+
+/** A text-only asset (no image) with a description — style-by-text / shared prompt. */
+const textAsset = (id: string, kind: Asset['kind'], key: string, description: string): Asset => ({
+  id,
+  kind,
+  key,
+  displayName: key,
+  images: [],
+  description,
   color: '#000',
 });
 
@@ -69,5 +80,50 @@ describe('checkAssets', () => {
 
   it('is quiet when a character is mentioned and has an image', () => {
     expect(checkAssets([an], [{ text: '@an walks' }])).toEqual([]);
+  });
+
+  it('treats a text description as content — an assigned text style is not image-less', () => {
+    const style = textAsset('a_st', 'style', 'noir', 'high-contrast noir look');
+    expect(checkAssets([style], [{ text: 'city', assetIds: ['a_st'] }])).toEqual([]);
+  });
+
+  it('flags a used text asset that has neither image nor description', () => {
+    const empty = textAsset('a_p', 'prompt', '', '');
+    expect(checkAssets([empty], [{ text: 'x', assetIds: ['a_p'] }])).toEqual([
+      { code: 'missing-image', assetId: 'a_p', key: '' },
+    ]);
+  });
+
+  it('flags a text asset with a description but no scene using it as unused', () => {
+    const style = textAsset('a_st', 'style', 'noir', 'noir look');
+    expect(checkAssets([style], [{ text: 'nothing here' }])).toEqual([
+      { code: 'unused-asset', assetId: 'a_st', key: 'noir' },
+    ]);
+  });
+});
+
+describe('composeScenePrompt', () => {
+  it('returns the scene text when no asset carries a description', () => {
+    expect(composeScenePrompt({ text: '@an walks', assetIds: ['a_room'] }, roster)).toBe('@an walks');
+  });
+
+  it('appends the description of an assigned prompt/style asset', () => {
+    const style = textAsset('a_st', 'style', 'noir', 'high-contrast noir look');
+    const scene = { text: 'city at night', assetIds: ['a_st'] };
+    expect(composeScenePrompt(scene, [style])).toBe('city at night\n\nhigh-contrast noir look');
+  });
+
+  it('appends descriptions in sceneAssets order: @key mentions before assignments', () => {
+    const anDesc = textAsset('a_an', 'character', 'an', 'a calm young man');
+    const style = textAsset('a_st', 'style', 'noir', 'noir look');
+    const scene = { text: '@an appears', assetIds: ['a_st'] };
+    expect(composeScenePrompt(scene, [anDesc, style])).toBe(
+      '@an appears\n\na calm young man\n\nnoir look',
+    );
+  });
+
+  it('skips empty/whitespace descriptions and trims the base text', () => {
+    const blank = textAsset('a_p', 'prompt', '', '   ');
+    expect(composeScenePrompt({ text: '  hello  ', assetIds: ['a_p'] }, [blank])).toBe('hello');
   });
 });

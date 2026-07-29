@@ -1,5 +1,10 @@
 import { Button, Empty, Alert, Space, Typography } from 'antd';
-import { UserAddOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import {
+  UserAddOutlined,
+  EnvironmentOutlined,
+  BgColorsOutlined,
+  FileTextOutlined,
+} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import type { Asset, AssetKind, AssetIssue, AssetIssueCode } from '@/domain/video';
 import { AssetItem } from './AssetItem';
@@ -26,7 +31,7 @@ const ISSUE_KEY: Record<AssetIssueCode, string> = {
 };
 
 /** Reference-asset roster: characters (via @key) + settings/styles (assigned to
- * scenes), plus consistency warnings (spec §2.3, §9, §13.2). */
+ * scenes) + reusable prompt blocks, plus consistency warnings (spec §2.3, §9). */
 export function AssetPanel({
   assets,
   usedScenes,
@@ -40,6 +45,22 @@ export function AssetPanel({
 }: AssetPanelProps) {
   const { t } = useTranslation('video-studio');
 
+  const kindLabel: Record<AssetKind, string> = {
+    character: t('asset.kindCharacter'),
+    setting: t('asset.kindSetting'),
+    style: t('asset.kindStyle'),
+    prompt: t('asset.kindPrompt'),
+  };
+
+  /** A human label for an issue: `@key` for characters/unknown keys, else the
+   * asset's name (falling back to its kind) — so prompt/style rows read clearly. */
+  const issueLabel = (issue: AssetIssue): string => {
+    const asset = issue.assetId ? assets.find((a) => a.id === issue.assetId) : undefined;
+    if (!asset) return `@${issue.key}`;
+    if (asset.kind === 'character') return `@${asset.key}`;
+    return asset.displayName || (asset.key ? `@${asset.key}` : kindLabel[asset.kind]);
+  };
+
   return (
     <div>
       <div className="mb-3 flex flex-wrap justify-end gap-2">
@@ -48,6 +69,12 @@ export function AssetPanel({
         </Button>
         <Button size="small" icon={<EnvironmentOutlined />} onClick={() => onAdd('setting')}>
           {t('asset.addSetting')}
+        </Button>
+        <Button size="small" icon={<BgColorsOutlined />} onClick={() => onAdd('style')}>
+          {t('asset.addStyle')}
+        </Button>
+        <Button size="small" icon={<FileTextOutlined />} onClick={() => onAdd('prompt')}>
+          {t('asset.addPrompt')}
         </Button>
       </div>
 
@@ -77,7 +104,7 @@ export function AssetPanel({
             <Space orientation="vertical" size={0}>
               {issues.map((issue, i) => (
                 <Typography.Text key={`${issue.code}-${issue.key}-${i}`} className="text-xs">
-                  {t(ISSUE_KEY[issue.code], { key: issue.key })}
+                  {t(ISSUE_KEY[issue.code], { label: issueLabel(issue), key: issue.key })}
                 </Typography.Text>
               ))}
             </Space>

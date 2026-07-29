@@ -1,5 +1,13 @@
-import { Input, ColorPicker, Upload, Button, Space, Tag, Segmented, Select, Typography } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import type { ReactNode } from 'react';
+import { Input, ColorPicker, Upload, Button, Tag, Select, Typography } from 'antd';
+import {
+  DeleteOutlined,
+  PlusOutlined,
+  UserOutlined,
+  EnvironmentOutlined,
+  BgColorsOutlined,
+  FileTextOutlined,
+} from '@ant-design/icons';
 import type { UploadFile } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { Asset, AssetKind } from '@/domain/video';
@@ -16,8 +24,37 @@ interface AssetItemProps {
   onAssignScenes: (sceneIds: string[]) => void;
 }
 
-/** One asset row: kind, @key, name, colour, images, and (for settings/styles) the
- * scenes it is applied to (spec §2.3, §9). */
+/** Icon per kind — the kind is FIXED at creation (chosen by the "Add …" button),
+ * so this row shows it read-only instead of a switcher (spec §2.3). */
+const KIND_ICON: Record<AssetKind, ReactNode> = {
+  character: <UserOutlined />,
+  setting: <EnvironmentOutlined />,
+  style: <BgColorsOutlined />,
+  prompt: <FileTextOutlined />,
+};
+
+const KIND_LABEL_KEY: Record<AssetKind, string> = {
+  character: 'asset.kindCharacter',
+  setting: 'asset.kindSetting',
+  style: 'asset.kindStyle',
+  prompt: 'asset.kindPrompt',
+};
+
+/** A tiny labelled field wrapper so each control reads clearly (spec §13.5). */
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1">
+      <Typography.Text type="secondary" className="text-xs">
+        {label}
+      </Typography.Text>
+      {children}
+    </label>
+  );
+}
+
+/** One asset row. The kind is set when created and never switched here. `character`
+ * / `setting` / `style` carry reference images and/or a text description; `prompt`
+ * is a text-only block applied to scenes (spec §2.3, §9). */
 export function AssetItem({
   asset,
   usedSceneOrders,
@@ -28,6 +65,7 @@ export function AssetItem({
   onAssignScenes,
 }: AssetItemProps) {
   const { t } = useTranslation('video-studio');
+  const isPrompt = asset.kind === 'prompt';
 
   const fileList: UploadFile[] = asset.images.map((url, i) => ({
     uid: String(i),
@@ -48,55 +86,114 @@ export function AssetItem({
     onChange({ images: asset.images.filter((_, i) => i !== idx) });
   };
 
-  const kindOptions = [
-    { value: 'character', label: t('asset.kindCharacter') },
-    { value: 'setting', label: t('asset.kindSetting') },
-    { value: 'style', label: t('asset.kindStyle') },
-  ];
+  const descLabel = isPrompt
+    ? t('asset.promptContent')
+    : asset.kind === 'style'
+      ? t('asset.descStyle')
+      : t('asset.descOptional');
 
   return (
-    <div className="mb-3 rounded-app bg-canvas p-3">
-      <div className="mb-2">
-        <Segmented
+    <div className="mb-3 rounded-app border border-line-soft bg-canvas p-3">
+      {/* Header: read-only kind + remove */}
+      <div className="mb-2 flex items-center justify-between">
+        <Tag color={asset.color} variant="filled" className="!m-0">
+          <span className="mr-1">{KIND_ICON[asset.kind]}</span>
+          {t(KIND_LABEL_KEY[asset.kind])}
+        </Tag>
+        <Button
+          type="text"
           size="small"
-          value={asset.kind}
-          onChange={(v) => onChange({ kind: v as AssetKind })}
-          options={kindOptions}
+          danger
+          icon={<DeleteOutlined />}
+          onClick={onRemove}
+          aria-label={t('character.remove')}
         />
       </div>
-      <div className="mb-2 flex items-center gap-2">
-        <ColorPicker value={asset.color} onChange={(c) => onChange({ color: c.toHexString() })} size="small" />
-        <Input
-          size="small"
-          prefix="@"
-          placeholder={t('character.keyPlaceholder')}
-          value={asset.key}
-          onChange={(e) => onChange({ key: e.target.value.trim().toLowerCase() })}
-          style={{ width: 110 }}
-        />
-        <Input
-          size="small"
-          placeholder={t('character.namePlaceholder')}
-          value={asset.displayName}
-          onChange={(e) => onChange({ displayName: e.target.value })}
-        />
-        <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={onRemove} aria-label={t('character.remove')} />
-      </div>
-      <Space align="center" wrap>
-        <Upload
-          listType="picture-card"
-          accept="image/*"
-          fileList={fileList}
-          beforeUpload={beforeUpload}
-          onRemove={removeImage}
-        >
-          <div className="text-xs">
-            <PlusOutlined />
-            <div>{t('character.upload')}</div>
+
+      {isPrompt ? (
+        <Field label={t('asset.promptNameLabel')}>
+          <Input
+            size="small"
+            placeholder={t('asset.promptNamePlaceholder')}
+            value={asset.displayName}
+            onChange={(e) => onChange({ displayName: e.target.value })}
+          />
+        </Field>
+      ) : (
+        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-end gap-2">
+          <Field label={t('asset.colorLabel')}>
+            <ColorPicker
+              value={asset.color}
+              onChange={(c) => onChange({ color: c.toHexString() })}
+              size="small"
+            />
+          </Field>
+          <Field label={t('asset.nameLabel')}>
+            <Input
+              size="small"
+              placeholder={t('character.namePlaceholder')}
+              value={asset.displayName}
+              onChange={(e) => onChange({ displayName: e.target.value })}
+            />
+          </Field>
+          <div className="col-span-2">
+            <Field label={t('asset.keyLabel')}>
+              <Input
+                size="small"
+                prefix="@"
+                placeholder={t('character.keyPlaceholder')}
+                value={asset.key}
+                onChange={(e) => onChange({ key: e.target.value.trim().toLowerCase() })}
+              />
+            </Field>
+            <Typography.Text type="secondary" className="mt-1 block text-xs">
+              {t('asset.keyHelp')}
+            </Typography.Text>
           </div>
-        </Upload>
+        </div>
+      )}
+
+      {/* Reference images (not for prompt kind) */}
+      {!isPrompt && (
+        <div className="mt-2">
+          <Typography.Text type="secondary" className="mb-1 block text-xs">
+            {t('asset.imagesLabel')}
+          </Typography.Text>
+          <Upload
+            listType="picture-card"
+            accept="image/*"
+            fileList={fileList}
+            beforeUpload={beforeUpload}
+            onRemove={removeImage}
+          >
+            <div className="text-xs">
+              <PlusOutlined />
+              <div>{t('character.upload')}</div>
+            </div>
+          </Upload>
+          <Typography.Text type="secondary" className="block text-xs">
+            {t('asset.imagesHelp')}
+          </Typography.Text>
+        </div>
+      )}
+
+      {/* Text description / prompt content — usable with OR instead of an image */}
+      <div className="mt-2">
+        <Field label={descLabel}>
+          <Input.TextArea
+            size="small"
+            autoSize={{ minRows: isPrompt ? 3 : 2, maxRows: 8 }}
+            placeholder={isPrompt ? t('asset.promptContentPlaceholder') : t('asset.descPlaceholder')}
+            value={asset.description ?? ''}
+            onChange={(e) => onChange({ description: e.target.value })}
+          />
+        </Field>
+      </div>
+
+      {/* Which scenes this asset is used in */}
+      <div className="mt-2 flex flex-wrap items-center gap-1">
         {usedSceneOrders.length > 0 ? (
-          <span className="flex flex-wrap items-center gap-1">
+          <>
             <Typography.Text type="secondary" className="text-xs">
               {t('asset.usedScenes')}
             </Typography.Text>
@@ -105,28 +202,26 @@ export function AssetItem({
                 #{o}
               </Tag>
             ))}
-          </span>
+          </>
         ) : (
-          <Tag>{t('asset.notUsed')}</Tag>
+          <Tag className="!m-0">{t('asset.notUsed')}</Tag>
         )}
-      </Space>
+      </div>
 
-      {/* Attach this asset to scenes directly (works for any kind — characters can
-          be @key'd in the prompt too, spec decision). */}
+      {/* Assign this asset to scenes (works for any kind). */}
       <div className="mt-2">
-        <Typography.Text type="secondary" className="mb-1 block text-xs">
-          {t('asset.assignScenes')}
-        </Typography.Text>
-        <Select
-          mode="multiple"
-          size="small"
-          className="w-full"
-          placeholder={t('asset.assignPlaceholder')}
-          value={assignedSceneIds}
-          onChange={onAssignScenes}
-          options={scenes.map((s) => ({ value: s.id, label: `#${s.order}` }))}
-          disabled={scenes.length === 0}
-        />
+        <Field label={t('asset.assignScenes')}>
+          <Select
+            mode="multiple"
+            size="small"
+            className="w-full"
+            placeholder={t('asset.assignPlaceholder')}
+            value={assignedSceneIds}
+            onChange={onAssignScenes}
+            options={scenes.map((s) => ({ value: s.id, label: `#${s.order}` }))}
+            disabled={scenes.length === 0}
+          />
+        </Field>
       </div>
     </div>
   );

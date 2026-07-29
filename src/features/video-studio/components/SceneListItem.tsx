@@ -60,18 +60,6 @@ export function SceneListItem({
         }
         extra={
           <Space size={0}>
-            <Tooltip title={t('scene.characters')}>
-              <span className="mr-2">
-                {scene.characterKeys.map((key) => {
-                  const c = colorByKey.get(key);
-                  return (
-                    <Tag key={key} color={c?.color} variant="filled">
-                      @{key}
-                    </Tag>
-                  );
-                })}
-              </span>
-            </Tooltip>
             <Tooltip title={t('grid.generate')}>
               <Button type="text" size="small" icon={<VideoCameraAddOutlined />} onClick={onGenerate} />
             </Tooltip>
@@ -100,13 +88,20 @@ export function SceneListItem({
             onChange={onChange}
           />
         </div>
-        {assignedAssets.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {assignedAssets.map((a) => (
-              <Tag key={a.id} color={a.color} variant="filled">
-                {a.displayName || a.key || '—'}
+        {(scene.characterKeys.length > 0 || assignedAssets.length > 0) && (
+          <div className="mt-2 flex flex-wrap items-center gap-1">
+            {scene.characterKeys.map((key) => (
+              <Tag key={`k-${key}`} color={colorByKey.get(key)?.color} variant="filled">
+                @{key}
               </Tag>
             ))}
+            {assignedAssets
+              .filter((a) => !scene.characterKeys.includes(a.key.toLowerCase()))
+              .map((a) => (
+                <Tag key={a.id} color={a.color} variant="filled">
+                  {a.displayName || a.key || '—'}
+                </Tag>
+              ))}
           </div>
         )}
       </Card>

@@ -6,7 +6,8 @@ import { AssetItem } from './AssetItem';
 
 interface AssetPanelProps {
   assets: Asset[];
-  usage: Record<string, number>;
+  /** assetId → scene ORDERS it is used in (via @key or assignment). */
+  usedScenes: Record<string, number[]>;
   issues: AssetIssue[];
   scenes: { id: string; order: number }[];
   /** assetId → scene ids it is assigned to (from each scene's assetIds). */
@@ -28,7 +29,7 @@ const ISSUE_KEY: Record<AssetIssueCode, string> = {
  * scenes), plus consistency warnings (spec §2.3, §9, §13.2). */
 export function AssetPanel({
   assets,
-  usage,
+  usedScenes,
   issues,
   scenes,
   assignedByAsset,
@@ -57,7 +58,7 @@ export function AssetPanel({
           <AssetItem
             key={a.id}
             asset={a}
-            usedCount={usage[a.id] ?? 0}
+            usedSceneOrders={usedScenes[a.id] ?? []}
             scenes={scenes}
             assignedSceneIds={assignedByAsset[a.id] ?? []}
             onChange={(patch) => onChange(a.id, patch)}

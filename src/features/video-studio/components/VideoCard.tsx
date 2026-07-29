@@ -1,14 +1,24 @@
+import { useState } from 'react';
 import { Card, Tag, Progress, Button, Typography, Space, Tooltip } from 'antd';
-import { VideoCameraAddOutlined, ReloadOutlined, StopOutlined, CopyOutlined } from '@ant-design/icons';
+import {
+  VideoCameraAddOutlined,
+  ReloadOutlined,
+  StopOutlined,
+  CopyOutlined,
+  InfoCircleOutlined,
+} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import type { AspectRatio, Job, JobStatus, Scene } from '@/domain/video';
+import { sceneAssets, type AspectRatio, type Asset, type Job, type JobStatus, type RunConfig, type Scene } from '@/domain/video';
 import { jobKey } from '../hooks/use-video-run';
 import { SceneOverrides } from './SceneOverrides';
+import { SceneInfoModal } from './SceneInfoModal';
 
 interface VideoCardProps {
   scene: Scene;
   count: number;
   jobs: Job[];
+  config: RunConfig;
+  assets: readonly Asset[];
   aspectOptions: readonly AspectRatio[];
   defaultAspect: AspectRatio;
   defaultCount: number;
@@ -32,6 +42,8 @@ export function VideoCard({
   scene,
   count,
   jobs,
+  config,
+  assets,
   aspectOptions,
   defaultAspect,
   defaultCount,
@@ -42,21 +54,40 @@ export function VideoCard({
   onOverrideChange,
 }: VideoCardProps) {
   const { t } = useTranslation('video-studio');
+  const [infoOpen, setInfoOpen] = useState(false);
   const byIndex = new Map(jobs.map((j) => [j.index, j]));
+  const effectiveAspect = scene.aspectOverride ?? defaultAspect;
+  const usedAssets = sceneAssets(scene, assets);
 
   return (
+    <>
     <Card
       size="small"
       title={<Typography.Text strong>#{scene.order}</Typography.Text>}
       extra={
-        <Button size="small" icon={<VideoCameraAddOutlined />} onClick={onGenerate}>
-          {t('grid.generate')}
-        </Button>
+        <Space size={0}>
+          <Tooltip title={t('info.view')}>
+            <Button type="text" size="small" icon={<InfoCircleOutlined />} onClick={() => setInfoOpen(true)} />
+          </Tooltip>
+          <Button size="small" icon={<VideoCameraAddOutlined />} onClick={onGenerate}>
+            {t('grid.generate')}
+          </Button>
+        </Space>
       }
     >
       <Typography.Paragraph type="secondary" ellipsis={{ rows: 2 }} className="!mb-2 text-xs">
         {scene.text || '—'}
       </Typography.Paragraph>
+
+      {usedAssets.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-1">
+          {usedAssets.map((a) => (
+            <Tag key={a.id} color={a.color} variant="filled">
+              {a.kind === 'character' ? `@${a.key}` : a.displayName || a.key || '—'}
+            </Tag>
+          ))}
+        </div>
+      )}
 
       <div className="mb-2">
         <SceneOverrides
@@ -147,5 +178,15 @@ export function VideoCard({
         })}
       </Space>
     </Card>
+    <SceneInfoModal
+      open={infoOpen}
+      scene={scene}
+      config={config}
+      assets={assets}
+      aspect={effectiveAspect}
+      count={count}
+      onClose={() => setInfoOpen(false)}
+    />
+    </>
   );
 }

@@ -1,12 +1,13 @@
 import { Empty, Alert, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { AspectRatio, Job, RunConfig, Scene } from '@/domain/video';
+import type { AspectRatio, Asset, Job, RunConfig, Scene } from '@/domain/video';
 import { VideoCard } from './VideoCard';
 
 interface VideoGridProps {
   scenes: Scene[];
   jobs: Record<string, Job>;
   config: RunConfig;
+  assets: readonly Asset[];
   aspectOptions: readonly AspectRatio[];
   onGenerate: (sceneId: string) => void;
   onRetry: (key: string) => void;
@@ -20,6 +21,7 @@ export function VideoGrid({
   scenes,
   jobs,
   config,
+  assets,
   aspectOptions,
   onGenerate,
   onRetry,
@@ -45,6 +47,8 @@ export function VideoGrid({
             scene={scene}
             count={scene.countOverride ?? config.count}
             jobs={jobsList.filter((j) => j.sceneId === scene.id)}
+            config={config}
+            assets={assets}
             aspectOptions={aspectOptions}
             defaultAspect={config.aspect}
             defaultCount={config.count}

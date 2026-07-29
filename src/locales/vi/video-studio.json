@@ -111,6 +111,8 @@
     "assignScenes": "Áp dụng cho cảnh",
     "assignPlaceholder": "Chọn cảnh…",
     "assignedChip": "Bối cảnh",
+    "usedScenes": "Dùng ở:",
+    "notUsed": "Chưa dùng cảnh nào",
     "empty": "Chưa có nhân vật/bối cảnh nào. Nhân vật: nhắc bằng @key trong prompt. Bối cảnh: thêm ảnh rồi gán cho các cảnh.",
     "issue": {
       "missingImage": "@{{key}} được dùng nhưng chưa có ảnh.",
@@ -164,6 +166,26 @@
     "aspectNeedsCrop": "Tỷ lệ {{aspect}} phải crop sau (provider không sinh trực tiếp).",
     "noScenes": "Chưa có phân cảnh nào.",
     "noJobs": "Không có job nào để chạy (số lượng đang là 0)."
+  },
+  "info": {
+    "title": "Thông tin tạo video",
+    "view": "Xem thông tin",
+    "rawPrompt": "Prompt của cảnh",
+    "provider": "Provider",
+    "model": "Model",
+    "speed": "Tốc độ",
+    "aspect": "Tỷ lệ",
+    "duration": "Độ dài",
+    "seconds": "{{n}} giây",
+    "audio": "Audio",
+    "on": "Bật",
+    "off": "Tắt",
+    "seed": "Seed",
+    "randomSeed": "Ngẫu nhiên",
+    "count": "Số video",
+    "assets": "Nhân vật / Bối cảnh",
+    "noAssets": "Không có",
+    "refImages": "{{n}} ảnh"
   },
   "error": {
     "network": "Lỗi mạng — sẽ tự thử lại.",

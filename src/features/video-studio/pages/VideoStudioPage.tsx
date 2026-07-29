@@ -143,11 +143,12 @@ export function VideoStudioPage() {
     [scenes, keySignature],
   );
 
-  // Usage per asset id = how many scenes reference it (via @key OR assignment).
-  const usage = useMemo(() => {
-    const u: Record<string, number> = {};
-    for (const s of viewScenes) for (const a of sceneAssets(s, assets)) u[a.id] = (u[a.id] ?? 0) + 1;
-    return u;
+  // Scene ORDERS each asset is used in (via @key OR assignment) — so the panel
+  // can show WHICH scenes, not just a count.
+  const usedScenes = useMemo(() => {
+    const m: Record<string, number[]> = {};
+    for (const s of viewScenes) for (const a of sceneAssets(s, assets)) (m[a.id] ??= []).push(s.order);
+    return m;
   }, [viewScenes, assets]);
 
   // assetId → scene ids it is assigned to (for the AssetPanel multi-select value).
@@ -496,6 +497,7 @@ export function VideoStudioPage() {
             scenes={viewScenes}
             jobs={run.jobs}
             config={config}
+            assets={assets}
             aspectOptions={aspectOptions}
             onGenerate={run.runScene}
             onRetry={run.retry}
@@ -535,7 +537,7 @@ export function VideoStudioPage() {
       >
         <AssetPanel
           assets={assets}
-          usage={usage}
+          usedScenes={usedScenes}
           issues={issues}
           scenes={viewScenes.map((s) => ({ id: s.id, order: s.order }))}
           assignedByAsset={assignedByAsset}

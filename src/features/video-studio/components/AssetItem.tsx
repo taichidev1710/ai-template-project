@@ -6,7 +6,8 @@ import type { Asset, AssetKind } from '@/domain/video';
 
 interface AssetItemProps {
   asset: Asset;
-  usedCount: number;
+  /** Scene ORDERS this asset is used in (via @key in prompt OR assignment). */
+  usedSceneOrders: number[];
   scenes: { id: string; order: number }[];
   /** Scene ids this asset is currently assigned to (from each scene's assetIds). */
   assignedSceneIds: string[];
@@ -19,7 +20,7 @@ interface AssetItemProps {
  * scenes it is applied to (spec §2.3, §9). */
 export function AssetItem({
   asset,
-  usedCount,
+  usedSceneOrders,
   scenes,
   assignedSceneIds,
   onChange,
@@ -94,29 +95,39 @@ export function AssetItem({
             <div>{t('character.upload')}</div>
           </div>
         </Upload>
-        <Tag color={usedCount > 0 ? 'blue' : 'default'}>
-          {usedCount > 0 ? t('character.usedIn', { n: usedCount }) : t('character.unused')}
-        </Tag>
+        {usedSceneOrders.length > 0 ? (
+          <span className="flex flex-wrap items-center gap-1">
+            <Typography.Text type="secondary" className="text-xs">
+              {t('asset.usedScenes')}
+            </Typography.Text>
+            {usedSceneOrders.map((o) => (
+              <Tag key={o} color="blue" variant="filled" className="!m-0">
+                #{o}
+              </Tag>
+            ))}
+          </span>
+        ) : (
+          <Tag>{t('asset.notUsed')}</Tag>
+        )}
       </Space>
 
-      {/* Settings / styles are applied to a group of scenes; characters use @key. */}
-      {asset.kind !== 'character' && (
-        <div className="mt-2">
-          <Typography.Text type="secondary" className="mb-1 block text-xs">
-            {t('asset.assignScenes')}
-          </Typography.Text>
-          <Select
-            mode="multiple"
-            size="small"
-            className="w-full"
-            placeholder={t('asset.assignPlaceholder')}
-            value={assignedSceneIds}
-            onChange={onAssignScenes}
-            options={scenes.map((s) => ({ value: s.id, label: `#${s.order}` }))}
-            disabled={scenes.length === 0}
-          />
-        </div>
-      )}
+      {/* Attach this asset to scenes directly (works for any kind — characters can
+          be @key'd in the prompt too, spec decision). */}
+      <div className="mt-2">
+        <Typography.Text type="secondary" className="mb-1 block text-xs">
+          {t('asset.assignScenes')}
+        </Typography.Text>
+        <Select
+          mode="multiple"
+          size="small"
+          className="w-full"
+          placeholder={t('asset.assignPlaceholder')}
+          value={assignedSceneIds}
+          onChange={onAssignScenes}
+          options={scenes.map((s) => ({ value: s.id, label: `#${s.order}` }))}
+          disabled={scenes.length === 0}
+        />
+      </div>
     </div>
   );
 }

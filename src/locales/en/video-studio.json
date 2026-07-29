@@ -111,6 +111,8 @@
     "assignScenes": "Apply to scenes",
     "assignPlaceholder": "Pick scenes…",
     "assignedChip": "Setting",
+    "usedScenes": "Used in:",
+    "notUsed": "Not used in any scene",
     "empty": "No characters/settings yet. Character: mention it as @key in a prompt. Setting: add an image then assign it to scenes.",
     "issue": {
       "missingImage": "@{{key}} is used but has no image.",
@@ -164,6 +166,26 @@
     "aspectNeedsCrop": "{{aspect}} must be cropped afterwards (the provider can't render it directly).",
     "noScenes": "No scenes yet.",
     "noJobs": "No jobs to run (counts are 0)."
+  },
+  "info": {
+    "title": "Generation info",
+    "view": "View info",
+    "rawPrompt": "Scene prompt",
+    "provider": "Provider",
+    "model": "Model",
+    "speed": "Speed",
+    "aspect": "Aspect",
+    "duration": "Duration",
+    "seconds": "{{n}}s",
+    "audio": "Audio",
+    "on": "On",
+    "off": "Off",
+    "seed": "Seed",
+    "randomSeed": "Random",
+    "count": "Videos",
+    "assets": "Characters / Settings",
+    "noAssets": "None",
+    "refImages": "{{n}} img"
   },
   "error": {
     "network": "Network error — will auto-retry.",

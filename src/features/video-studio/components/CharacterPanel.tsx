@@ -26,8 +26,7 @@ export function CharacterPanel({ characters, usage, issues, onAdd, onChange, onR
 
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between">
-        <Typography.Text strong>{t('character.title')}</Typography.Text>
+      <div className="mb-3 flex justify-end">
         <Button size="small" icon={<UserAddOutlined />} onClick={onAdd}>
           {t('character.add')}
         </Button>

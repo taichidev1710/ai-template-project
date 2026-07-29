@@ -1,11 +1,5 @@
 import { Card, Tag, Progress, Button, Typography, Space, Tooltip } from 'antd';
-import {
-  VideoCameraAddOutlined,
-  ReloadOutlined,
-  StopOutlined,
-  CopyOutlined,
-  InfoCircleOutlined,
-} from '@ant-design/icons';
+import { VideoCameraAddOutlined, ReloadOutlined, StopOutlined, CopyOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import type { Job, JobStatus, Scene } from '@/domain/video';
 import { jobKey } from '../hooks/use-video-run';
@@ -53,44 +47,57 @@ export function VideoCard({ scene, count, jobs, onGenerate, onRetry, onCancel, o
           const key = jobKey(scene.id, i);
           const status = job?.status;
           return (
-            <div key={i} className="flex items-center gap-2">
-              <Typography.Text type="secondary" className="text-xs" style={{ minWidth: 68 }}>
+            <div key={i} className="flex min-w-0 items-center gap-2">
+              <Typography.Text type="secondary" className="shrink-0 text-xs" style={{ width: 62 }}>
                 {t('grid.variant', { n: i + 1 })}
               </Typography.Text>
 
               {status ? (
-                <Tag color={STATUS_COLOR[status]} className="!m-0">
+                <Tag color={STATUS_COLOR[status]} className="!m-0 shrink-0">
                   {t(`grid.status.${status}`)}
                 </Tag>
               ) : (
-                <Tag className="!m-0">—</Tag>
+                <Tag className="!m-0 shrink-0">—</Tag>
               )}
 
               {status === 'processing' && (
-                <Progress percent={job?.progress ?? 0} size="small" className="!m-0 flex-1" />
+                <Progress percent={job?.progress ?? 0} size="small" className="!m-0 min-w-0 flex-1" />
               )}
 
               {status === 'success' && job?.outputPath && (
-                <Tooltip title={job.outputPath}>
+                <>
+                  <Tooltip title={job.outputPath}>
+                    <Typography.Text type="secondary" className="min-w-0 flex-1 truncate text-xs">
+                      {job.outputPath}
+                    </Typography.Text>
+                  </Tooltip>
                   <Button
                     type="text"
                     size="small"
+                    className="shrink-0"
                     icon={<CopyOutlined />}
                     onClick={() => onCopyPath(job.outputPath!)}
-                  >
-                    <span className="max-w-[140px] truncate text-xs">{job.outputPath}</span>
-                  </Button>
-                </Tooltip>
+                    aria-label={t('grid.copyPath')}
+                  />
+                </>
               )}
 
               {status === 'error' && (
                 <>
                   {job?.error && (
                     <Tooltip title={t(`error.${job.error.code}`)}>
-                      <InfoCircleOutlined className="text-xs" />
+                      <Typography.Text type="danger" className="min-w-0 flex-1 truncate text-xs">
+                        {t(`error.${job.error.code}`)}
+                      </Typography.Text>
                     </Tooltip>
                   )}
-                  <Button type="text" size="small" icon={<ReloadOutlined />} onClick={() => onRetry(key)}>
+                  <Button
+                    type="text"
+                    size="small"
+                    className="shrink-0"
+                    icon={<ReloadOutlined />}
+                    onClick={() => onRetry(key)}
+                  >
                     {t('grid.retry')}
                   </Button>
                 </>
@@ -101,6 +108,7 @@ export function VideoCard({ scene, count, jobs, onGenerate, onRetry, onCancel, o
                   type="text"
                   size="small"
                   danger
+                  className="shrink-0"
                   icon={<StopOutlined />}
                   onClick={() => onCancel(key)}
                   aria-label={t('grid.cancel')}

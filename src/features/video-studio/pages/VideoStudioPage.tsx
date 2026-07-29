@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { App, Alert, Button, Space, Typography } from 'antd';
-import { ThunderboltOutlined, StopOutlined } from '@ant-design/icons';
+import { App, Alert, Badge, Button, Modal, Space, Typography } from 'antd';
+import { ThunderboltOutlined, StopOutlined, SettingOutlined, TeamOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { arrayMove } from '@dnd-kit/sortable';
 import {
@@ -91,6 +91,8 @@ export function VideoStudioPage() {
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [preset, setPreset] = useState<PlatformPreset | null>(null);
+  const [configOpen, setConfigOpen] = useState(false);
+  const [charsOpen, setCharsOpen] = useState(false);
 
   // --- Project persistence (P2): MongoDB via backend, server state → Query ---
   const [projectName, setProjectName] = useState('');
@@ -319,7 +321,15 @@ export function VideoStudioPage() {
         <Alert type="info" showIcon className="mb-4" title={t('mockBanner')} />
       )}
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
+        <Button icon={<SettingOutlined />} onClick={() => setConfigOpen(true)}>
+          {t('config.title')}
+        </Button>
+        <Badge count={issues.length} size="small">
+          <Button icon={<TeamOutlined />} onClick={() => setCharsOpen(true)}>
+            {t('character.title')} ({characters.length})
+          </Button>
+        </Badge>
         <Button
           type="primary"
           size="large"
@@ -358,21 +368,9 @@ export function VideoStudioPage() {
         />
       )}
 
-      {/* Three columns */}
+      {/* Two columns: prompt/scenes (left) + preview (right, wider) */}
       <div className="flex flex-col gap-4 xl:min-h-0 xl:flex-row">
-        <aside className="rounded-app bg-surface p-4 xl:w-72 xl:shrink-0">
-          <ConfigPanel
-            config={config}
-            caps={caps}
-            providers={PROVIDERS}
-            preset={preset}
-            onChange={patchConfig}
-            onProviderChange={handleProviderChange}
-            onPresetChange={setPreset}
-          />
-        </aside>
-
-        <section className="flex flex-col gap-4 rounded-app bg-surface p-4 xl:flex-1 xl:min-w-0">
+        <section className="flex min-w-0 flex-col gap-4 rounded-app bg-surface p-3 sm:p-4 xl:w-[40%] xl:shrink-0">
           <Typography.Title level={5} className="!mb-0">
             {t('prompt.title')}
           </Typography.Title>
@@ -400,17 +398,9 @@ export function VideoStudioPage() {
             onRemove={removeScene}
             onGenerate={run.runScene}
           />
-          <CharacterPanel
-            characters={characters}
-            usage={usage}
-            issues={issues}
-            onAdd={addCharacter}
-            onChange={patchCharacter}
-            onRemove={removeCharacter}
-          />
         </section>
 
-        <section className="rounded-app bg-surface p-4 xl:flex-1 xl:min-w-0">
+        <section className="min-w-0 flex-1 rounded-app bg-surface p-3 sm:p-4">
           <Typography.Title level={5} className="!mb-3">
             {t('grid.title')}
           </Typography.Title>
@@ -425,6 +415,43 @@ export function VideoStudioPage() {
           />
         </section>
       </div>
+
+      <Modal
+        open={configOpen}
+        onCancel={() => setConfigOpen(false)}
+        footer={null}
+        title={t('config.title')}
+        width={440}
+        styles={{ body: { maxHeight: '72vh', overflowY: 'auto' } }}
+      >
+        <ConfigPanel
+          config={config}
+          caps={caps}
+          providers={PROVIDERS}
+          preset={preset}
+          onChange={patchConfig}
+          onProviderChange={handleProviderChange}
+          onPresetChange={setPreset}
+        />
+      </Modal>
+
+      <Modal
+        open={charsOpen}
+        onCancel={() => setCharsOpen(false)}
+        footer={null}
+        title={t('character.title')}
+        width={560}
+        styles={{ body: { maxHeight: '72vh', overflowY: 'auto' } }}
+      >
+        <CharacterPanel
+          characters={characters}
+          usage={usage}
+          issues={issues}
+          onAdd={addCharacter}
+          onChange={patchCharacter}
+          onRemove={removeCharacter}
+        />
+      </Modal>
     </div>
   );
 }

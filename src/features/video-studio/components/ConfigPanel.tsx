@@ -97,10 +97,6 @@ export function ConfigPanel({
 
   return (
     <div>
-      <Typography.Title level={5} className="!mb-4">
-        {t('config.title')}
-      </Typography.Title>
-
       <Field label={t('config.provider')}>
         <Select
           className="w-full"

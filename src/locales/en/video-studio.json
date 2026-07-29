@@ -2,6 +2,21 @@
   "title": "Video Studio",
   "subtitle": "Batch-generate video with AI (Veo 3.1, Nano Banana…)",
   "mockBanner": "Running on the Mock provider — no real API calls, no cost. Use it to finish the flow before wiring Veo.",
+  "project": {
+    "name": "Project name",
+    "namePlaceholder": "Name this batch…",
+    "save": "Save",
+    "new": "New",
+    "open": "Open a saved project",
+    "openPlaceholder": "Pick a project…",
+    "saved": "Project saved",
+    "deleted": "Project deleted",
+    "unsaved": "Unsaved",
+    "nameRequired": "Name the project before saving.",
+    "imagesNote": "Note: character images are NOT stored on the server — reopening elsewhere needs re-upload.",
+    "confirmNewTitle": "Start a new batch?",
+    "confirmNewBody": "Unsaved changes will be lost."
+  },
   "config": {
     "title": "Configuration",
     "provider": "Provider",

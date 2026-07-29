@@ -2,6 +2,21 @@
   "title": "Xưởng video",
   "subtitle": "Tạo video hàng loạt từ AI (Veo 3.1, Nano Banana…)",
   "mockBanner": "Đang chạy trên provider giả lập (Mock) — không gọi API thật, không tốn phí. Dùng để hoàn thiện luồng trước khi nối Veo.",
+  "project": {
+    "name": "Tên project",
+    "namePlaceholder": "Đặt tên mẻ…",
+    "save": "Lưu",
+    "new": "Mới",
+    "open": "Mở project đã lưu",
+    "openPlaceholder": "Chọn project…",
+    "saved": "Đã lưu project",
+    "deleted": "Đã xoá project",
+    "unsaved": "Chưa lưu",
+    "nameRequired": "Đặt tên project trước khi lưu.",
+    "imagesNote": "Lưu ý: ảnh nhân vật KHÔNG lưu trên máy chủ — mở lại ở máy khác cần tải ảnh lại.",
+    "confirmNewTitle": "Tạo mẻ mới?",
+    "confirmNewBody": "Thay đổi chưa lưu sẽ mất."
+  },
   "config": {
     "title": "Cấu hình",
     "provider": "Provider",

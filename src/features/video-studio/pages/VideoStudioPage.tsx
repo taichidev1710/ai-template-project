@@ -23,7 +23,10 @@ import { PromptEditor } from '../components/PromptEditor';
 import { SceneList } from '../components/SceneList';
 import { CharacterPanel } from '../components/CharacterPanel';
 import { VideoGrid } from '../components/VideoGrid';
+import { ProjectBar } from '../components/ProjectBar';
 import { useVideoRun } from '../hooks/use-video-run';
+import { useVideoProjects, useVideoProjectMutations } from '../hooks/use-video-projects';
+import type { VideoProjectDto, VideoProjectInput } from '../api/video-projects-api';
 import { formatUsd } from '../lib';
 import { initialConfig, makeCharacter, makeScene, newId } from '../types';
 
@@ -38,6 +41,38 @@ const WARNING_KEY: Record<RunPlanWarningCode, string> = {
 
 /** Re-number scenes 1..n after any insert/remove/reorder. */
 const reindex = (scenes: Scene[]): Scene[] => scenes.map((s, i) => ({ ...s, order: i + 1 }));
+
+/**
+ * Normalise the draft into the server's persisted shape (spec §12.1): drops
+ * runtime jobs and character image bytes. Used both to build the save payload and
+ * to compute a stable snapshot for the dirty check.
+ */
+function toInput(
+  name: string,
+  sourcePrompt: string,
+  config: RunConfig,
+  scenes: Scene[],
+  characters: Character[],
+): VideoProjectInput {
+  return {
+    name: name.trim(),
+    sourcePrompt,
+    runConfig: config,
+    scenes: scenes.map((s) => ({
+      id: s.id,
+      order: s.order,
+      text: s.text,
+      ...(s.aspectOverride ? { aspectOverride: s.aspectOverride } : {}),
+      ...(s.countOverride !== undefined ? { countOverride: s.countOverride } : {}),
+    })),
+    characters: characters.map((c) => ({
+      id: c.id,
+      key: c.key,
+      displayName: c.displayName,
+      color: c.color,
+    })),
+  };
+}
 
 /**
  * Video Studio — the P1 container (spec §13). It OWNS the working draft (prompt,
@@ -56,6 +91,15 @@ export function VideoStudioPage() {
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [preset, setPreset] = useState<PlatformPreset | null>(null);
+
+  // --- Project persistence (P2): MongoDB via backend, server state → Query ---
+  const [projectName, setProjectName] = useState('');
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [savedSnapshot, setSavedSnapshot] = useState<string>(() =>
+    JSON.stringify(toInput('', '', initialConfig(), [], [])),
+  );
+  const projectsQuery = useVideoProjects({ limit: 100, sort: '-updatedAt' });
+  const projectMutations = useVideoProjectMutations();
 
   const caps = getCapabilities(config.providerId);
   const characterKeys = characters.map((c) => c.key).filter(Boolean);
@@ -84,6 +128,94 @@ export function VideoStudioPage() {
   const plan = useMemo(() => buildRunPlan(viewScenes, config), [viewScenes, config]);
 
   const run = useVideoRun(viewScenes, config);
+
+  /* ---- project persistence ---- */
+  const currentInput = useMemo(
+    () => toInput(projectName, sourcePrompt, config, scenes, characters),
+    [projectName, sourcePrompt, config, scenes, characters],
+  );
+  const currentSnapshot = JSON.stringify(currentInput);
+  const dirty = currentSnapshot !== savedSnapshot;
+  const savingProject = projectMutations.create.isPending || projectMutations.update.isPending;
+
+  const applyProject = (dto: VideoProjectDto) => {
+    const loadedScenes: Scene[] = dto.scenes.map((s) => ({
+      id: s.id,
+      order: s.order,
+      text: s.text,
+      aspectOverride: s.aspectOverride,
+      countOverride: s.countOverride,
+      characterKeys: [],
+      jobs: [],
+    }));
+    const loadedChars: Character[] = dto.characters.map((c) => ({
+      id: c.id,
+      key: c.key,
+      displayName: c.displayName,
+      color: c.color,
+      images: [],
+    }));
+    setProjectName(dto.name);
+    setSourcePrompt(dto.sourcePrompt);
+    setConfig(dto.runConfig);
+    setScenes(loadedScenes);
+    setCharacters(loadedChars);
+    setCurrentProjectId(dto.id);
+    setPreset(null);
+    run.reset();
+    setSavedSnapshot(JSON.stringify(toInput(dto.name, dto.sourcePrompt, dto.runConfig, loadedScenes, loadedChars)));
+  };
+
+  const openProject = (id: string) => {
+    const dto = projectsQuery.data?.items.find((p) => p.id === id);
+    if (dto) applyProject(dto);
+  };
+
+  const saveProject = () => {
+    if (!projectName.trim()) {
+      message.warning(t('project.nameRequired'));
+      return;
+    }
+    const snap = currentSnapshot;
+    if (currentProjectId) {
+      projectMutations.update.mutate(
+        { id: currentProjectId, input: currentInput },
+        { onSuccess: () => setSavedSnapshot(snap) },
+      );
+    } else {
+      projectMutations.create.mutate(currentInput, {
+        onSuccess: (dto) => {
+          setCurrentProjectId(dto.id);
+          setSavedSnapshot(snap);
+        },
+      });
+    }
+  };
+
+  const newProject = () => {
+    const doNew = () => {
+      const cfg = initialConfig();
+      setProjectName('');
+      setSourcePrompt('');
+      setScenes([]);
+      setCharacters([]);
+      setConfig(cfg);
+      setCurrentProjectId(null);
+      setPreset(null);
+      run.reset();
+      setSavedSnapshot(JSON.stringify(toInput('', '', cfg, [], [])));
+    };
+    if (dirty) {
+      modal.confirm({
+        title: t('project.confirmNewTitle'),
+        content: t('project.confirmNewBody'),
+        okText: t('project.new'),
+        onOk: doNew,
+      });
+    } else {
+      doNew();
+    }
+  };
 
   /* ---- config ---- */
   const patchConfig = (patch: Partial<RunConfig>) => setConfig((c) => ({ ...c, ...patch }));
@@ -169,6 +301,19 @@ export function VideoStudioPage() {
         </Typography.Title>
         <Typography.Text type="secondary">{t('subtitle')}</Typography.Text>
       </div>
+
+      <ProjectBar
+        name={projectName}
+        currentId={currentProjectId}
+        dirty={dirty}
+        saving={savingProject}
+        loadingList={projectsQuery.isLoading}
+        projects={(projectsQuery.data?.items ?? []).map((p) => ({ id: p.id, name: p.name }))}
+        onNameChange={setProjectName}
+        onSave={saveProject}
+        onNew={newProject}
+        onOpen={openProject}
+      />
 
       {config.providerId === 'mock' && (
         <Alert type="info" showIcon className="mb-4" title={t('mockBanner')} />

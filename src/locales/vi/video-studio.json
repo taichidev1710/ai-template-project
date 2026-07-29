@@ -101,6 +101,23 @@
       "unknownKey": "@{{key}} được nhắc nhưng chưa khai báo nhân vật."
     }
   },
+  "asset": {
+    "title": "Nhân vật & Bối cảnh",
+    "addCharacter": "Thêm nhân vật",
+    "addSetting": "Thêm bối cảnh",
+    "kindCharacter": "Nhân vật",
+    "kindSetting": "Bối cảnh",
+    "kindStyle": "Phong cách",
+    "assignScenes": "Áp dụng cho cảnh",
+    "assignPlaceholder": "Chọn cảnh…",
+    "assignedChip": "Bối cảnh",
+    "empty": "Chưa có nhân vật/bối cảnh nào. Nhân vật: nhắc bằng @key trong prompt. Bối cảnh: thêm ảnh rồi gán cho các cảnh.",
+    "issue": {
+      "missingImage": "@{{key}} được dùng nhưng chưa có ảnh.",
+      "unusedAsset": "@{{key}} có ảnh nhưng chưa cảnh nào dùng.",
+      "unknownKey": "@{{key}} được nhắc nhưng chưa khai báo."
+    }
+  },
   "grid": {
     "title": "Khung xem",
     "empty": "Chưa có gì để hiện. Thêm phân cảnh và bấm “Tạo video”.",

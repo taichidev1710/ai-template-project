@@ -6,7 +6,7 @@
  * MongoDB via TanStack Query) arrives in P2 (spec §12.1). The domain types are
  * the source of truth; this file only adds id helpers and empty-value factories.
  */
-import type { Character, RunConfig, Scene } from '@/domain/video';
+import type { Asset, AssetKind, RunConfig, Scene } from '@/domain/video';
 import { defaultRunConfig } from '@/domain/video';
 
 /** Client-only id generator for P1 (the backend will own ids from P2). */
@@ -14,7 +14,7 @@ export function newId(prefix: string): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-/** Default highlight colours offered to new characters — content, not theme (spec §13.5). */
+/** Default highlight colours offered to new assets — content, not theme (spec §13.5). */
 export const CHARACTER_COLORS = [
   '#2563eb',
   '#dc2626',
@@ -31,10 +31,11 @@ export function makeScene(order: number, text = ''): Scene {
   return { id: newId('sc'), order, text, characterKeys: [], jobs: [] };
 }
 
-/** A blank character, colour chosen round-robin from the palette. */
-export function makeCharacter(index: number): Character {
+/** A blank asset of the given kind, colour chosen round-robin from the palette. */
+export function makeAsset(kind: AssetKind, index: number): Asset {
   return {
-    id: newId('ch'),
+    id: newId('as'),
+    kind,
     key: '',
     displayName: '',
     images: [],
@@ -52,6 +53,6 @@ export interface StudioDraft {
   sourcePrompt: string;
   useMarkers: boolean;
   scenes: Scene[];
-  characters: Character[];
+  assets: Asset[];
   config: RunConfig;
 }

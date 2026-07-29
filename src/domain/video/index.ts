@@ -43,6 +43,9 @@ export type {
   BuiltScenePrompt,
 } from './characterTagger';
 
+export { sceneAssets, checkAssets } from './assets';
+export type { AssetScene, AssetIssue, AssetIssueCode } from './assets';
+
 export { estimateRunCost, estimateJobCost } from './costEstimator';
 export type { CostBreakdown } from './costEstimator';
 

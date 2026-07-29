@@ -7,12 +7,14 @@ import {
   PROVIDERS,
   buildRunPlan,
   characterKeysInText,
-  checkCharacters,
+  checkAssets,
+  sceneAssets,
   defaultRunConfig,
   estimateRunCost,
   getCapabilities,
   reparseScenes,
-  type Character,
+  type Asset,
+  type AssetKind,
   type PlatformPreset,
   type RunConfig,
   type RunPlanWarningCode,
@@ -21,14 +23,14 @@ import {
 import { ConfigPanel } from '../components/ConfigPanel';
 import { PromptEditor } from '../components/PromptEditor';
 import { SceneList } from '../components/SceneList';
-import { CharacterPanel } from '../components/CharacterPanel';
+import { AssetPanel } from '../components/AssetPanel';
 import { VideoGrid } from '../components/VideoGrid';
 import { ProjectBar } from '../components/ProjectBar';
 import { useVideoRun } from '../hooks/use-video-run';
 import { useVideoProjects, useVideoProjectMutations } from '../hooks/use-video-projects';
 import type { VideoProjectDto, VideoProjectInput } from '../api/video-projects-api';
 import { formatUsd } from '../lib';
-import { initialConfig, makeCharacter, makeScene, newId } from '../types';
+import { initialConfig, makeAsset, makeScene, newId } from '../types';
 
 const WARNING_KEY: Record<RunPlanWarningCode, string> = {
   'delay-below-rpm': 'warning.delayBelowRpm',
@@ -52,7 +54,7 @@ function toInput(
   sourcePrompt: string,
   config: RunConfig,
   scenes: Scene[],
-  characters: Character[],
+  assets: Asset[],
 ): VideoProjectInput {
   return {
     name: name.trim(),
@@ -64,12 +66,15 @@ function toInput(
       text: s.text,
       ...(s.aspectOverride ? { aspectOverride: s.aspectOverride } : {}),
       ...(s.countOverride !== undefined ? { countOverride: s.countOverride } : {}),
+      ...(s.assetIds && s.assetIds.length ? { assetIds: s.assetIds } : {}),
     })),
-    characters: characters.map((c) => ({
-      id: c.id,
-      key: c.key,
-      displayName: c.displayName,
-      color: c.color,
+    // Persisted field name stays `characters`; items are assets of any kind.
+    characters: assets.map((a) => ({
+      id: a.id,
+      kind: a.kind,
+      key: a.key,
+      displayName: a.displayName,
+      color: a.color,
     })),
   };
 }
@@ -89,7 +94,7 @@ export function VideoStudioPage() {
   const [sourcePrompt, setSourcePrompt] = useState('');
   const [useMarkers, setUseMarkers] = useState(false);
   const [scenes, setScenes] = useState<Scene[]>([]);
-  const [characters, setCharacters] = useState<Character[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
   const [preset, setPreset] = useState<PlatformPreset | null>(null);
   const [configOpen, setConfigOpen] = useState(false);
   const [charsOpen, setCharsOpen] = useState(false);
@@ -104,27 +109,32 @@ export function VideoStudioPage() {
   const projectMutations = useVideoProjectMutations();
 
   const caps = getCapabilities(config.providerId);
-  const characterKeys = characters.map((c) => c.key).filter(Boolean);
-  const keySignature = characterKeys.join('|');
+  const assetKeys = assets.map((a) => a.key).filter(Boolean);
+  const keySignature = assetKeys.join('|');
 
-  // Scenes enriched with the character keys detected in their text (derived, not
+  // Scenes enriched with the asset keys detected in their text (derived, not
   // stored — recomputed whenever a scene's text or the roster changes).
   const viewScenes = useMemo(
-    () => scenes.map((s) => ({ ...s, characterKeys: characterKeysInText(s.text, characterKeys) })),
+    () => scenes.map((s) => ({ ...s, characterKeys: characterKeysInText(s.text, assetKeys) })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [scenes, keySignature],
   );
 
+  // Usage per asset id = how many scenes reference it (via @key OR assignment).
   const usage = useMemo(() => {
     const u: Record<string, number> = {};
-    for (const s of viewScenes) for (const k of s.characterKeys) u[k] = (u[k] ?? 0) + 1;
+    for (const s of viewScenes) for (const a of sceneAssets(s, assets)) u[a.id] = (u[a.id] ?? 0) + 1;
     return u;
-  }, [viewScenes]);
+  }, [viewScenes, assets]);
 
-  const issues = useMemo(
-    () => checkCharacters(characters, viewScenes.map((s) => s.text)),
-    [characters, viewScenes],
-  );
+  // assetId → scene ids it is assigned to (for the AssetPanel multi-select value).
+  const assignedByAsset = useMemo(() => {
+    const m: Record<string, string[]> = {};
+    for (const s of scenes) for (const id of s.assetIds ?? []) (m[id] ??= []).push(s.id);
+    return m;
+  }, [scenes]);
+
+  const issues = useMemo(() => checkAssets(assets, viewScenes), [assets, viewScenes]);
 
   const cost = useMemo(() => estimateRunCost(viewScenes, config), [viewScenes, config]);
   const plan = useMemo(() => buildRunPlan(viewScenes, config), [viewScenes, config]);
@@ -133,8 +143,8 @@ export function VideoStudioPage() {
 
   /* ---- project persistence ---- */
   const currentInput = useMemo(
-    () => toInput(projectName, sourcePrompt, config, scenes, characters),
-    [projectName, sourcePrompt, config, scenes, characters],
+    () => toInput(projectName, sourcePrompt, config, scenes, assets),
+    [projectName, sourcePrompt, config, scenes, assets],
   );
   const currentSnapshot = JSON.stringify(currentInput);
   const dirty = currentSnapshot !== savedSnapshot;
@@ -147,11 +157,14 @@ export function VideoStudioPage() {
       text: s.text,
       aspectOverride: s.aspectOverride,
       countOverride: s.countOverride,
+      assetIds: s.assetIds ?? [],
       characterKeys: [],
       jobs: [],
     }));
-    const loadedChars: Character[] = dto.characters.map((c) => ({
+    // Legacy projects saved before kinds default to `character`.
+    const loadedAssets: Asset[] = dto.characters.map((c) => ({
       id: c.id,
+      kind: c.kind ?? 'character',
       key: c.key,
       displayName: c.displayName,
       color: c.color,
@@ -161,11 +174,11 @@ export function VideoStudioPage() {
     setSourcePrompt(dto.sourcePrompt);
     setConfig(dto.runConfig);
     setScenes(loadedScenes);
-    setCharacters(loadedChars);
+    setAssets(loadedAssets);
     setCurrentProjectId(dto.id);
     setPreset(null);
     run.reset();
-    setSavedSnapshot(JSON.stringify(toInput(dto.name, dto.sourcePrompt, dto.runConfig, loadedScenes, loadedChars)));
+    setSavedSnapshot(JSON.stringify(toInput(dto.name, dto.sourcePrompt, dto.runConfig, loadedScenes, loadedAssets)));
   };
 
   const openProject = (id: string) => {
@@ -200,7 +213,7 @@ export function VideoStudioPage() {
       setProjectName('');
       setSourcePrompt('');
       setScenes([]);
-      setCharacters([]);
+      setAssets([]);
       setConfig(cfg);
       setCurrentProjectId(null);
       setPreset(null);
@@ -261,11 +274,31 @@ export function VideoStudioPage() {
       return reindex(arrayMove(list, from, to));
     });
 
-  /* ---- characters ---- */
-  const addCharacter = () => setCharacters((list) => [...list, makeCharacter(list.length)]);
-  const patchCharacter = (id: string, patch: Partial<(typeof characters)[number]>) =>
-    setCharacters((list) => list.map((c) => (c.id === id ? { ...c, ...patch } : c)));
-  const removeCharacter = (id: string) => setCharacters((list) => list.filter((c) => c.id !== id));
+  /* ---- assets (characters / settings / styles) ---- */
+  const addAsset = (kind: AssetKind) => setAssets((list) => [...list, makeAsset(kind, list.length)]);
+  const patchAsset = (id: string, patch: Partial<Asset>) =>
+    setAssets((list) => list.map((a) => (a.id === id ? { ...a, ...patch } : a)));
+  const removeAsset = (id: string) => {
+    setAssets((list) => list.filter((a) => a.id !== id));
+    // Drop the asset from any scene it was assigned to.
+    setScenes((list) =>
+      list.map((s) =>
+        s.assetIds?.includes(id) ? { ...s, assetIds: s.assetIds.filter((x) => x !== id) } : s,
+      ),
+    );
+  };
+  /** Assign (or unassign) one asset across a set of scenes — writes scene.assetIds. */
+  const assignAssetToScenes = (assetId: string, sceneIds: string[]) =>
+    setScenes((list) =>
+      list.map((s) => {
+        const shouldHave = sceneIds.includes(s.id);
+        const current = s.assetIds ?? [];
+        const has = current.includes(assetId);
+        if (shouldHave === has) return s;
+        const next = shouldHave ? [...current, assetId] : current.filter((x) => x !== assetId);
+        return { ...s, assetIds: next };
+      }),
+    );
 
   /* ---- run ---- */
   const copyPath = (path: string) => {
@@ -327,7 +360,7 @@ export function VideoStudioPage() {
         </Button>
         <Badge count={issues.length} size="small">
           <Button icon={<TeamOutlined />} onClick={() => setCharsOpen(true)}>
-            {t('character.title')} ({characters.length})
+            {t('asset.title')} ({assets.length})
           </Button>
         </Badge>
         <Button
@@ -390,7 +423,7 @@ export function VideoStudioPage() {
           </div>
           <SceneList
             scenes={viewScenes}
-            characters={characters}
+            characters={assets}
             aspectOptions={aspectOptions}
             defaultAspect={config.aspect}
             defaultCount={config.count}
@@ -443,17 +476,20 @@ export function VideoStudioPage() {
         open={charsOpen}
         onCancel={() => setCharsOpen(false)}
         footer={null}
-        title={t('character.title')}
-        width={560}
+        title={t('asset.title')}
+        width={600}
         styles={{ body: { maxHeight: '72vh', overflowY: 'auto' } }}
       >
-        <CharacterPanel
-          characters={characters}
+        <AssetPanel
+          assets={assets}
           usage={usage}
           issues={issues}
-          onAdd={addCharacter}
-          onChange={patchCharacter}
-          onRemove={removeCharacter}
+          scenes={viewScenes.map((s) => ({ id: s.id, order: s.order }))}
+          assignedByAsset={assignedByAsset}
+          onAdd={addAsset}
+          onChange={patchAsset}
+          onRemove={removeAsset}
+          onAssignScenes={assignAssetToScenes}
         />
       </Modal>
     </div>

@@ -101,6 +101,23 @@
       "unknownKey": "@{{key}} is mentioned but no character is defined."
     }
   },
+  "asset": {
+    "title": "Characters & Settings",
+    "addCharacter": "Add character",
+    "addSetting": "Add setting",
+    "kindCharacter": "Character",
+    "kindSetting": "Setting",
+    "kindStyle": "Style",
+    "assignScenes": "Apply to scenes",
+    "assignPlaceholder": "Pick scenes…",
+    "assignedChip": "Setting",
+    "empty": "No characters/settings yet. Character: mention it as @key in a prompt. Setting: add an image then assign it to scenes.",
+    "issue": {
+      "missingImage": "@{{key}} is used but has no image.",
+      "unusedAsset": "@{{key}} has an image but no scene uses it.",
+      "unknownKey": "@{{key}} is mentioned but not defined."
+    }
+  },
   "grid": {
     "title": "Preview",
     "empty": "Nothing to show yet. Add scenes and press “Generate”.",

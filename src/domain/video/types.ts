@@ -152,17 +152,34 @@ export type PlatformPreset =
  */
 export type CharacterSyncLevel = 1 | 2 | 3;
 
-/** An uploaded character used to keep a subject consistent across clips (spec §9). */
-export interface Character {
+/**
+ * What an asset represents (spec §2.3: Veo "ingredients" take reference images in
+ * several ROLES). `character` = a person/subject, usually attached by an inline
+ * `@key`; `setting` = a location/background, usually ASSIGNED to a group of scenes;
+ * `style` = a look/tone. All three feed the same `reference_images` list.
+ */
+export type AssetKind = 'character' | 'setting' | 'style';
+
+/**
+ * An uploaded reference asset used to keep something consistent across clips
+ * (spec §9, §2.3) — a character, a setting/location, or a style. Attached to a
+ * scene either by an inline `@key` (see characterTagger) or by scene assignment
+ * (`Scene.assetIds`); both resolve to the same per-scene reference-image list.
+ */
+export interface Asset {
   id: string;
+  kind: AssetKind;
   /** Match key referenced in prompts as `@key` (spec §9.1, default convention). */
   key: string;
   displayName: string;
   /** 1..N reference images (as data-URLs in the app; opaque here). */
   images: string[];
-  /** Highlight colour for this character's mentions — pure data (spec §13.5). */
+  /** Highlight colour for this asset's mentions — pure data (spec §13.5). */
   color: string;
 }
+
+/** @deprecated Kept so existing imports compile; use {@link Asset}. */
+export type Character = Asset;
 
 /** The job state machine (spec §14). */
 export type JobStatus = 'queued' | 'processing' | 'success' | 'error' | 'canceled';
@@ -215,6 +232,12 @@ export interface Scene {
   countOverride?: number;
   /** Character keys detected in `text` (derived by characterTagger). */
   characterKeys: string[];
+  /**
+   * Assets ASSIGNED to this scene by id (typically settings/styles applied to a
+   * group of scenes, spec §2.3). Combined with the `@key` mentions in `text` to
+   * form the scene's full reference list — see `sceneAssets`.
+   */
+  assetIds?: string[];
   jobs: Job[];
 }
 
@@ -255,7 +278,9 @@ export interface Project {
   sourcePrompt: string;
   runConfig: RunConfig;
   scenes: Scene[];
-  characters: Character[];
+  /** The reference-asset roster (characters + settings + styles). Field name kept
+   * as `characters` for storage compatibility; items are {@link Asset} of any kind. */
+  characters: Asset[];
   createdAt: string;
   updatedAt: string;
 }

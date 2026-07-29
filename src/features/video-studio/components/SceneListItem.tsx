@@ -34,6 +34,7 @@ export function SceneListItem({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: scene.id });
 
   const colorByKey = new Map(characters.map((c) => [c.key.toLowerCase(), c]));
+  const assignedAssets = characters.filter((c) => scene.assetIds?.includes(c.id));
 
   return (
     <div
@@ -99,6 +100,15 @@ export function SceneListItem({
             onChange={onChange}
           />
         </div>
+        {assignedAssets.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {assignedAssets.map((a) => (
+              <Tag key={a.id} color={a.color} variant="filled">
+                {a.displayName || a.key || '—'}
+              </Tag>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   );

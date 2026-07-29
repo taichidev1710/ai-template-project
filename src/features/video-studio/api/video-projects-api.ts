@@ -1,6 +1,6 @@
 import { apiClient } from '@/shared/api';
 import type { ApiEnvelope } from '@/shared/api';
-import type { AspectRatio, RunConfig } from '@/domain/video';
+import type { AspectRatio, AssetKind, RunConfig } from '@/domain/video';
 
 /**
  * API layer for Video Studio projects — the ONLY place that knows these URLs
@@ -16,11 +16,16 @@ export interface PersistedScene {
   text: string;
   aspectOverride?: AspectRatio;
   countOverride?: number;
+  /** Assets assigned to this scene (settings/styles applied to a group). */
+  assetIds?: string[];
 }
 
-/** A character as persisted (no image bytes — object storage is a later step). */
+/** An asset as persisted (no image bytes — object storage is a later step). Field
+ * collection name stays `characters` for compat; items are assets of any kind. */
 export interface PersistedCharacter {
   id: string;
+  /** Optional for legacy projects saved before kinds existed → treat as character. */
+  kind?: AssetKind;
   key: string;
   displayName: string;
   color: string;

@@ -392,6 +392,8 @@ export function VideoStudioPage() {
             scenes={viewScenes}
             characters={characters}
             aspectOptions={aspectOptions}
+            defaultAspect={config.aspect}
+            defaultCount={config.count}
             onReorder={reorderScenes}
             onSceneChange={patchScene}
             onDuplicate={duplicateScene}
@@ -408,10 +410,12 @@ export function VideoStudioPage() {
             scenes={viewScenes}
             jobs={run.jobs}
             config={config}
+            aspectOptions={aspectOptions}
             onGenerate={run.runScene}
             onRetry={run.retry}
             onCancel={run.cancel}
             onCopyPath={copyPath}
+            onSceneChange={patchScene}
           />
         </section>
       </div>

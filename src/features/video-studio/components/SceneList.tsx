@@ -17,6 +17,8 @@ interface SceneListProps {
   scenes: Scene[];
   characters: readonly Character[];
   aspectOptions: readonly AspectRatio[];
+  defaultAspect: AspectRatio;
+  defaultCount: number;
   onReorder: (activeId: string, overId: string) => void;
   onSceneChange: (id: string, patch: Partial<Scene>) => void;
   onDuplicate: (id: string) => void;
@@ -30,6 +32,8 @@ export function SceneList({
   scenes,
   characters,
   aspectOptions,
+  defaultAspect,
+  defaultCount,
   onReorder,
   onSceneChange,
   onDuplicate,
@@ -60,6 +64,8 @@ export function SceneList({
             scene={scene}
             characters={characters}
             aspectOptions={aspectOptions}
+            defaultAspect={defaultAspect}
+            defaultCount={defaultCount}
             onChange={(patch) => onSceneChange(scene.id, patch)}
             onDuplicate={() => onDuplicate(scene.id)}
             onRemove={() => onRemove(scene.id)}

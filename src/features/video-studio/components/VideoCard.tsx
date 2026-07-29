@@ -1,17 +1,22 @@
 import { Card, Tag, Progress, Button, Typography, Space, Tooltip } from 'antd';
 import { VideoCameraAddOutlined, ReloadOutlined, StopOutlined, CopyOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import type { Job, JobStatus, Scene } from '@/domain/video';
+import type { AspectRatio, Job, JobStatus, Scene } from '@/domain/video';
 import { jobKey } from '../hooks/use-video-run';
+import { SceneOverrides } from './SceneOverrides';
 
 interface VideoCardProps {
   scene: Scene;
   count: number;
   jobs: Job[];
+  aspectOptions: readonly AspectRatio[];
+  defaultAspect: AspectRatio;
+  defaultCount: number;
   onGenerate: () => void;
   onRetry: (key: string) => void;
   onCancel: (key: string) => void;
   onCopyPath: (path: string) => void;
+  onOverrideChange: (patch: Partial<Pick<Scene, 'aspectOverride' | 'countOverride'>>) => void;
 }
 
 const STATUS_COLOR: Record<JobStatus, string> = {
@@ -23,7 +28,19 @@ const STATUS_COLOR: Record<JobStatus, string> = {
 };
 
 /** One preview card per scene, with a row per variant (spec §13.3). */
-export function VideoCard({ scene, count, jobs, onGenerate, onRetry, onCancel, onCopyPath }: VideoCardProps) {
+export function VideoCard({
+  scene,
+  count,
+  jobs,
+  aspectOptions,
+  defaultAspect,
+  defaultCount,
+  onGenerate,
+  onRetry,
+  onCancel,
+  onCopyPath,
+  onOverrideChange,
+}: VideoCardProps) {
   const { t } = useTranslation('video-studio');
   const byIndex = new Map(jobs.map((j) => [j.index, j]));
 
@@ -40,6 +57,17 @@ export function VideoCard({ scene, count, jobs, onGenerate, onRetry, onCancel, o
       <Typography.Paragraph type="secondary" ellipsis={{ rows: 2 }} className="!mb-2 text-xs">
         {scene.text || '—'}
       </Typography.Paragraph>
+
+      <div className="mb-2">
+        <SceneOverrides
+          defaultAspect={defaultAspect}
+          defaultCount={defaultCount}
+          aspectOverride={scene.aspectOverride}
+          countOverride={scene.countOverride}
+          aspectOptions={aspectOptions}
+          onChange={onOverrideChange}
+        />
+      </div>
 
       <Space orientation="vertical" size={6} className="w-full">
         {Array.from({ length: count }, (_, i) => {

@@ -6,16 +6,13 @@
  * backend queue; the components above it stay the same.
  */
 import { useCallback, useEffect, useReducer, useRef } from 'react';
-import { buildRunPlan, isRetriable, type AspectRatio, type Job, type PlannedJob, type RunConfig } from '@/domain/video';
+import { buildRunPlan, type AspectRatio, type Job, type PlannedJob, type RunConfig } from '@/domain/video';
 import type { PlannableScene } from '@/domain/video';
 import { fakeOutputPath, rollLifecycle, type FakeResult } from '../fake/fakeProvider';
 
 /** Stable key for a job = scene + variant index. */
 export const jobKey = (sceneId: string, index: number): string => `${sceneId}#${index}`;
 
-/** Max attempts before a retriable error stops auto-retrying (spec §10.3). */
-const MAX_ATTEMPTS = 2;
-const RETRY_BACKOFF_MS = 1000;
 const TICK_MS = 250;
 
 type JobMap = Record<string, Job>;
@@ -233,15 +230,14 @@ function finalize(
     return;
   }
 
-  const attempts = job.attempts + 1;
-  if (isRetriable(result.error.code) && attempts < MAX_ATTEMPTS) {
-    // Auto-retry: back to queued after a short backoff (spec §10.3).
-    meta.readyAt = now + RETRY_BACKOFF_MS;
-    meta.startedAt = undefined;
-    meta.durationMs = undefined;
-    meta.result = undefined;
-    patches[key] = { status: 'queued', progress: 0, attempts, error: result.error };
-    return;
-  }
-  patches[key] = { status: 'error', progress: undefined, finishedAt, attempts, error: result.error };
+  // No silent auto-retry in the mock: each generate = exactly one processing pass.
+  // A failure surfaces as `error` with a manual "Thử lại" button; the real queue's
+  // auto-retry (spec §10.3) belongs to the P3 backend adapter.
+  patches[key] = {
+    status: 'error',
+    progress: undefined,
+    finishedAt,
+    attempts: job.attempts + 1,
+    error: result.error,
+  };
 }

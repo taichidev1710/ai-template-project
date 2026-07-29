@@ -21,12 +21,12 @@ const FATAL = [{ status: 400 }, { status: 402 }];
 
 const rand = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)]!;
 
-/** Roll one job's lifecycle: ~78% success, ~14% retriable error, ~8% fatal. */
+/** Roll one job's lifecycle: mostly success, occasional error to show that state. */
 export function rollLifecycle(): FakeLifecycle {
   const durationMs = 1200 + Math.floor(Math.random() * 2800);
   const r = Math.random();
-  if (r < 0.78) return { durationMs, result: 'success' };
-  const signal = r < 0.92 ? rand(RETRIABLE) : rand(FATAL);
+  if (r < 0.9) return { durationMs, result: 'success' };
+  const signal = r < 0.96 ? rand(RETRIABLE) : rand(FATAL);
   return { durationMs, result: { error: classifyError(signal) } };
 }
 

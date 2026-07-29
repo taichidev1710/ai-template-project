@@ -1,20 +1,32 @@
 import { Empty, Alert, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { Job, RunConfig, Scene } from '@/domain/video';
+import type { AspectRatio, Job, RunConfig, Scene } from '@/domain/video';
 import { VideoCard } from './VideoCard';
 
 interface VideoGridProps {
   scenes: Scene[];
   jobs: Record<string, Job>;
   config: RunConfig;
+  aspectOptions: readonly AspectRatio[];
   onGenerate: (sceneId: string) => void;
   onRetry: (key: string) => void;
   onCancel: (key: string) => void;
   onCopyPath: (path: string) => void;
+  onSceneChange: (id: string, patch: Partial<Scene>) => void;
 }
 
 /** Right column — a preview card per scene (spec §13.3). */
-export function VideoGrid({ scenes, jobs, config, onGenerate, onRetry, onCancel, onCopyPath }: VideoGridProps) {
+export function VideoGrid({
+  scenes,
+  jobs,
+  config,
+  aspectOptions,
+  onGenerate,
+  onRetry,
+  onCancel,
+  onCopyPath,
+  onSceneChange,
+}: VideoGridProps) {
   const { t } = useTranslation('video-studio');
 
   if (scenes.length === 0) {
@@ -33,10 +45,14 @@ export function VideoGrid({ scenes, jobs, config, onGenerate, onRetry, onCancel,
             scene={scene}
             count={scene.countOverride ?? config.count}
             jobs={jobsList.filter((j) => j.sceneId === scene.id)}
+            aspectOptions={aspectOptions}
+            defaultAspect={config.aspect}
+            defaultCount={config.count}
             onGenerate={() => onGenerate(scene.id)}
             onRetry={onRetry}
             onCancel={onCancel}
             onCopyPath={onCopyPath}
+            onOverrideChange={(patch) => onSceneChange(scene.id, patch)}
           />
         ))}
       </div>

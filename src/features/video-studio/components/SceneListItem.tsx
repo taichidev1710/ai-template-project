@@ -1,14 +1,17 @@
-import { Card, Input, Select, Button, Space, Tag, Tooltip, Typography } from 'antd';
+import { Card, Input, Button, Space, Tag, Tooltip, Typography } from 'antd';
 import { HolderOutlined, CopyOutlined, DeleteOutlined, VideoCameraAddOutlined } from '@ant-design/icons';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useTranslation } from 'react-i18next';
 import type { AspectRatio, Character, Scene } from '@/domain/video';
+import { SceneOverrides } from './SceneOverrides';
 
 interface SceneListItemProps {
   scene: Scene;
   characters: readonly Character[];
   aspectOptions: readonly AspectRatio[];
+  defaultAspect: AspectRatio;
+  defaultCount: number;
   onChange: (patch: Partial<Scene>) => void;
   onDuplicate: () => void;
   onRemove: () => void;
@@ -20,6 +23,8 @@ export function SceneListItem({
   scene,
   characters,
   aspectOptions,
+  defaultAspect,
+  defaultCount,
   onChange,
   onDuplicate,
   onRemove,
@@ -59,7 +64,7 @@ export function SceneListItem({
                 {scene.characterKeys.map((key) => {
                   const c = colorByKey.get(key);
                   return (
-                    <Tag key={key} color={c?.color} bordered={false}>
+                    <Tag key={key} color={c?.color} variant="filled">
                       @{key}
                     </Tag>
                   );
@@ -84,24 +89,14 @@ export function SceneListItem({
           placeholder={t('scene.textPlaceholder')}
           autoSize={{ minRows: 2, maxRows: 6 }}
         />
-        <div className="mt-2 flex flex-wrap gap-2">
-          <Select
-            size="small"
-            allowClear
-            placeholder={t('scene.aspectOverride')}
-            style={{ minWidth: 120 }}
-            value={scene.aspectOverride}
-            onChange={(v?: AspectRatio) => onChange({ aspectOverride: v })}
-            options={aspectOptions.map((a) => ({ value: a, label: a }))}
-          />
-          <Select
-            size="small"
-            allowClear
-            placeholder={t('scene.countOverride')}
-            style={{ minWidth: 120 }}
-            value={scene.countOverride}
-            onChange={(v?: number) => onChange({ countOverride: v })}
-            options={[1, 2, 3, 4].map((n) => ({ value: n, label: `×${n}` }))}
+        <div className="mt-2">
+          <SceneOverrides
+            defaultAspect={defaultAspect}
+            defaultCount={defaultCount}
+            aspectOverride={scene.aspectOverride}
+            countOverride={scene.countOverride}
+            aspectOptions={aspectOptions}
+            onChange={onChange}
           />
         </div>
       </Card>

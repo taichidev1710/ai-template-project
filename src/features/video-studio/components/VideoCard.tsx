@@ -63,19 +63,24 @@ export function VideoCard({
     <>
     <Card
       size="small"
-      title={<Typography.Text strong>#{scene.order}</Typography.Text>}
+      className="!border-line !shadow-sm transition-shadow hover:!shadow-md"
+      title={
+        <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-app-sm bg-primary px-1.5 text-sm font-semibold text-white">
+          #{scene.order}
+        </span>
+      }
       extra={
         <Space size={0}>
           <Tooltip title={t('info.view')}>
             <Button type="text" size="small" icon={<InfoCircleOutlined />} onClick={() => setInfoOpen(true)} />
           </Tooltip>
-          <Button size="small" icon={<VideoCameraAddOutlined />} onClick={onGenerate}>
+          <Button size="small" type="primary" ghost icon={<VideoCameraAddOutlined />} onClick={onGenerate}>
             {t('grid.generate')}
           </Button>
         </Space>
       }
     >
-      <Typography.Paragraph type="secondary" ellipsis={{ rows: 2 }} className="!mb-2 text-xs">
+      <Typography.Paragraph ellipsis={{ rows: 2 }} className="!mb-2 text-sm text-ink">
         {scene.text || '—'}
       </Typography.Paragraph>
 

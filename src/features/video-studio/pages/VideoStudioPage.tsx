@@ -408,7 +408,7 @@ export function VideoStudioPage() {
         <Alert type="info" showIcon className="mb-4" title={t('mockBanner')} />
       )}
 
-      <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
+      <div className="sticky top-0 z-20 -mx-4 mb-4 flex flex-wrap items-center gap-2 border-b border-line-soft bg-canvas px-4 py-3 sm:-mx-6 sm:gap-3 sm:px-6">
         <Button icon={<SettingOutlined />} onClick={() => setConfigOpen(true)}>
           {t('config.title')}
         </Button>
@@ -457,7 +457,7 @@ export function VideoStudioPage() {
 
       {/* Two columns: prompt/scenes (left) + preview (right, wider) */}
       <div className="flex flex-col gap-4 xl:min-h-0 xl:flex-row">
-        <section className="flex min-w-0 flex-col gap-4 rounded-app bg-surface p-3 sm:p-4 xl:w-[40%] xl:shrink-0">
+        <section className="flex min-w-0 flex-col gap-4 rounded-app bg-surface p-3 sm:p-4 xl:w-[34%] xl:shrink-0">
           <Typography.Title level={5} className="!mb-0">
             {t('prompt.title')}
           </Typography.Title>
@@ -489,7 +489,7 @@ export function VideoStudioPage() {
           />
         </section>
 
-        <section className="min-w-0 flex-1 rounded-app bg-surface p-3 sm:p-4">
+        <section className="min-w-0 flex-1 rounded-app border border-line-soft bg-canvas p-3 sm:p-4">
           <Typography.Title level={5} className="!mb-3">
             {t('grid.title')}
           </Typography.Title>

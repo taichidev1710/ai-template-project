@@ -67,6 +67,17 @@
       "region": "Vùng (region)"
     }
   },
+  "save": {
+    "folder": "Thư mục lưu video",
+    "pick": "Chọn thư mục",
+    "change": "Đổi thư mục",
+    "none": "Chưa chọn thư mục",
+    "chosen": "Đã chọn: {{name}}",
+    "unsupported": "Trình duyệt không hỗ trợ chọn thư mục — video sẽ tải về Downloads.",
+    "needFolder": "Hãy chọn thư mục lưu trước khi tạo video.",
+    "tabWarning": "Giữ tab này mở suốt mẻ — đóng tab hoặc để máy ngủ sẽ dừng việc tải file về.",
+    "hint": "Mỗi video lưu vào thư mục con theo cảnh (vd Canh 01/), kèm 1 file .json metadata."
+  },
   "free": {
     "warnTitle": "Rủi ro chế độ phiên (free)",
     "intro": "Chế độ phiên tự động hoá tài khoản consumer — rủi ro thật, nói thẳng:",

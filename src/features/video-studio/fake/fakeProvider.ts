@@ -6,6 +6,7 @@
  * the grid and retry logic will see against a live provider.
  */
 import { classifyError, type AspectRatio, type JobError } from '@/domain/video';
+import { buildOutputPath } from '../outputPath';
 
 export type FakeResult = 'success' | { error: JobError };
 
@@ -30,8 +31,7 @@ export function rollLifecycle(): FakeLifecycle {
   return { durationMs, result: { error: classifyError(signal) } };
 }
 
-/** A plausible relative save path for a finished mock clip (spec §12 naming). */
+/** A plausible relative save path for a finished mock clip (shares the real naming). */
 export function fakeOutputPath(sceneOrder: number, index: number, aspect: AspectRatio): string {
-  const order = String(sceneOrder).padStart(2, '0');
-  return `videos/Canh ${order}/v${index + 1}_mock_${aspect.replace(':', 'x')}.mp4`;
+  return buildOutputPath({ projectName: 'video', sceneOrder, index, provider: 'mock', aspect });
 }

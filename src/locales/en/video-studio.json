@@ -67,6 +67,17 @@
       "region": "Region"
     }
   },
+  "save": {
+    "folder": "Save folder",
+    "pick": "Choose folder",
+    "change": "Change folder",
+    "none": "No folder chosen",
+    "chosen": "Chosen: {{name}}",
+    "unsupported": "Your browser can't pick a folder — videos will download to Downloads.",
+    "needFolder": "Choose a save folder before generating.",
+    "tabWarning": "Keep this tab open during the batch — closing it (or sleep) stops downloading files.",
+    "hint": "Each video saves into a per-scene subfolder (e.g. Canh 01/) with a .json metadata file."
+  },
   "free": {
     "warnTitle": "Session (free) mode risks",
     "intro": "Session mode automates a consumer account — real risks, stated plainly:",

@@ -18,14 +18,25 @@ const TICK_MS = 250;
 /** Poll interval for a REAL Veo job (generation is slow — minutes, spec §2.1). */
 const POLL_MS = 6000;
 
+/** Args cho `saveVideo` — hook chỉ biết scene+variant+op; page tự suy đường dẫn/lưu. */
+export interface SaveVideoArgs {
+  sceneId: string;
+  index: number;
+  /** operationName để gọi endpoint tải (server chuyền thẳng byte, spec §12). */
+  op: string;
+}
+
 /**
  * Extra context the REAL (Veo) path needs but the mock path ignores. `projectId`
  * scopes the backend generate/poll endpoints; `promptFor` yields a scene's composed
- * outgoing prompt (scene text + asset descriptions).
+ * outgoing prompt (scene text + asset descriptions). `saveVideo` (khi có) tải byte
+ * video về + ghi vào thư mục user chọn, trả về đường dẫn tương đối đã lưu (ném lỗi
+ * nếu tải/ghi thất bại → job thành lỗi `download`).
  */
 export interface RunRuntime {
   projectId: string | null;
   promptFor: (sceneId: string) => string;
+  saveVideo?: (args: SaveVideoArgs) => Promise<string>;
 }
 
 type JobMap = Record<string, Job>;
@@ -175,10 +186,33 @@ export function useVideoRun(
             }
             delete pollTimersRef.current[key];
             if (r.status === 'success') {
-              dispatch({
-                type: 'merge',
-                patches: { [key]: { status: 'success', progress: 100, outputPath: r.videoUri } },
-              });
+              const save = runtimeRef.current.saveVideo;
+              if (!save) {
+                // Không cấu hình lưu → giữ videoUri gốc (không tải được nếu thiếu key).
+                dispatch({
+                  type: 'merge',
+                  patches: { [key]: { status: 'success', progress: 100, outputPath: r.videoUri } },
+                });
+                return;
+              }
+              // Đã xong ở Veo → sang bước TẢI + GHI file; giữ processing/100% trong lúc ghi.
+              dispatch({ type: 'merge', patches: { [key]: { progress: 100, providerRef: op } } });
+              const hash = key.lastIndexOf('#');
+              const sceneId = key.slice(0, hash);
+              const index = Number(key.slice(hash + 1));
+              void save({ sceneId, index, op })
+                .then((path) => {
+                  const cur = jobsRef.current[key];
+                  if (!cur || cur.status === 'canceled') return;
+                  dispatch({
+                    type: 'merge',
+                    patches: { [key]: { status: 'success', progress: 100, outputPath: path } },
+                  });
+                })
+                .catch((e: unknown) => {
+                  const msg = e instanceof Error ? e.message : undefined;
+                  setError(key, 'download', true, msg);
+                });
             } else {
               setError(key, r.error?.code ?? 'unknown', r.error?.retriable ?? false, r.error?.message);
             }

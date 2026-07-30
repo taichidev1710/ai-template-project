@@ -1,6 +1,12 @@
 import { useMemo, useState } from 'react';
 import { App, Alert, Badge, Button, Modal, Space, Typography } from 'antd';
-import { ThunderboltOutlined, StopOutlined, SettingOutlined, TeamOutlined } from '@ant-design/icons';
+import {
+  ThunderboltOutlined,
+  StopOutlined,
+  SettingOutlined,
+  TeamOutlined,
+  FolderOpenOutlined,
+} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { arrayMove } from '@dnd-kit/sortable';
 import {
@@ -29,10 +35,18 @@ import { SceneList } from '../components/SceneList';
 import { AssetPanel } from '../components/AssetPanel';
 import { VideoGrid } from '../components/VideoGrid';
 import { ProjectBar } from '../components/ProjectBar';
-import { useVideoRun, type HydrateEntry } from '../hooks/use-video-run';
+import { useVideoRun, type HydrateEntry, type SaveVideoArgs } from '../hooks/use-video-run';
 import { useVideoProjects, useVideoProjectMutations } from '../hooks/use-video-projects';
 import { useProviderKeys } from '../hooks/use-provider-keys';
 import type { VideoProjectDto, VideoProjectInput } from '../api/video-projects-api';
+import { generationApi } from '../api/generation-api';
+import { buildOutputPath, metadataPathFor } from '../outputPath';
+import {
+  downloadBlob,
+  isDirectoryPickerSupported,
+  pickDirectory,
+  writeFileToDir,
+} from '../fsAccess';
 import { formatUsd } from '../lib';
 import { initialConfig, makeAsset, makeScene, newId } from '../types';
 
@@ -125,6 +139,10 @@ export function VideoStudioPage() {
   const [preset, setPreset] = useState<PlatformPreset | null>(null);
   const [configOpen, setConfigOpen] = useState(false);
   const [charsOpen, setCharsOpen] = useState(false);
+  // Thư mục người dùng chọn để lưu video (File System Access, spec §12). Không bền
+  // qua reload — chọn lại mỗi phiên. `null` = chưa chọn / trình duyệt không hỗ trợ.
+  const [outputDir, setOutputDir] = useState<FileSystemDirectoryHandle | null>(null);
+  const fsSupported = isDirectoryPickerSupported();
 
   // --- Project persistence (P2): MongoDB via backend, server state → Query ---
   const [projectName, setProjectName] = useState('');
@@ -176,12 +194,50 @@ export function VideoStudioPage() {
     !!credentialProviderId &&
     !!providerKeysQuery.data?.some((k) => k.provider === credentialProviderId);
 
+  /**
+   * Tải byte video (server chuyền thẳng từ Veo) rồi GHI vào thư mục user chọn theo
+   * cấu trúc `project/Canh NN/vX_….mp4` + `.json` metadata (spec §12). Không có thư
+   * mục (trình duyệt không hỗ trợ / chưa chọn) → fallback tải về Downloads. Trả về
+   * đường dẫn tương đối đã lưu; ném lỗi → job thành lỗi `download` (có nút Tải lại).
+   */
+  const saveVideo = async ({ sceneId, index, op }: SaveVideoArgs): Promise<string> => {
+    if (!currentProjectId) throw new Error('missing project');
+    const scene = viewScenes.find((s) => s.id === sceneId);
+    const sceneOrder = scene?.order ?? 1;
+    const aspect = scene?.aspectOverride ?? config.aspect;
+    const relPath = buildOutputPath({
+      projectName: projectName || 'video',
+      sceneOrder,
+      index,
+      provider: config.providerId,
+      aspect,
+    });
+    const blob = await generationApi.download(currentProjectId, op);
+    if (outputDir) {
+      const meta = {
+        prompt: scene ? composeScenePrompt(scene, assets) : '',
+        provider: config.providerId,
+        model: config.modelId,
+        aspect,
+        durationSeconds: config.durationSeconds,
+        seed: config.seed,
+        savedAt: new Date().toISOString(),
+      };
+      await writeFileToDir(outputDir, relPath, blob);
+      await writeFileToDir(outputDir, metadataPathFor(relPath), JSON.stringify(meta, null, 2));
+    } else {
+      downloadBlob(blob, relPath);
+    }
+    return relPath;
+  };
+
   const run = useVideoRun(viewScenes, config, {
     projectId: currentProjectId,
     promptFor: (sceneId) => {
       const s = viewScenes.find((x) => x.id === sceneId);
       return s ? composeScenePrompt(s, assets) : '';
     },
+    saveVideo,
   });
 
   /**
@@ -198,7 +254,22 @@ export function VideoStudioPage() {
       message.warning(t('run.needKey'));
       return false;
     }
+    // Chromium: bắt buộc chọn thư mục lưu trước (spec §12). Trình duyệt không hỗ trợ
+    // → bỏ qua, video sẽ rơi vào Downloads.
+    if (fsSupported && !outputDir) {
+      message.warning(t('save.needFolder'));
+      setConfigOpen(true);
+      return false;
+    }
     return true;
+  };
+
+  const chooseFolder = async () => {
+    const handle = await pickDirectory();
+    if (handle) {
+      setOutputDir(handle);
+      message.success(t('save.chosen', { name: handle.name }));
+    }
   };
 
   const handleGenerateScene = (sceneId: string) => {
@@ -450,6 +521,10 @@ export function VideoStudioPage() {
         <Alert type="info" showIcon className="mb-4" title={t('mockBanner')} />
       )}
 
+      {realMode && run.isActive && (
+        <Alert type="info" showIcon className="mb-4" title={t('save.tabWarning')} />
+      )}
+
       <div className="sticky top-0 z-20 -mx-4 mb-4 flex flex-wrap items-center gap-2 border-b border-line-soft bg-canvas px-4 py-3 sm:-mx-6 sm:gap-3 sm:px-6">
         <Button icon={<SettingOutlined />} onClick={() => setConfigOpen(true)}>
           {t('config.title')}
@@ -570,6 +645,38 @@ export function VideoStudioPage() {
         {config.source === 'api' && credentialProviderId && (
           <div className="mt-4">
             <ApiKeyManager credentialProviderId={credentialProviderId} />
+          </div>
+        )}
+
+        {config.source === 'api' && credentialProviderId && (
+          <div className="mt-4 rounded-app border border-line-soft p-3">
+            <div className="mb-2 flex items-center gap-2">
+              <FolderOpenOutlined />
+              <Typography.Text strong>{t('save.folder')}</Typography.Text>
+            </div>
+            {fsSupported ? (
+              <>
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <Typography.Text type={outputDir ? undefined : 'secondary'} className="text-xs">
+                    {outputDir ? t('save.chosen', { name: outputDir.name }) : t('save.none')}
+                  </Typography.Text>
+                  <Button size="small" onClick={chooseFolder}>
+                    {outputDir ? t('save.change') : t('save.pick')}
+                  </Button>
+                </div>
+                <Alert
+                  type="info"
+                  showIcon
+                  title={<span className="text-xs">{t('save.hint')}</span>}
+                />
+              </>
+            ) : (
+              <Alert
+                type="warning"
+                showIcon
+                title={<span className="text-xs">{t('save.unsupported')}</span>}
+              />
+            )}
           </div>
         )}
       </Modal>

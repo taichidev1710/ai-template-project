@@ -49,4 +49,16 @@ export const generationApi = {
     );
     return data.data;
   },
+  /**
+   * Tải BYTE video của một operation đã xong. Server (giữ key) chuyền thẳng từ Veo
+   * (spec §12); ở đây nhận Blob để FE ghi vào thư mục user chọn. Không phải envelope
+   * JSON — nên đọc `blob` trực tiếp.
+   */
+  download: async (projectId: string, op: string): Promise<Blob> => {
+    const { data } = await apiClient.get<Blob>(`/video-projects/${projectId}/download`, {
+      params: { op },
+      responseType: 'blob',
+    });
+    return data;
+  },
 };

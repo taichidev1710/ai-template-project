@@ -53,6 +53,7 @@ const VEO31: ProviderCapabilities = {
   ],
   rpm: 10,
   maxConcurrent: 10,
+  credentialProviderId: 'google',
 };
 
 /**
@@ -72,6 +73,7 @@ const NANOBANANA: ProviderCapabilities = {
   speedTiers: [{ tier: 'normal', modelId: 'gemini-2.5-flash-image', pricePerImage: 0.039 }],
   rpm: 60,
   maxConcurrent: 10,
+  credentialProviderId: 'google',
 };
 
 /**

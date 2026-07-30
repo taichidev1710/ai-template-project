@@ -170,7 +170,11 @@ export function VideoStudioPage() {
 
   // Real generation targets a paid provider on the official API; else stays mock.
   const realMode = config.providerId !== 'mock' && config.source === 'api';
-  const hasProviderKey = !!providerKeysQuery.data?.some((k) => k.provider === 'google');
+  // The vendor whose key this provider needs (Veo/Nano Banana → google); mock → none.
+  const credentialProviderId = caps?.credentialProviderId;
+  const hasProviderKey =
+    !!credentialProviderId &&
+    !!providerKeysQuery.data?.some((k) => k.provider === credentialProviderId);
 
   const run = useVideoRun(viewScenes, config, {
     projectId: currentProjectId,
@@ -563,9 +567,9 @@ export function VideoStudioPage() {
           onProviderChange={handleProviderChange}
           onPresetChange={setPreset}
         />
-        {config.source === 'api' && (
+        {config.source === 'api' && credentialProviderId && (
           <div className="mt-4">
-            <ApiKeyManager />
+            <ApiKeyManager credentialProviderId={credentialProviderId} />
           </div>
         )}
       </Modal>

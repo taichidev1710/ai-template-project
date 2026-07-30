@@ -123,6 +123,13 @@ export interface ProviderCapabilities {
   rpm: number;
   /** Max jobs the provider will run at once for one project (spec §2.1). */
   maxConcurrent: number;
+  /**
+   * Which credential VENDOR this provider draws its key from (see
+   * `credentialProviders.ts`). Veo & Nano Banana are Google → `'google'`, so they
+   * SHARE one key. `undefined` = no key needed (the keyless `mock` provider). A new
+   * vendor's providers point at a new credential id and get their own key.
+   */
+  credentialProviderId?: string;
 }
 
 /* ============================================================

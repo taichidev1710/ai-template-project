@@ -59,6 +59,14 @@
     "note": "Stored encrypted on the server, used only to generate videos and never shown again. Create your own key in Google AI Studio (Veo needs billing enabled).",
     "getKey": "Get a key at Google AI Studio"
   },
+  "credential": {
+    "title": "API key — {{vendor}}",
+    "field": {
+      "apiKey": "API key",
+      "endpoint": "Endpoint",
+      "region": "Region"
+    }
+  },
   "free": {
     "warnTitle": "Session (free) mode risks",
     "intro": "Session mode automates a consumer account — real risks, stated plainly:",

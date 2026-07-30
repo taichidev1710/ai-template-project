@@ -59,6 +59,14 @@
     "note": "Khóa được mã hoá lưu ở máy chủ, chỉ dùng để tạo video và không hiển thị lại. Bạn tự tạo key ở Google AI Studio (Veo cần bật billing).",
     "getKey": "Lấy key ở Google AI Studio"
   },
+  "credential": {
+    "title": "Khóa API — {{vendor}}",
+    "field": {
+      "apiKey": "API key",
+      "endpoint": "Endpoint",
+      "region": "Vùng (region)"
+    }
+  },
   "free": {
     "warnTitle": "Rủi ro chế độ phiên (free)",
     "intro": "Chế độ phiên tự động hoá tài khoản consumer — rủi ro thật, nói thẳng:",

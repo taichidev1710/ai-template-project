@@ -23,8 +23,8 @@ export function useProviderKeyMutations() {
   const onError = (e: NormalizedError) => message.error(e.message);
 
   const save = useMutation({
-    mutationFn: ({ provider, key }: { provider: KeyProvider; key: string }) =>
-      providerKeysApi.set(provider, key),
+    mutationFn: ({ provider, fields }: { provider: KeyProvider; fields: Record<string, string> }) =>
+      providerKeysApi.set(provider, fields),
     onSuccess: () => {
       void invalidate();
       message.success(t('apiKey.saved'));

@@ -22,6 +22,9 @@ export {
 } from './providerCapabilities';
 export type { ResolvedPreset } from './providerCapabilities';
 
+export { CREDENTIAL_PROVIDERS, getCredentialProvider, previewFieldOf } from './credentialProviders';
+export type { CredentialField, CredentialProviderSpec } from './credentialProviders';
+
 export { parseScenes, reparseScenes, joinScenes } from './sceneParser';
 export type { ParsedScene, SceneParseOptions, MergeableScene, ReparseResult } from './sceneParser';
 

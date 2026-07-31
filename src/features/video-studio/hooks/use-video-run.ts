@@ -6,10 +6,18 @@
  * backend queue; the components above it stay the same.
  */
 import { useCallback, useEffect, useReducer, useRef } from 'react';
-import { buildRunPlan, type AspectRatio, type Job, type JobErrorCode, type PlannedJob, type RunConfig } from '@/domain/video';
+import { buildRunPlan, getCapabilities, type AspectRatio, type Job, type JobErrorCode, type PlannedJob, type RunConfig } from '@/domain/video';
 import type { PlannableScene } from '@/domain/video';
 import { fakeOutputPath, rollLifecycle, type FakeResult } from '../fake/fakeProvider';
 import { generationApi } from '../api/generation-api';
+
+/** base64 (từ API ảnh) → Blob để ghi file + tạo object URL xem trước. */
+function base64ToBlob(b64: string, mime: string): Blob {
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], { type: mime || 'image/png' });
+}
 
 /** Stable key for a job = scene + variant index. */
 export const jobKey = (sceneId: string, index: number): string => `${sceneId}#${index}`;
@@ -26,6 +34,13 @@ export interface SaveVideoArgs {
   op: string;
 }
 
+/** Args cho `saveImage` — ảnh đã có sẵn bytes (blob), page ghi ra file .png. */
+export interface SaveImageArgs {
+  sceneId: string;
+  index: number;
+  blob: Blob;
+}
+
 /**
  * Extra context the REAL (Veo) path needs but the mock path ignores. `projectId`
  * scopes the backend generate/poll endpoints; `promptFor` yields a scene's composed
@@ -37,6 +52,8 @@ export interface RunRuntime {
   projectId: string | null;
   promptFor: (sceneId: string) => string;
   saveVideo?: (args: SaveVideoArgs) => Promise<string>;
+  /** Ghi ẢNH (provider kind:'image') vào thư mục user chọn; trả đường dẫn tương đối. */
+  saveImage?: (args: SaveImageArgs) => Promise<string>;
 }
 
 type JobMap = Record<string, Job>;
@@ -132,6 +149,8 @@ export function useVideoRun(
   const concurrencyRef = useRef(1);
   /** Active poll timers for REAL jobs, keyed by jobKey — so cancel/reset can stop them. */
   const pollTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  /** Object URL xem trước ẢNH theo jobKey — thu hồi khi ghi đè/reset (tránh rò bộ nhớ). */
+  const previewUrlsRef = useRef<Record<string, string>>({});
 
   // Real generation = a paid provider on the official API; anything else stays mock.
   const realMode = config.providerId !== 'mock' && config.source === 'api';
@@ -151,6 +170,19 @@ export function useVideoRun(
   const clearAllPolls = useCallback(() => {
     for (const key of Object.keys(pollTimersRef.current)) clearPoll(key);
   }, [clearPoll]);
+
+  /** Thu hồi object URL xem trước của một job (nếu có). */
+  const revokePreview = useCallback((key: string) => {
+    const u = previewUrlsRef.current[key];
+    if (u) {
+      URL.revokeObjectURL(u);
+      delete previewUrlsRef.current[key];
+    }
+  }, []);
+
+  const revokeAllPreviews = useCallback(() => {
+    for (const key of Object.keys(previewUrlsRef.current)) revokePreview(key);
+  }, [revokePreview]);
 
   const setError = useCallback(
     (key: string, code: JobErrorCode, retriable: boolean, message?: string) => {
@@ -227,7 +259,11 @@ export function useVideoRun(
     [setError],
   );
 
-  /** Submit ONE real job (scene+variant) to Veo, then start polling it. */
+  /**
+   * Chạy MỘT job thật (scene+variant). Provider `kind:'image'` → tạo ảnh ĐỒNG BỘ
+   * (không poll): 1 request ra ảnh → ghi file + xem trước. Còn lại (video) → submit
+   * lên Veo rồi poll như cũ.
+   */
   const runOneReal = useCallback(
     (sceneId: string, index: number) => {
       const projectId = runtimeRef.current.projectId;
@@ -236,10 +272,60 @@ export function useVideoRun(
       const key = jobKey(sceneId, index);
       const aspect = scene.aspectOverride ?? config.aspect;
       clearPoll(key);
+      revokePreview(key);
       dispatch({
         type: 'enqueue',
         jobs: [{ id: key, sceneId, index, status: 'processing', attempts: 0, progress: undefined }],
       });
+
+      const isImage = getCapabilities(config.providerId)?.kind === 'image';
+      if (isImage) {
+        void generationApi
+          .generateImage(projectId, {
+            sceneId,
+            prompt: runtimeRef.current.promptFor(sceneId),
+            model: config.modelId,
+            aspectRatio: aspect,
+          })
+          .then((res) => {
+            const cur = jobsRef.current[key];
+            if (cur?.status === 'canceled') return;
+            if (res.error) {
+              setError(key, res.error.code, res.error.retriable, res.error.message);
+              return;
+            }
+            if (!res.image) {
+              setError(key, 'unknown', false);
+              return;
+            }
+            const blob = base64ToBlob(res.image.dataBase64, res.image.mimeType);
+            const previewUrl = URL.createObjectURL(blob);
+            previewUrlsRef.current[key] = previewUrl;
+            const save = runtimeRef.current.saveImage;
+            if (!save) {
+              dispatch({
+                type: 'merge',
+                patches: { [key]: { status: 'success', progress: 100, previewUrl } },
+              });
+              return;
+            }
+            void save({ sceneId, index, blob })
+              .then((path) => {
+                const c = jobsRef.current[key];
+                if (c?.status === 'canceled') return;
+                dispatch({
+                  type: 'merge',
+                  patches: { [key]: { status: 'success', progress: 100, previewUrl, outputPath: path } },
+                });
+              })
+              .catch((e: unknown) => {
+                setError(key, 'download', true, e instanceof Error ? e.message : undefined);
+              });
+          })
+          .catch(() => setError(key, 'unknown', false));
+        return;
+      }
+
       void generationApi
         .submit(projectId, {
           sceneId,
@@ -259,7 +345,7 @@ export function useVideoRun(
         })
         .catch(() => setError(key, 'unknown', false));
     },
-    [scenes, config.aspect, config.modelId, config.durationSeconds, clearPoll, schedulePoll, setError],
+    [scenes, config.providerId, config.aspect, config.modelId, config.durationSeconds, clearPoll, revokePreview, schedulePoll, setError],
   );
 
   const enqueuePlanned = useCallback((planned: PlannedJob[], baseTime: number) => {
@@ -281,6 +367,7 @@ export function useVideoRun(
   const startAll = useCallback(() => {
     metaRef.current = {};
     clearAllPolls();
+    revokeAllPreviews();
     dispatch({ type: 'reset' });
     if (realMode) {
       if (!runtimeRef.current.projectId) return;
@@ -293,7 +380,7 @@ export function useVideoRun(
     const plan = buildRunPlan(scenes, config);
     concurrencyRef.current = Math.max(1, plan.concurrency);
     enqueuePlanned(plan.jobs, Date.now());
-  }, [scenes, config, realMode, runOneReal, clearAllPolls, enqueuePlanned]);
+  }, [scenes, config, realMode, runOneReal, clearAllPolls, revokeAllPreviews, enqueuePlanned]);
 
   const runScene = useCallback(
     (sceneId: string) => {
@@ -335,10 +422,11 @@ export function useVideoRun(
   const cancel = useCallback(
     (key: string) => {
       clearPoll(key);
+      revokePreview(key);
       dispatch({ type: 'merge', patches: { [key]: { status: 'canceled', progress: undefined } } });
       delete metaRef.current[key];
     },
-    [clearPoll],
+    [clearPoll, revokePreview],
   );
 
   const cancelAll = useCallback(() => {
@@ -348,16 +436,18 @@ export function useVideoRun(
         patches[key] = { status: 'canceled', progress: undefined };
         delete metaRef.current[key];
         clearPoll(key);
+        revokePreview(key);
       }
     }
     if (Object.keys(patches).length) dispatch({ type: 'merge', patches });
-  }, [clearPoll]);
+  }, [clearPoll, revokePreview]);
 
   const reset = useCallback(() => {
     metaRef.current = {};
     clearAllPolls();
+    revokeAllPreviews();
     dispatch({ type: 'reset' });
-  }, [clearAllPolls]);
+  }, [clearAllPolls, revokeAllPreviews]);
 
   const hydrate = useCallback((entries: readonly HydrateEntry[]) => {
     metaRef.current = {};
@@ -428,9 +518,11 @@ export function useVideoRun(
       if (Object.keys(patches).length) dispatch({ type: 'merge', patches });
     }, TICK_MS);
     const timers = pollTimersRef.current;
+    const previews = previewUrlsRef.current;
     return () => {
       clearInterval(timer);
       for (const t of Object.values(timers)) clearTimeout(t);
+      for (const u of Object.values(previews)) URL.revokeObjectURL(u);
     };
   }, []);
 

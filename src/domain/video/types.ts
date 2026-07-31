@@ -236,6 +236,8 @@ export interface Job {
   attempts: number;
   /** RELATIVE saved path shown to the user (browser hides absolute path, §12). */
   outputPath?: string;
+  /** Object URL xem trước ẢNH (chỉ provider `kind:'image'`; runtime-only, thu hồi khi reset). */
+  previewUrl?: string;
   costActual?: Money;
   startedAt?: string;
   finishedAt?: string;

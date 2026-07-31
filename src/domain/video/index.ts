@@ -8,10 +8,13 @@ export * from './types';
 
 export {
   PROVIDERS,
+  DEFAULT_PROVIDERS,
   PROVIDER_VEO31,
   PROVIDER_NANOBANANA,
   PROVIDER_MOCK,
   getCapabilities,
+  getAllProviders,
+  setProviderRegistry,
   getSpeedTier,
   supportsSpeed,
   supportsAspect,

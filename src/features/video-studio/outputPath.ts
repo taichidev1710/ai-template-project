@@ -30,16 +30,18 @@ export interface OutputPathInput {
   /** Provider id (vd 'veo31', 'mock'). */
   provider: string;
   aspect: AspectRatio;
+  /** Đuôi file: video 'mp4' (mặc định) hoặc ảnh 'png'. */
+  ext?: 'mp4' | 'png';
 }
 
-/** Đường dẫn TƯƠNG ĐỐI của video trong thư mục gốc đã chọn. */
+/** Đường dẫn TƯƠNG ĐỐI của file trong thư mục gốc đã chọn. */
 export function buildOutputPath(i: OutputPathInput): string {
   const aspect = i.aspect.replace(':', 'x');
-  const file = `v${i.index + 1}_${slug(i.provider, 'veo')}_${aspect}.mp4`;
+  const file = `v${i.index + 1}_${slug(i.provider, 'veo')}_${aspect}.${i.ext ?? 'mp4'}`;
   return `${slug(i.projectName)}/Canh ${pad2(i.sceneOrder)}/${file}`;
 }
 
-/** Đường dẫn file .json metadata cạnh video (đổi đuôi .mp4 → .json). */
-export function metadataPathFor(videoRelPath: string): string {
-  return videoRelPath.replace(/\.mp4$/i, '.json');
+/** Đường dẫn file .json metadata cạnh media (đổi đuôi .mp4/.png → .json). */
+export function metadataPathFor(mediaRelPath: string): string {
+  return mediaRelPath.replace(/\.(mp4|png)$/i, '.json');
 }

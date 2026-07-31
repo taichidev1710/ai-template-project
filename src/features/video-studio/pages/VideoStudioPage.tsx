@@ -10,7 +10,6 @@ import {
 import { useTranslation } from 'react-i18next';
 import { arrayMove } from '@dnd-kit/sortable';
 import {
-  PROVIDERS,
   buildRunPlan,
   characterKeysInText,
   checkAssets,
@@ -35,9 +34,10 @@ import { SceneList } from '../components/SceneList';
 import { AssetPanel } from '../components/AssetPanel';
 import { VideoGrid } from '../components/VideoGrid';
 import { ProjectBar } from '../components/ProjectBar';
-import { useVideoRun, type HydrateEntry, type SaveVideoArgs } from '../hooks/use-video-run';
+import { useVideoRun, type HydrateEntry, type SaveVideoArgs, type SaveImageArgs } from '../hooks/use-video-run';
 import { useVideoProjects, useVideoProjectMutations } from '../hooks/use-video-projects';
 import { useProviderKeys } from '../hooks/use-provider-keys';
+import { useStudioProviders } from '../hooks/use-studio-providers';
 import type { VideoProjectDto, VideoProjectInput } from '../api/video-projects-api';
 import { generationApi } from '../api/generation-api';
 import { buildOutputPath, metadataPathFor } from '../outputPath';
@@ -153,6 +153,8 @@ export function VideoStudioPage() {
   const projectsQuery = useVideoProjects({ limit: 100, sort: '-updatedAt' });
   const projectMutations = useVideoProjectMutations();
   const providerKeysQuery = useProviderKeys();
+  // Nạp catalog provider từ API vào registry runtime (admin chỉnh → studio phản ánh).
+  const { providers } = useStudioProviders();
 
   const caps = getCapabilities(config.providerId);
   const assetKeys = assets.map((a) => a.key).filter(Boolean);
@@ -231,6 +233,41 @@ export function VideoStudioPage() {
     return relPath;
   };
 
+  /**
+   * GHI ẢNH (provider kind:'image') — bytes đã có sẵn (blob từ API), lưu `…/Canh NN/
+   * vX_….png` + `.json` metadata; không có thư mục → tải về Downloads. Ảnh vẫn xem
+   * trước được dù không lưu; đây là bước lưu file.
+   */
+  const saveImage = async ({ sceneId, index, blob }: SaveImageArgs): Promise<string> => {
+    if (!currentProjectId) throw new Error('missing project');
+    const scene = viewScenes.find((s) => s.id === sceneId);
+    const sceneOrder = scene?.order ?? 1;
+    const aspect = scene?.aspectOverride ?? config.aspect;
+    const relPath = buildOutputPath({
+      projectName: projectName || 'video',
+      sceneOrder,
+      index,
+      provider: config.providerId,
+      aspect,
+      ext: 'png',
+    });
+    if (outputDir) {
+      const meta = {
+        prompt: scene ? composeScenePrompt(scene, assets) : '',
+        provider: config.providerId,
+        model: config.modelId,
+        aspect,
+        seed: config.seed,
+        savedAt: new Date().toISOString(),
+      };
+      await writeFileToDir(outputDir, relPath, blob);
+      await writeFileToDir(outputDir, metadataPathFor(relPath), JSON.stringify(meta, null, 2));
+    } else {
+      downloadBlob(blob, relPath);
+    }
+    return relPath;
+  };
+
   const run = useVideoRun(viewScenes, config, {
     projectId: currentProjectId,
     promptFor: (sceneId) => {
@@ -238,6 +275,7 @@ export function VideoStudioPage() {
       return s ? composeScenePrompt(s, assets) : '';
     },
     saveVideo,
+    saveImage,
   });
 
   /**
@@ -636,7 +674,7 @@ export function VideoStudioPage() {
         <ConfigPanel
           config={config}
           caps={caps}
-          providers={PROVIDERS}
+          providers={providers}
           preset={preset}
           onChange={patchConfig}
           onProviderChange={handleProviderChange}

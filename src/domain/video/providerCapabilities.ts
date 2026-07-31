@@ -98,10 +98,31 @@ const MOCK: ProviderCapabilities = {
   maxConcurrent: 4,
 };
 
-/** Every registered provider, in display order. */
-export const PROVIDERS: readonly ProviderCapabilities[] = [VEO31, NANOBANANA, MOCK];
+/**
+ * Built-in defaults — khớp seed BE. Dùng khi CHƯA fetch được registry từ API (và cho
+ * test). `PROVIDERS` giữ tên cũ = defaults để không vỡ import/test hiện có.
+ */
+export const DEFAULT_PROVIDERS: readonly ProviderCapabilities[] = [VEO31, NANOBANANA, MOCK];
+export const PROVIDERS = DEFAULT_PROVIDERS;
 
-const BY_ID = new Map<ProviderId, ProviderCapabilities>(PROVIDERS.map((p) => [p.id, p]));
+/**
+ * Registry HIỆN HÀNH (mutable) — mặc định = built-in, Video Studio nạp từ API
+ * (`setProviderRegistry`) để phản ánh cấu hình admin. Mọi helper đọc qua đây nên
+ * call-site không đổi.
+ */
+let activeProviders: readonly ProviderCapabilities[] = DEFAULT_PROVIDERS;
+let byId = new Map<ProviderId, ProviderCapabilities>(activeProviders.map((p) => [p.id, p]));
+
+/** Thay registry runtime (danh sách provider đã map từ API, thường kèm MOCK). */
+export function setProviderRegistry(list: readonly ProviderCapabilities[]): void {
+  activeProviders = list.length > 0 ? list : DEFAULT_PROVIDERS;
+  byId = new Map(activeProviders.map((p) => [p.id, p]));
+}
+
+/** Toàn bộ provider hiện hành (cho dropdown chọn provider). */
+export function getAllProviders(): readonly ProviderCapabilities[] {
+  return activeProviders;
+}
 
 /* ============================================================
    Lookups
@@ -109,7 +130,7 @@ const BY_ID = new Map<ProviderId, ProviderCapabilities>(PROVIDERS.map((p) => [p.
 
 /** Capabilities for a provider id, or `undefined` if unknown. */
 export function getCapabilities(providerId: ProviderId): ProviderCapabilities | undefined {
-  return BY_ID.get(providerId);
+  return byId.get(providerId);
 }
 
 /** The tier spec for a provider+speed, or `undefined` if the provider lacks it. */

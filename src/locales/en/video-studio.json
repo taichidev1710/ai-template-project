@@ -173,6 +173,8 @@
     "title": "Preview",
     "empty": "Nothing to show yet. Add scenes and press “Generate”.",
     "generate": "Generate",
+    "generateImage": "Generate image",
+    "viewImage": "View image",
     "cancel": "Cancel",
     "retry": "Retry",
     "copyPath": "Copy path",

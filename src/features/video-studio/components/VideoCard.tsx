@@ -8,7 +8,7 @@ import {
   InfoCircleOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { sceneAssets, type AspectRatio, type Asset, type Job, type JobStatus, type RunConfig, type Scene } from '@/domain/video';
+import { getCapabilities, sceneAssets, type AspectRatio, type Asset, type Job, type JobStatus, type RunConfig, type Scene } from '@/domain/video';
 import { jobKey } from '../hooks/use-video-run';
 import { assetTagLabel } from '../lib';
 import { SceneOverrides } from './SceneOverrides';
@@ -56,6 +56,7 @@ export function VideoCard({
 }: VideoCardProps) {
   const { t } = useTranslation('video-studio');
   const [infoOpen, setInfoOpen] = useState(false);
+  const isImage = getCapabilities(config.providerId)?.kind === 'image';
   const byIndex = new Map(jobs.map((j) => [j.index, j]));
   const effectiveAspect = scene.aspectOverride ?? defaultAspect;
   const usedAssets = sceneAssets(scene, assets);
@@ -76,7 +77,7 @@ export function VideoCard({
             <Button type="text" size="small" icon={<InfoCircleOutlined />} onClick={() => setInfoOpen(true)} />
           </Tooltip>
           <Button size="small" type="primary" ghost icon={<VideoCameraAddOutlined />} onClick={onGenerate}>
-            {t('grid.generate')}
+            {isImage ? t('grid.generateImage') : t('grid.generate')}
           </Button>
         </Space>
       }
@@ -127,6 +128,22 @@ export function VideoCard({
 
               {status === 'processing' && (
                 <Progress percent={job?.progress ?? 0} size="small" className="!m-0 min-w-0 flex-1" />
+              )}
+
+              {status === 'success' && job?.previewUrl && (
+                <a
+                  href={job.previewUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="shrink-0"
+                  title={t('grid.viewImage')}
+                >
+                  <img
+                    src={job.previewUrl}
+                    alt=""
+                    className="h-10 w-10 rounded-app-sm border border-line object-cover"
+                  />
+                </a>
               )}
 
               {status === 'success' && job?.outputPath && (

@@ -173,6 +173,8 @@
     "title": "Khung xem",
     "empty": "Chưa có gì để hiện. Thêm phân cảnh và bấm “Tạo video”.",
     "generate": "Tạo video",
+    "generateImage": "Tạo ảnh",
+    "viewImage": "Xem ảnh",
     "cancel": "Huỷ",
     "retry": "Thử lại",
     "copyPath": "Copy đường dẫn",

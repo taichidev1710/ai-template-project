@@ -28,6 +28,20 @@ export interface SubmitResult {
   error?: GenJobError;
 }
 
+/** Body tạo ẢNH (đồng bộ) — provider ảnh (không có duration). */
+export interface GenerateImageBody {
+  sceneId?: string;
+  prompt: string;
+  model: string;
+  aspectRatio: AspectRatio;
+}
+
+/** Kết quả tạo ảnh: hoặc ảnh base64, hoặc lỗi job (HTTP 200). */
+export interface ImageResult {
+  image?: { mimeType: string; dataBase64: string };
+  error?: GenJobError;
+}
+
 export interface PollResult {
   status: 'processing' | 'success' | 'error';
   videoUri?: string;
@@ -38,6 +52,14 @@ export const generationApi = {
   submit: async (projectId: string, body: GenerateBody): Promise<SubmitResult> => {
     const { data } = await apiClient.post<ApiEnvelope<SubmitResult>>(
       `/video-projects/${projectId}/generate`,
+      body,
+    );
+    return data.data;
+  },
+  /** Tạo ẢNH đồng bộ (provider ảnh) — trả ảnh base64 hoặc lỗi job, KHÔNG poll. */
+  generateImage: async (projectId: string, body: GenerateImageBody): Promise<ImageResult> => {
+    const { data } = await apiClient.post<ApiEnvelope<ImageResult>>(
+      `/video-projects/${projectId}/generate-image`,
       body,
     );
     return data.data;

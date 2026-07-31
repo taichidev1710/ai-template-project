@@ -92,7 +92,7 @@ export function AppLayout() {
       items: [
         { key: paths.diagrams, icon: <PartitionOutlined />, label: 'Sơ đồ' },
         { key: paths.diagramTypes, icon: <ApartmentOutlined />, label: 'Loại sơ đồ' },
-        { key: paths.videoStudio, icon: <VideoCameraOutlined />, label: t('nav.videoStudio') },
+        { key: paths.videoStudio, icon: <VideoCameraOutlined />, label: t('nav.videoStudio'), perm: PERM.videoProject.read },
         { key: paths.providers, icon: <ApiOutlined />, label: t('nav.providers'), perm: PERM.provider.read },
       ],
     },

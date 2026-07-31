@@ -20,7 +20,8 @@ export const FEATURE = {
   TIER: 'tier',
   MEMBER_GROUP: 'member_group',
   MEMBER_FEATURE: 'member_feature',
-  // ----- Nhà cung cấp (registry provider tạo video/ảnh) -----
+  // ----- Công cụ tạo nội dung (Video Studio) + registry provider -----
+  VIDEO_PROJECT: 'video_project',
   PROVIDER: 'provider',
 } as const;
 
@@ -80,6 +81,12 @@ export const PERM = {
     create: `${FEATURE.MEMBER_FEATURE}:create`,
     update: `${FEATURE.MEMBER_FEATURE}:update`,
     delete: `${FEATURE.MEMBER_FEATURE}:delete`,
+  },
+  videoProject: {
+    read: `${FEATURE.VIDEO_PROJECT}:read`,
+    create: `${FEATURE.VIDEO_PROJECT}:create`,
+    update: `${FEATURE.VIDEO_PROJECT}:update`,
+    delete: `${FEATURE.VIDEO_PROJECT}:delete`,
   },
   provider: {
     read: `${FEATURE.PROVIDER}:read`,

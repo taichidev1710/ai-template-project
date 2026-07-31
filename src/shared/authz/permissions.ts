@@ -20,6 +20,8 @@ export const FEATURE = {
   TIER: 'tier',
   MEMBER_GROUP: 'member_group',
   MEMBER_FEATURE: 'member_feature',
+  // ----- Nhà cung cấp (registry provider tạo video/ảnh) -----
+  PROVIDER: 'provider',
 } as const;
 
 /** Quyền hệ thống dạng `feature:action` — dùng cho can()/menu. Suy từ FEATURE để 1 nguồn. */
@@ -78,5 +80,11 @@ export const PERM = {
     create: `${FEATURE.MEMBER_FEATURE}:create`,
     update: `${FEATURE.MEMBER_FEATURE}:update`,
     delete: `${FEATURE.MEMBER_FEATURE}:delete`,
+  },
+  provider: {
+    read: `${FEATURE.PROVIDER}:read`,
+    create: `${FEATURE.PROVIDER}:create`,
+    update: `${FEATURE.PROVIDER}:update`,
+    delete: `${FEATURE.PROVIDER}:delete`,
   },
 } as const;

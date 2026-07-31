@@ -19,7 +19,8 @@
     "tiers": "Cấp bậc",
     "memberGroups": "Nhóm quyền thành viên",
     "memberFeatures": "Chức năng thành viên",
-    "videoStudio": "Xưởng video"
+    "videoStudio": "Xưởng video",
+    "providers": "Nhà cung cấp"
   },
   "action": {
     "create": "Thêm mới",
@@ -184,6 +185,36 @@
     "editTitle": "Sửa nhóm quyền",
     "deleteConfirm": "Xoá nhóm quyền này?",
     "assignTitle": "Gán nhóm quyền cho người dùng"
+  },
+  "provider": {
+    "title": "Nhà cung cấp",
+    "key": "Mã (key)",
+    "label": "Tên hiển thị",
+    "description": "Mô tả",
+    "adapter": "Adapter (code)",
+    "adapterHint": "Adapter là code xử lý cách gọi API của hãng. Thêm hãng mới cần lập trình viên thêm adapter; ở đây chỉ khai báo provider dùng adapter nào + cấu hình.",
+    "credential": "Vendor khóa API",
+    "outputType": "Kiểu đầu ra",
+    "output": { "video": "Video", "image": "Ảnh" },
+    "status": "Trạng thái",
+    "statusValue": { "stable": "Ổn định", "beta": "Thử nghiệm", "deprecated": "Ngừng dùng" },
+    "enabled": "Đang bật",
+    "system": "Hệ thống",
+    "order": "Thứ tự",
+    "models": "Model",
+    "modelId": "Model id",
+    "modelTier": "Tier",
+    "aspects": "Tỷ lệ khung hình",
+    "durations": "Độ dài clip (giây)",
+    "maxRefImages": "Số ảnh tham chiếu tối đa",
+    "rpm": "Yêu cầu/phút",
+    "maxConcurrent": "Job đồng thời tối đa",
+    "addAspect": "Thêm tỷ lệ",
+    "addDuration": "Thêm độ dài",
+    "addModel": "Thêm model",
+    "createTitle": "Thêm nhà cung cấp",
+    "editTitle": "Sửa nhà cung cấp",
+    "deleteConfirm": "Xoá nhà cung cấp này?"
   },
   "feature": {
     "title": "Nhóm quyền chức năng",

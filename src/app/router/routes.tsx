@@ -21,6 +21,7 @@ import { MemberFeaturesPage } from '@/features/member-features';
 import { DiagramTypesPage, DiagramTypeEditorPage } from '@/features/diagram-types';
 import { DiagramsPage, DiagramEditorPage } from '@/features/diagrams';
 import { VideoStudioPage } from '@/features/video-studio';
+import { ProviderRegistryPage } from '@/features/provider-registry';
 import {
   MemberLayout,
   MemberHomePage,
@@ -64,6 +65,7 @@ export const router = createBrowserRouter(
             { path: paths.diagramTypes, element: <DiagramTypesPage /> },
             { path: `${paths.diagramTypes}/:id`, element: <DiagramTypeEditorPage /> },
             { path: paths.videoStudio, element: <VideoStudioPage /> },
+            { path: paths.providers, element: <ProviderRegistryPage /> },
           ],
         },
       ],

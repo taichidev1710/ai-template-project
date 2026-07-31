@@ -19,7 +19,8 @@
     "tiers": "Tiers",
     "memberGroups": "Member permission groups",
     "memberFeatures": "Member features",
-    "videoStudio": "Video Studio"
+    "videoStudio": "Video Studio",
+    "providers": "Providers"
   },
   "action": {
     "create": "Create",
@@ -184,6 +185,36 @@
     "editTitle": "Edit group",
     "deleteConfirm": "Delete this group?",
     "assignTitle": "Assign groups to user"
+  },
+  "provider": {
+    "title": "Providers",
+    "key": "Key",
+    "label": "Display name",
+    "description": "Description",
+    "adapter": "Adapter (code)",
+    "adapterHint": "An adapter is the code that knows how to call a vendor's API. Adding a new vendor needs a developer to add an adapter; here you only declare which adapter a provider uses plus its config.",
+    "credential": "API key vendor",
+    "outputType": "Output type",
+    "output": { "video": "Video", "image": "Image" },
+    "status": "Status",
+    "statusValue": { "stable": "Stable", "beta": "Beta", "deprecated": "Deprecated" },
+    "enabled": "Enabled",
+    "system": "System",
+    "order": "Order",
+    "models": "Models",
+    "modelId": "Model id",
+    "modelTier": "Tier",
+    "aspects": "Aspect ratios",
+    "durations": "Clip durations (s)",
+    "maxRefImages": "Max reference images",
+    "rpm": "Requests/min",
+    "maxConcurrent": "Max concurrent jobs",
+    "addAspect": "Add aspect",
+    "addDuration": "Add duration",
+    "addModel": "Add model",
+    "createTitle": "Add provider",
+    "editTitle": "Edit provider",
+    "deleteConfirm": "Delete this provider?"
   },
   "feature": {
     "title": "Feature registry",

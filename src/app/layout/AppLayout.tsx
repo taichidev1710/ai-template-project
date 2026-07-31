@@ -18,6 +18,7 @@ import {
   LogoutOutlined,
   TranslationOutlined,
   VideoCameraOutlined,
+  ApiOutlined,
 } from '@ant-design/icons';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -92,6 +93,7 @@ export function AppLayout() {
         { key: paths.diagrams, icon: <PartitionOutlined />, label: 'Sơ đồ' },
         { key: paths.diagramTypes, icon: <ApartmentOutlined />, label: 'Loại sơ đồ' },
         { key: paths.videoStudio, icon: <VideoCameraOutlined />, label: t('nav.videoStudio') },
+        { key: paths.providers, icon: <ApiOutlined />, label: t('nav.providers'), perm: PERM.provider.read },
       ],
     },
   ];
